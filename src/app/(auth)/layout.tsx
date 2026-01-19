@@ -1,69 +1,163 @@
+"use client";
+
+import Image from "next/image";
+import { usePathname } from "next/navigation";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { ShieldCheck, Users, FileText, Mail } from "lucide-react";
+
+import pesoLogo from "@/assets/images/image-Photoroom.png";
+
 export default function AuthLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <div className="min-h-screen bg-white">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-blue-50 via-white to-white" />
-      <div className="mx-auto w-full max-w-6xl px-6 py-6">
-        <a
-          href="/"
-          className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:underline"
-        >
-          <span aria-hidden="true">←</span>
-          Back to Home
-        </a>
-      </div>
+  const pathname = usePathname();
+  const reduceMotion = useReducedMotion();
+  const prevPathRef = useRef<string>(pathname);
+  const [direction, setDirection] = useState<1 | -1>(1);
 
-      <div className="mx-auto grid min-h-[calc(100vh-88px)] w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 pb-12 md:grid-cols-2">
-        <div className="hidden md:block">
-          <div className="rounded-3xl border border-blue-200 bg-white/70 p-8 shadow-sm backdrop-blur">
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-blue-700 text-white">
-                P
-              </div>
+  useEffect(() => {
+    const prev = prevPathRef.current;
+    if (prev === pathname) return;
+
+    // Direction rules:
+    // - Login -> Register: slide left (enter from right)
+    // - Register -> Login: slide right (enter from left)
+    if (prev === "/login" && pathname === "/register") setDirection(1);
+    else if (prev === "/register" && pathname === "/login") setDirection(-1);
+    else setDirection(1);
+
+    prevPathRef.current = pathname;
+  }, [pathname]);
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 place-items-center rounded-full bg-white ring-1 ring-slate-200">
+              <Image
+                src={pesoLogo}
+                alt="Cabuyao PESO seal"
+                width={40}
+                height={40}
+                priority
+                className="h-10 w-10 rounded-full object-contain"
+              />
+            </div>
+            <div className="leading-tight">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                City Government of Cabuyao
+              </p>
+              <p className="text-sm font-semibold text-slate-900">
+                Public Employment Service Office
+              </p>
+            </div>
+          </div>
+          <a
+            href="/"
+            className="rounded-full border border-blue-200 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50"
+          >
+            Back to Home
+          </a>
+        </div>
+      </header>
+
+      <main className="mx-auto grid min-h-[calc(100vh-73px)] w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 py-10 md:grid-cols-2">
+        <div className="hidden md:flex flex-col justify-center">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Official System Access
+          </p>
+          <h2 className="mt-2 text-3xl font-bold leading-tight text-slate-900">
+            OJT Attendance Management
+          </h2>
+          <p className="mt-3 max-w-md text-sm leading-6 text-slate-700">
+            Sign in using your assigned account. Access is role-based and
+            actions are recorded for accountability.
+          </p>
+
+          <div className="mt-8 grid max-w-md gap-4">
+            <div className="flex gap-3">
+              <ShieldCheck className="mt-0.5 h-5 w-5 text-blue-700" />
               <div>
-                <p className="text-base font-semibold text-blue-700">PESO</p>
-                <p className="-mt-1 text-sm text-slate-500">
-                  OJT Attendance System
+                <p className="text-sm font-semibold text-slate-900">
+                  Secure & auditable
+                </p>
+                <p className="text-sm leading-6 text-slate-700">
+                  Authentication and activity tracking support transparency and
+                  service excellence.
                 </p>
               </div>
             </div>
 
-            <h2 className="mt-8 text-3xl font-bold leading-tight text-slate-900">
-              Transparent attendance,
-              <span className="text-red-600"> empowered interns</span>.
-            </h2>
-            <p className="mt-3 text-slate-600">
-              Clock-in/out verification, approvals, and reporting—built for
-              Cabuyao PESO operations.
-            </p>
-
-            <div className="mt-8 grid gap-3">
-              {[
-                "Web-based access (desktop + mobile browsers)",
-                "Location + selfie verification (when enabled)",
-                "Supervisor approval workflow and audit trail",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700"
-                >
-                  {item}
-                </div>
-              ))}
+            <div className="flex gap-3">
+              <Users className="mt-0.5 h-5 w-5 text-red-600" />
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  Role-based access
+                </p>
+                <p className="text-sm leading-6 text-slate-700">
+                  Interns, supervisors, coordinators, and admins have
+                  appropriate permissions.
+                </p>
+              </div>
             </div>
 
-            <div className="mt-8 rounded-2xl bg-blue-50 px-4 py-3 text-sm text-blue-800">
-              Tip: Use your official email to ensure your account is matched to
-              your internship record.
+            <div className="flex gap-3">
+              <FileText className="mt-0.5 h-5 w-5 text-blue-700" />
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  Report-ready records
+                </p>
+                <p className="text-sm leading-6 text-slate-700">
+                  Attendance logs support DTR generation and hours-rendered
+                  tracking.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8 max-w-md rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-700 shadow-sm">
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-slate-500" />
+              <p className="text-sm">
+                Need help?{" "}
+                <a
+                  className="font-semibold text-blue-700 hover:underline"
+                  href="mailto:pesocabuyaocity@gmail.com?subject=PESO%20OJT%20Attendance%20System%20-%20Access%20Support"
+                >
+                  pesocabuyaocity@gmail.com
+                </a>
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="mx-auto w-full max-w-md">{children}</div>
-      </div>
+        <div className="mx-auto w-full max-w-lg">
+          <AnimatePresence mode="wait" initial={false} custom={direction}>
+            <motion.div
+              key={pathname}
+              custom={direction}
+              initial={
+                reduceMotion
+                  ? { opacity: 1 }
+                  : { opacity: 0, x: direction === 1 ? 28 : -28 }
+              }
+              animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
+              exit={
+                reduceMotion
+                  ? { opacity: 1 }
+                  : { opacity: 0, x: direction === 1 ? -28 : 28 }
+              }
+              transition={{ duration: 0.22, ease: "easeOut" }}
+            >
+              {children}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </main>
     </div>
   );
 }
