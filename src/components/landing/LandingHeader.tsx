@@ -42,7 +42,7 @@ export function LandingHeader({ links }: LandingHeaderProps) {
       animate={reduceMotion ? undefined : { opacity: scrolled ? 0.98 : 1 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-6 px-6 py-4">
+      <div className="mx-auto flex w-full max-w-[90%] items-center justify-between gap-6 px-4 py-4 sm:max-w-2xl sm:px-6 lg:max-w-6xl lg:px-8 xl:max-w-7xl xl:px-12 2xl:max-w-[1600px] 2xl:px-16">
         <div className="flex items-center gap-4">
           <div className="grid h-11 w-11 place-items-center rounded-full bg-white ring-1 ring-slate-200">
             <Image

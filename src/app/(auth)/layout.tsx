@@ -33,9 +33,9 @@ export default function AuthLayout({
   }, [pathname]);
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen w-full bg-slate-50">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
+        <div className="mx-auto flex w-full max-w-[90%] items-center justify-between px-4 py-4 sm:max-w-2xl sm:px-6 lg:max-w-6xl lg:px-8 xl:max-w-7xl xl:px-12 2xl:max-w-[1600px] 2xl:px-16">
           <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-full bg-white ring-1 ring-slate-200">
               <Image
@@ -65,12 +65,12 @@ export default function AuthLayout({
         </div>
       </header>
 
-      <main className="mx-auto grid min-h-[calc(100vh-73px)] w-full max-w-6xl grid-cols-1 items-center gap-10 px-6 py-10 md:grid-cols-2">
+      <main className="mx-auto grid min-h-[calc(100vh-73px)] w-full max-w-[90%] grid-cols-1 items-center gap-10 px-4 py-10 sm:max-w-2xl sm:px-6 md:grid-cols-2 lg:max-w-6xl lg:px-8 xl:max-w-7xl xl:px-12 2xl:max-w-[1600px] 2xl:px-16">
         <div className="hidden md:flex flex-col justify-center">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Official System Access
           </p>
-          <h2 className="mt-2 text-3xl font-bold leading-tight text-slate-900">
+          <h2 className="mt-2 text-3xl font-bold leading-tight text-slate-900 lg:text-4xl">
             OJT Attendance Management
           </h2>
           <p className="mt-3 max-w-md text-sm leading-6 text-slate-700">
