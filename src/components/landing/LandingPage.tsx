@@ -383,7 +383,7 @@ export function LandingPage() {
                 </li>
                 <li>
                   <a
-                    href="/login"
+                    href="/dashboard/intern"
                     className="text-slate-700 hover:text-blue-700 hover:underline"
                   >
                     Log In

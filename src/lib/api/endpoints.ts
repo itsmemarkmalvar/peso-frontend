@@ -63,4 +63,12 @@ export const API_ENDPOINTS = {
     stats: '/dashboard/stats',
     recentActivity: '/dashboard/recent-activity',
   },
+
+  // Intern dashboard aggregates (Laravel should expose these)
+  intern: {
+    dashboard: '/intern/dashboard',
+    timeClock: '/intern/time-clock',
+    timesheets: '/intern/timesheets',
+    approvals: '/intern/approvals',
+  },
 } as const;
