@@ -19,6 +19,7 @@ import {
   Plane,
   LineChart,
   UserCircle2,
+  Navigation2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/timesheets", label: "Timesheets", icon: FileSpreadsheet },
   { href: "/dashboard/live-locations", label: "Live Locations", icon: MapPin },
+  { href: "/dashboard/geofences", label: "Geofences", icon: Navigation2 },
   { href: "/dashboard/time-off", label: "Time Off", icon: Plane },
   { href: "/dashboard/reports", label: "Reports", icon: LineChart },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
