@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import pesoLogo from "@/assets/images/image-Photoroom.png";
+import { useAuth } from "@/hooks/useAuth";
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
@@ -38,6 +40,9 @@ export default function LoginPage() {
     { email: false, password: false }
   );
   const [formError, setFormError] = useState<string | null>(null);
+
+  const router = useRouter();
+  const { login } = useAuth();
 
   const emailError =
     touched.email && !email.trim()
@@ -63,6 +68,27 @@ export default function LoginPage() {
     if (!isFormValid) return;
 
     setIsSubmitting(true);
+    // Development-only admin shortcut
+    if (
+      process.env.NODE_ENV === "development" &&
+      email.trim().toLowerCase() === "admin@example.com" &&
+      password === "admin12345"
+    ) {
+      login(
+        {
+          id: 1,
+          username: "admin",
+          email: "admin@example.com",
+          role: "admin",
+          name: "System Admin",
+        },
+        "dev-admin-token"
+      );
+      router.push("/dashboard/admin");
+      setIsSubmitting(false);
+      return;
+    }
+
     // UI-only: backend integration will be wired later (Laravel Sanctum).
     await new Promise((r) => setTimeout(r, 600));
     setFormError("Invalid credentials. Please verify your email and password.");
