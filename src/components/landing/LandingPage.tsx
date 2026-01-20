@@ -26,7 +26,7 @@ export function LandingPage() {
   const reduceMotion = useReducedMotion();
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+    <div className="min-h-screen w-full bg-slate-50 font-sans text-slate-900">
       <LandingHeader
         links={[
           { label: "Features", href: "#features" },
@@ -35,11 +35,11 @@ export function LandingPage() {
         ]}
       />
 
-      <main>
+      <main className="w-full">
         <section className="relative overflow-hidden">
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-slate-50 via-white to-slate-50" />
 
-          <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-10 px-6 py-16 md:grid-cols-2 md:items-center md:py-24">
+          <div className="mx-auto grid w-full max-w-[90%] grid-cols-1 gap-10 px-4 py-16 sm:max-w-2xl sm:px-6 md:max-w-4xl md:grid-cols-2 md:items-center md:py-24 lg:max-w-6xl lg:px-8 xl:max-w-7xl xl:px-12 2xl:max-w-[1600px] 2xl:px-16">
             <motion.div
               variants={reduceMotion ? undefined : container}
               initial={reduceMotion ? undefined : "hidden"}
@@ -52,13 +52,13 @@ export function LandingPage() {
                 OJT Attendance System
               </motion.p>
               <motion.h1
-                className="mt-3 text-4xl font-bold leading-tight text-slate-900 md:text-5xl"
+                className="mt-3 text-4xl font-bold leading-tight text-slate-900 md:text-5xl lg:text-6xl"
                 variants={reduceMotion ? undefined : item}
               >
                 Reliable attendance records for OJT interns.
               </motion.h1>
               <motion.p
-                className="mt-4 text-lg text-slate-700"
+                className="mt-4 text-lg text-slate-700 lg:text-xl"
                 variants={reduceMotion ? undefined : item}
               >
                 A secure, web-based system for clock-in/out recording, approvals,
@@ -145,14 +145,14 @@ export function LandingPage() {
 
         <section
           id="features"
-          className="mx-auto w-full max-w-6xl scroll-mt-24 px-6 py-16"
+          className="mx-auto w-full max-w-[90%] scroll-mt-24 px-4 py-16 sm:max-w-2xl sm:px-6 lg:max-w-6xl lg:px-8 xl:max-w-7xl xl:px-12 2xl:max-w-[1600px] 2xl:px-16"
         >
           <Reveal>
             <div className="mb-10">
               <p className="text-xs font-semibold uppercase tracking-wide text-red-600">
                 Key Features
               </p>
-              <h2 className="mt-2 text-3xl font-bold text-slate-900">
+              <h2 className="mt-2 text-3xl font-bold text-slate-900 lg:text-4xl">
                 Attendance management with accountability
               </h2>
               <p className="mt-3 max-w-3xl text-slate-700">
@@ -162,7 +162,7 @@ export function LandingPage() {
             </div>
           </Reveal>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[
               {
                 title: "Clock In/Out",
@@ -193,7 +193,7 @@ export function LandingPage() {
 
         <section
           id="about"
-          className="mx-auto w-full max-w-6xl scroll-mt-24 px-6 pb-6 pt-4"
+          className="mx-auto w-full max-w-[90%] scroll-mt-24 px-4 pb-6 pt-4 sm:max-w-2xl sm:px-6 lg:max-w-6xl lg:px-8 xl:max-w-7xl xl:px-12 2xl:max-w-[1600px] 2xl:px-16"
         >
           <div className="grid gap-6 md:grid-cols-2">
             <Reveal>
@@ -245,7 +245,7 @@ export function LandingPage() {
 
         <section
           id="how-it-works"
-          className="mx-auto w-full max-w-6xl scroll-mt-24 px-6 py-16"
+          className="mx-auto w-full max-w-[90%] scroll-mt-24 px-4 py-16 sm:max-w-2xl sm:px-6 lg:max-w-6xl lg:px-8 xl:max-w-7xl xl:px-12 2xl:max-w-[1600px] 2xl:px-16"
         >
           <div className="grid gap-10 md:grid-cols-2 md:items-center">
             <Reveal>
@@ -253,7 +253,7 @@ export function LandingPage() {
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                   How It Works
                 </p>
-                <h2 className="mt-2 text-3xl font-bold text-slate-900">
+                <h2 className="mt-2 text-3xl font-bold text-slate-900 lg:text-4xl">
                   Simple flow for interns and supervisors
                 </h2>
                 <p className="mt-3 text-slate-700">
@@ -300,7 +300,7 @@ export function LandingPage() {
 
         <section
           id="history"
-          className="mx-auto w-full max-w-6xl scroll-mt-24 px-6 py-16"
+          className="mx-auto w-full max-w-[90%] scroll-mt-24 px-4 py-16 sm:max-w-2xl sm:px-6 lg:max-w-6xl lg:px-8 xl:max-w-7xl xl:px-12 2xl:max-w-[1600px] 2xl:px-16"
         >
           <Reveal>
             <div className="rounded-2xl border border-slate-200 bg-white px-8 py-10 shadow-sm">
@@ -334,7 +334,7 @@ export function LandingPage() {
       </main>
 
       <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto w-full max-w-6xl px-6 py-10">
+        <div className="mx-auto w-full max-w-[90%] px-4 py-10 sm:max-w-2xl sm:px-6 lg:max-w-6xl lg:px-8 xl:max-w-7xl xl:px-12 2xl:max-w-[1600px] 2xl:px-16">
           <div className="grid gap-8 md:grid-cols-3">
             <div className="space-y-3">
               <div className="flex items-center gap-3">
