@@ -69,11 +69,31 @@ function MapWrapper({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const initializedRef = useRef(false);
+  const [shouldRender, setShouldRender] = useState(false);
+  const hasRenderedRef = useRef(false);
 
   useEffect(() => {
-    // Cleanup function
+    // Only render once, even in Strict Mode
+    if (hasRenderedRef.current) {
+      return;
+    }
+
+    // Small delay to ensure DOM is ready
+    const timer = setTimeout(() => {
+      if (!hasRenderedRef.current && containerRef.current) {
+        // Check if container already has a Leaflet map
+        const container = containerRef.current;
+        const hasExistingMap = (container as any)._leaflet_id !== undefined;
+        
+        if (!hasExistingMap) {
+          hasRenderedRef.current = true;
+          setShouldRender(true);
+        }
+      }
+    }, 100);
+
     return () => {
+      clearTimeout(timer);
       if (mapInstanceRef.current) {
         try {
           const map = mapInstanceRef.current;
@@ -85,50 +105,47 @@ function MapWrapper({
         }
         mapInstanceRef.current = null;
       }
-      initializedRef.current = false;
+      hasRenderedRef.current = false;
     };
   }, []);
 
-  // Check if container already has a map before rendering
-  useEffect(() => {
-    if (containerRef.current) {
-      const hasMap = (containerRef.current as any)._leaflet_id !== undefined;
-      if (hasMap && !initializedRef.current) {
-        // Container already initialized, skip
-        return;
-      }
-    }
-  }, []);
+  if (!shouldRender) {
+    return (
+      <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-slate-100">
+        <p className="text-slate-600 text-sm">Loading map...</p>
+      </div>
+    );
+  }
 
   return (
-    <div ref={containerRef} className="w-full h-full">
-      {!initializedRef.current && (
-        <MapContainer
-          key={mapId}
-          center={center}
-          zoom={zoom}
-          style={{ height: "100%", width: "100%", zIndex: 0 }}
-          scrollWheelZoom={true}
-          whenCreated={(map) => {
-            if (!initializedRef.current && !mapInstanceRef.current) {
-              initializedRef.current = true;
-              mapInstanceRef.current = map;
-              if (onMapCreated) {
-                onMapCreated(map);
-              }
-            } else {
-              // Duplicate creation detected, remove it
-              try {
-                map.remove();
-              } catch (e) {
-                // Ignore
-              }
+    <div ref={containerRef} className="w-full h-full" id={mapId}>
+      <MapContainer
+        key={mapId}
+        center={center}
+        zoom={zoom}
+        style={{ height: "100%", width: "100%", zIndex: 0 }}
+        scrollWheelZoom={true}
+        whenCreated={(map) => {
+          // Only store the first map instance
+          if (!mapInstanceRef.current) {
+            mapInstanceRef.current = map;
+            if (onMapCreated) {
+              onMapCreated(map);
             }
-          }}
-        >
-          {children}
-        </MapContainer>
-      )}
+          } else {
+            // Duplicate detected - remove it immediately
+            try {
+              if (map && typeof map.remove === 'function') {
+                map.remove();
+              }
+            } catch (e) {
+              // Ignore cleanup errors
+            }
+          }
+        }}
+      >
+        {children}
+      </MapContainer>
     </div>
   );
 }
