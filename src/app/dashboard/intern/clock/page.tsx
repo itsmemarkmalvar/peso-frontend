@@ -1,1 +1,1 @@
-export { default } from "@/app/dashboard/intern/time/page"
+export { default } from "@/components/intern/pages/InternTimePage"

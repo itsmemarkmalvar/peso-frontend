@@ -53,103 +53,6 @@ function MapClickHandler({
   return null;
 }
 
-// Wrapper component to prevent double initialization
-function MapWrapper({
-  children,
-  center,
-  zoom,
-  mapId,
-  onMapCreated,
-}: {
-  children: React.ReactNode;
-  center: [number, number];
-  zoom: number;
-  mapId: string;
-  onMapCreated?: (map: L.Map) => void;
-}) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const [shouldRender, setShouldRender] = useState(false);
-  const hasRenderedRef = useRef(false);
-
-  useEffect(() => {
-    // Only render once, even in Strict Mode
-    if (hasRenderedRef.current) {
-      return;
-    }
-
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(() => {
-      if (!hasRenderedRef.current && containerRef.current) {
-        // Check if container already has a Leaflet map
-        const container = containerRef.current;
-        const hasExistingMap = (container as any)._leaflet_id !== undefined;
-        
-        if (!hasExistingMap) {
-          hasRenderedRef.current = true;
-          setShouldRender(true);
-        }
-      }
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-      if (mapInstanceRef.current) {
-        try {
-          const map = mapInstanceRef.current;
-          if (map && typeof map.remove === 'function') {
-            map.remove();
-          }
-        } catch (e) {
-          // Ignore errors during cleanup
-        }
-        mapInstanceRef.current = null;
-      }
-      hasRenderedRef.current = false;
-    };
-  }, []);
-
-  if (!shouldRender) {
-    return (
-      <div ref={containerRef} className="w-full h-full flex items-center justify-center bg-slate-100">
-        <p className="text-slate-600 text-sm">Loading map...</p>
-      </div>
-    );
-  }
-
-  return (
-    <div ref={containerRef} className="w-full h-full" id={mapId}>
-      <MapContainer
-        key={mapId}
-        center={center}
-        zoom={zoom}
-        style={{ height: "100%", width: "100%", zIndex: 0 }}
-        scrollWheelZoom={true}
-        whenCreated={(map) => {
-          // Only store the first map instance
-          if (!mapInstanceRef.current) {
-            mapInstanceRef.current = map;
-            if (onMapCreated) {
-              onMapCreated(map);
-            }
-          } else {
-            // Duplicate detected - remove it immediately
-            try {
-              if (map && typeof map.remove === 'function') {
-                map.remove();
-              }
-            } catch (e) {
-              // Ignore cleanup errors
-            }
-          }
-        }}
-      >
-        {children}
-      </MapContainer>
-    </div>
-  );
-}
-
 export function GeofenceMap({
   locations = [],
   onLocationCreate,
@@ -168,27 +71,23 @@ export function GeofenceMap({
     radius: number;
   } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  const [mapKey, setMapKey] = useState(0);
   const mapRef = useRef<L.Map | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   // Use a more unique ID that includes component instance
-  const mapIdRef = useRef<string>(`geofence-map-${Date.now()}-${Math.random().toString(36).substring(7)}`);
+  const mapIdRef = useRef<string>(
+    `geofence-map-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(7)}`
+  );
 
   useEffect(() => {
-    // Small delay to ensure clean mount
-    const timer = setTimeout(() => {
-      setIsMounted(true);
-      // Force a new key to ensure fresh container
-      setMapKey(prev => prev + 1);
-    }, 100);
-
+    setIsMounted(true);
     return () => {
-      clearTimeout(timer);
       if (mapRef.current) {
-        try {
-          mapRef.current.remove();
-        } catch (e) {
-          // Map might already be removed
+        const container = mapRef.current.getContainer();
+        mapRef.current.off();
+        mapRef.current.remove();
+        if (container && (container as any)._leaflet_id) {
+          delete (container as any)._leaflet_id;
         }
         mapRef.current = null;
       }
@@ -227,21 +126,16 @@ export function GeofenceMap({
   }
 
   return (
-    <div 
-      ref={containerRef}
+    <div
       className="relative w-full h-full min-h-[500px] rounded-lg overflow-hidden border border-slate-200"
-      id={mapIdRef.current}
     >
-      <MapWrapper
-        key={mapKey}
+      <MapContainer
+        id={mapIdRef.current}
+        ref={mapRef}
         center={mapCenter}
         zoom={mapZoom}
-        mapId={`${mapIdRef.current}-${mapKey}`}
-        onMapCreated={(map) => {
-          if (!mapRef.current) {
-            mapRef.current = map;
-          }
-        }}
+        style={{ height: "100%", width: "100%", zIndex: 0 }}
+        scrollWheelZoom={true}
       >
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -302,7 +196,7 @@ export function GeofenceMap({
             <Marker position={[newLocation.lat, newLocation.lng]} />
           </div>
         )}
-      </MapWrapper>
+      </MapContainer>
 
       {/* Create location form overlay */}
       {newLocation && mode === "create" && (

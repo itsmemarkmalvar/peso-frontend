@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { MapPin, Plus, Trash2, Edit2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,55 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GeofenceMap, GeofenceLocation } from "@/components/map/GeofenceMap";
+
+const geofenceStorageKey = "intern-geofences-v1";
+
+const defaultLocations: GeofenceLocation[] = [
+  {
+    id: 1,
+    name: "Cabuyao City Hall",
+    address: "Cabuyao City Hall, Laguna",
+    latitude: 14.2486,
+    longitude: 121.1258,
+    radius_meters: 100,
+  },
+];
+
+function parseStoredLocations(raw: string | null): GeofenceLocation[] | null {
+  if (!raw) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+    const cleaned = parsed.flatMap((item, index) => {
+      if (!item || typeof item !== "object") {
+        return [];
+      }
+      const lat = Number(item.latitude);
+      const lng = Number(item.longitude);
+      const radius = Number(item.radius_meters);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(radius)) {
+        return [];
+      }
+      return [
+        {
+          id: typeof item.id === "number" ? item.id : Date.now() + index,
+          name: typeof item.name === "string" ? item.name : `Location ${index + 1}`,
+          address: typeof item.address === "string" ? item.address : "",
+          latitude: lat,
+          longitude: lng,
+          radius_meters: radius,
+        },
+      ];
+    });
+    return cleaned.length ? cleaned : null;
+  } catch {
+    return null;
+  }
+}
 
 // Dynamic import to avoid SSR issues with Leaflet
 const GeofenceMapDynamic = dynamic(
@@ -23,17 +72,26 @@ const GeofenceMapDynamic = dynamic(
 );
 
 export default function GeofencesPage() {
-  const [locations, setLocations] = useState<GeofenceLocation[]>([
-    // Example location - Cabuyao City Hall
-    {
-      id: 1,
-      name: "Cabuyao City Hall",
-      address: "Cabuyao City Hall, Laguna",
-      latitude: 14.2486,
-      longitude: 121.1258,
-      radius_meters: 100,
-    },
-  ]);
+  const [locations, setLocations] = useState<GeofenceLocation[]>([]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const stored = parseStoredLocations(window.localStorage.getItem(geofenceStorageKey));
+    setLocations(stored ?? defaultLocations);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (!locations.length) {
+      window.localStorage.removeItem(geofenceStorageKey);
+      return;
+    }
+    window.localStorage.setItem(geofenceStorageKey, JSON.stringify(locations));
+  }, [locations]);
 
   const [selectedLocation, setSelectedLocation] = useState<GeofenceLocation | null>(null);
   const [mode, setMode] = useState<"view" | "create" | "edit">("view");
@@ -52,7 +110,7 @@ export default function GeofencesPage() {
       address: formData.address || "Address to be determined",
       radius_meters: formData.radius_meters,
     };
-    setLocations([...locations, newLocation]);
+    setLocations((prev) => [...prev, newLocation]);
     setSelectedLocation(newLocation);
     setMode("view");
     setFormData({ name: "", address: "", radius_meters: 100 });
@@ -99,7 +157,7 @@ export default function GeofencesPage() {
 
   const handleDelete = (id: number) => {
     if (confirm("Are you sure you want to delete this location?")) {
-      setLocations(locations.filter((loc) => loc.id !== id));
+      setLocations((prev) => prev.filter((loc) => loc.id !== id));
       if (selectedLocation?.id === id) {
         setSelectedLocation(null);
       }

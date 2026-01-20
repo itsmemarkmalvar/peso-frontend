@@ -48,7 +48,14 @@ const STATS = [
   },
 ];
 
-const TODAY_ATTENDANCE = [
+const TODAY_ATTENDANCE: Array<{
+  name: string;
+  id: string;
+  timeIn: string;
+  timeOut: string;
+  status: string;
+  statusTone: "success" | "warning" | "destructive";
+}> = [
   {
     name: "Dela Cruz, Juan",
     id: "INT-2026-014",
