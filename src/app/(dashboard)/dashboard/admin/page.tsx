@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -20,88 +21,100 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
 
-const STATS = [
-  {
-    label: "Total interns",
-    value: "128",
-    delta: "+12 this month",
-    trend: "up",
-  },
-  {
-    label: "Active today",
-    value: "94",
-    delta: "87% clocked in",
-    trend: "up",
-  },
-  {
-    label: "Pending approvals",
-    value: "18",
-    delta: "7 overtime · 11 corrections",
-    trend: "neutral",
-  },
-  {
-    label: "Attendance rate",
-    value: "96.2%",
-    delta: "vs 94.8% last week",
-    trend: "up",
-  },
-];
-
-const TODAY_ATTENDANCE: Array<{
+type AttendanceRow = {
   name: string;
   id: string;
   timeIn: string;
   timeOut: string;
   status: string;
   statusTone: "success" | "warning" | "destructive";
-}> = [
+};
+
+type PendingItem = {
+  id: string;
+  type: "Overtime" | "Correction" | "Undertime";
+  intern: string;
+  submitted: string;
+};
+
+const DEFAULT_STATS = [
   {
-    name: "Dela Cruz, Juan",
-    id: "INT-2026-014",
-    timeIn: "08:02 AM",
-    timeOut: "05:01 PM",
-    status: "On time",
-    statusTone: "success",
+    label: "Total interns",
+    value: "0",
+    delta: "+0 this month",
+    trend: "neutral" as const,
   },
   {
-    name: "Santos, Maria",
-    id: "INT-2026-032",
-    timeIn: "08:17 AM",
-    timeOut: "—",
-    status: "Late",
-    statusTone: "warning",
+    label: "Active today",
+    value: "0",
+    delta: "Mock metric",
+    trend: "neutral" as const,
   },
   {
-    name: "Garcia, Paulo",
-    id: "INT-2026-041",
-    timeIn: "—",
-    timeOut: "—",
-    status: "Absent",
-    statusTone: "destructive",
+    label: "Pending approvals",
+    value: "0",
+    delta: "Mock metric",
+    trend: "neutral" as const,
+  },
+  {
+    label: "Attendance rate",
+    value: "0%",
+    delta: "Mock metric",
+    trend: "neutral" as const,
   },
 ];
 
-const PENDING_ITEMS = [
-  {
-    id: "APP-2026-0041",
-    type: "Overtime",
-    intern: "Dela Cruz, Juan",
-    submitted: "Today · 4:12 PM",
-  },
-  {
-    id: "APP-2026-0039",
-    type: "Correction",
-    intern: "Santos, Maria",
-    submitted: "Today · 9:34 AM",
-  },
-  {
-    id: "APP-2026-0036",
-    type: "Undertime",
-    intern: "Reyes, Carla",
-    submitted: "Yesterday · 5:48 PM",
-  },
-];
+function buildTodayAttendance(interns: AdminIntern[]): AttendanceRow[] {
+  if (!interns.length) return [];
+
+  const patterns: Omit<AttendanceRow, "name" | "id">[] = [
+    {
+      timeIn: "08:02 AM",
+      timeOut: "05:01 PM",
+      status: "On time",
+      statusTone: "success",
+    },
+    {
+      timeIn: "08:17 AM",
+      timeOut: "—",
+      status: "Late",
+      statusTone: "warning",
+    },
+    {
+      timeIn: "—",
+      timeOut: "—",
+      status: "Absent",
+      statusTone: "destructive",
+    },
+  ];
+
+  return interns.slice(0, 10).map((intern, index) => {
+    const pattern = patterns[index % patterns.length];
+    return {
+      name: intern.name,
+      id: intern.id.toString(),
+      ...pattern,
+    };
+  });
+}
+
+function buildPendingItems(interns: AdminIntern[]): PendingItem[] {
+  if (!interns.length) return [];
+
+  const types: PendingItem["type"][] = ["Overtime", "Correction", "Undertime"];
+
+  return interns.slice(0, 10).map((intern, index) => {
+    const type = types[index % types.length];
+    return {
+      id: `APP-${2026}-${String(intern.id).padStart(4, "0")}`,
+      type,
+      intern: intern.name,
+      submitted: "Sample · pending wiring to API",
+    };
+  });
+}
 
 const QUICK_LINKS = [
   {
@@ -122,11 +135,47 @@ const QUICK_LINKS = [
 ];
 
 export default function AdminDashboardPage() {
+  const [stats, setStats] = useState(DEFAULT_STATS);
+  const [todayAttendance, setTodayAttendance] = useState<AttendanceRow[]>([]);
+  const [pendingItems, setPendingItems] = useState<PendingItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    getAdminInterns()
+      .then((interns) => {
+        if (!active) return;
+        const internCount = interns.length;
+
+        setStats((prev) => [
+          { ...prev[0], value: internCount.toString() },
+          prev[1],
+          { ...prev[2], value: pendingItems.length.toString() },
+          prev[3],
+        ]);
+
+        setTodayAttendance(buildTodayAttendance(interns));
+        setPendingItems(buildPendingItems(interns));
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Failed to load interns.");
+        setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
       {/* Stats row */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {STATS.map((stat) => (
+        {stats.map((stat) => (
           <Card
             key={stat.label}
             className="border-slate-200 bg-gradient-to-br from-white to-slate-50/60"
@@ -158,10 +207,10 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="flex flex-col gap-4">
         {/* Today’s attendance snapshot */}
         <Card className="border-slate-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div>
               <CardTitle className="text-base">Today&apos;s attendance</CardTitle>
               <CardDescription>
@@ -177,7 +226,15 @@ export default function AdminDashboardPage() {
               View calendar
             </Button>
           </CardHeader>
-          <CardContent className="space-y-3">
+            <CardContent className="space-y-3">
+              {isLoading && (
+                <p className="text-[11px] text-slate-500">Loading attendance…</p>
+              )}
+              {error && !isLoading && (
+                <p className="text-[11px] text-red-600">
+                  {error} Unable to load today&apos;s attendance.
+                </p>
+              )}
             <div className="overflow-x-auto">
               <div className="grid min-w-[640px] grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.1fr)] gap-3 rounded-lg bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-500">
                 <span>Intern</span>
@@ -185,8 +242,10 @@ export default function AdminDashboardPage() {
                 <span className="text-right">Time out</span>
                 <span className="text-right">Status</span>
               </div>
-              <div className="mt-2 space-y-2 min-w-[640px]">
-                {TODAY_ATTENDANCE.map((row) => (
+              <div className="mt-2 max-h-64 space-y-2 overflow-y-auto min-w-[640px] pr-1">
+                {!isLoading &&
+                  !error &&
+                  todayAttendance.map((row) => (
                   <div
                     key={row.id}
                     className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.1fr)] items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-700"
@@ -208,6 +267,12 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
                 ))}
+                {!isLoading && !error && todayAttendance.length === 0 && (
+                  <p className="text-[11px] text-slate-500">
+                    No attendance data yet. This will update once interns start
+                    clocking in.
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -232,8 +297,18 @@ export default function AdminDashboardPage() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="space-y-2">
-              {PENDING_ITEMS.map((item) => (
+            {isLoading && (
+              <p className="text-[11px] text-slate-500">Loading approvals…</p>
+            )}
+            {error && !isLoading && (
+              <p className="text-[11px] text-red-600">
+                {error} Unable to load pending approvals.
+              </p>
+            )}
+            <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+              {!isLoading &&
+                !error &&
+                pendingItems.map((item) => (
                 <div
                   key={item.id}
                   className="flex items-start justify-between gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs"
@@ -264,6 +339,12 @@ export default function AdminDashboardPage() {
                   </Button>
                 </div>
               ))}
+              {!isLoading && !error && pendingItems.length === 0 && (
+                <p className="text-[11px] text-slate-500">
+                  No pending approvals yet. Once interns start sending requests,
+                  they will appear here.
+                </p>
+              )}
             </div>
 
             <p className="text-[11px] text-slate-500">

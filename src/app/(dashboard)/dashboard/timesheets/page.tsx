@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, FileDown, Filter, FileSpreadsheet } from "lucide-react";
 
 import {
@@ -11,8 +11,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
 
 type WeeklyDay = {
   label: string;
@@ -28,7 +28,7 @@ type WeeklyTimesheetRow = {
   total: string;
 };
 
-const WEEKLY_TIMESHEETS: WeeklyTimesheetRow[] = [
+const DEFAULT_ROWS: WeeklyTimesheetRow[] = [
   {
     intern: "Abamonga, Angelica Lou P.",
     company: "LCR",
@@ -115,6 +115,10 @@ export default function TimesheetsPage() {
     getStartOfWeek(new Date())
   );
   const [searchTerm, setSearchTerm] = useState("");
+  const [rows, setRows] = useState<WeeklyTimesheetRow[]>(DEFAULT_ROWS);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [totalInterns, setTotalInterns] = useState<number>(DEFAULT_ROWS.length);
 
   const weekDates = getWeekDates(startOfWeek);
   const weekRangeLabel = formatWeekRange(weekDates);
@@ -135,7 +139,42 @@ export default function TimesheetsPage() {
     });
   };
 
-  const filteredRows = WEEKLY_TIMESHEETS.filter((row) => {
+  useEffect(() => {
+    let active = true;
+
+    getAdminInterns()
+      .then((interns) => {
+        if (!active) return;
+        if (interns.length) {
+          setTotalInterns(interns.length);
+          const mapped: WeeklyTimesheetRow[] = interns.slice(0, 50).map((intern, index) => {
+            const pattern = DEFAULT_ROWS[index % DEFAULT_ROWS.length];
+            return {
+              intern: intern.name,
+              company: intern.company_name,
+              id: intern.id.toString(),
+              days: pattern.days,
+              total: pattern.total,
+            };
+          });
+          setRows(mapped);
+        } else {
+          setIsLoading(false);
+        }
+        setIsLoading(false);
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err instanceof Error ? err.message : "Failed to load interns.");
+        setIsLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const filteredRows = rows.filter((row) => {
     if (!searchTerm.trim()) return true;
     const query = searchTerm.toLowerCase();
     return (
@@ -240,7 +279,7 @@ export default function TimesheetsPage() {
             />
             {searchTerm && (
               <p className="text-[11px] text-slate-500">
-                Showing {filteredRows.length} of {WEEKLY_TIMESHEETS.length} interns
+                Showing {filteredRows.length} of {totalInterns} interns
               </p>
             )}
           </div>
@@ -270,7 +309,19 @@ export default function TimesheetsPage() {
               <span className="text-right">Total hours</span>
             </div>
             <div className="mt-2 max-h-[420px] min-w-[960px] space-y-2 overflow-y-auto pr-1">
-              {filteredRows.map((row) => (
+              {isLoading && (
+                <div className="flex items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-xs text-slate-500">
+                  Loading timesheets…
+                </div>
+              )}
+              {error && !isLoading && (
+                <div className="flex items-center justify-center rounded-lg border border-dashed border-red-200 bg-red-50 px-4 py-8 text-xs text-red-600">
+                  {error}
+                </div>
+              )}
+              {!isLoading &&
+                !error &&
+                filteredRows.map((row) => (
                 <div
                   key={row.id}
                   className="grid grid-cols-[minmax(0,3.2fr)_repeat(7,minmax(0,1fr))_minmax(0,1.4fr)] items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-700"
@@ -313,7 +364,7 @@ export default function TimesheetsPage() {
                   </div>
                 </div>
               ))}
-              {filteredRows.length === 0 && (
+              {!isLoading && !error && filteredRows.length === 0 && (
                 <div className="flex items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-xs text-slate-500">
                   No interns match your search.
                 </div>

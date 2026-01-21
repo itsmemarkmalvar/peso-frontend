@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   CalendarDays,
+  CheckCircle2,
   ChevronDown,
   Clock3,
   FileText,
@@ -20,6 +21,7 @@ import {
   LineChart,
   UserCircle2,
   Navigation2,
+  UserPlus,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -30,18 +32,20 @@ import { internTheme } from "@/components/intern/internTheme";
 const NAV_ITEMS = [
   { href: "/dashboard/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/timesheets", label: "Timesheets", icon: FileSpreadsheet },
+  { href: "/dashboard/approvals", label: "Approvals", icon: CheckCircle2 },
   { href: "/dashboard/live-locations", label: "Live Locations", icon: MapPin },
   { href: "/dashboard/geofences", label: "Geofences", icon: Navigation2 },
   { href: "/dashboard/time-off", label: "Time Off", icon: Plane },
   { href: "/dashboard/reports", label: "Reports", icon: LineChart },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
   { href: "/dashboard/people", label: "People", icon: Users },
+  { href: "/dashboard/promote", label: "Promote", icon: UserPlus },
   { href: "/dashboard/time-tracking", label: "Time Tracking", icon: Clock3 },
   { href: "/dashboard/work-schedules", label: "Work Schedules", icon: CalendarDays },
+  { href: "/dashboard/settings", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -166,9 +170,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </p>
               </div>
             </div>
-            <span className="hidden rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 sm:inline-flex">
-              Signed in as {user?.name ?? "Admin"}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="hidden rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 sm:inline-flex">
+                Signed in as {user?.name ?? "Admin"}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 rounded-full border-[color:var(--dash-border)] px-3 text-xs text-[color:var(--dash-muted)] hover:text-[color:var(--dash-ink)]"
+                onClick={() => {
+                  logout();
+                  router.replace("/login");
+                }}
+              >
+                Log out
+              </Button>
+            </div>
           </header>
 
           {/* Access control + content */}
