@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
   CalendarDays,
+  CheckCircle2,
   ChevronDown,
   Clock3,
   FileText,
@@ -31,6 +32,7 @@ import { internTheme } from "@/components/intern/internTheme";
 const NAV_ITEMS = [
   { href: "/dashboard/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/dashboard/timesheets", label: "Timesheets", icon: FileSpreadsheet },
+  { href: "/dashboard/approvals", label: "Approvals", icon: CheckCircle2 },
   { href: "/dashboard/live-locations", label: "Live Locations", icon: MapPin },
   { href: "/dashboard/geofences", label: "Geofences", icon: Navigation2 },
   { href: "/dashboard/time-off", label: "Time Off", icon: Plane },
