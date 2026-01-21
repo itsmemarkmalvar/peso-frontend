@@ -72,4 +72,12 @@ export const API_ENDPOINTS = {
     timesheets: '/intern/timesheets',
     approvals: '/intern/approvals',
   },
+
+  // Pending Registrations
+  pendingRegistrations: {
+    list: '/pending-registrations',
+    show: (id: number) => `/pending-registrations/${id}`,
+    approve: (id: number) => `/pending-registrations/${id}/approve`,
+    reject: (id: number) => `/pending-registrations/${id}/reject`,
+  },
 } as const;

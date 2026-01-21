@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { UserCheck, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { UserCheck, CheckCircle2, XCircle, Clock, AlertCircle } from "lucide-react";
 
 import {
   Card,
@@ -12,69 +12,76 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
-
-type PendingUser = {
-  id: number;
-  name: string;
-  email: string;
-  student_id: string;
-  company_name: string;
-  registered_date: string;
-  status: "Pending" | "Approved" | "Rejected";
-};
-
-function buildPendingUsers(interns: AdminIntern[]): PendingUser[] {
-  if (!interns.length) return [];
-
-  const statuses: PendingUser["status"][] = ["Pending", "Pending", "Pending", "Approved", "Rejected"];
-
-  return interns.slice(0, 20).map((intern, index) => {
-    const baseDate = new Date();
-    baseDate.setDate(baseDate.getDate() - index);
-
-    return {
-      id: intern.id,
-      name: intern.name,
-      email: intern.email,
-      student_id: intern.student_id,
-      company_name: intern.company_name,
-      registered_date: baseDate.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-      status: statuses[index % statuses.length],
-    };
-  });
-}
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  getPendingRegistrations,
+  approvePendingRegistration,
+  rejectPendingRegistration,
+  type PendingRegistration,
+} from "@/lib/api/pendingRegistrations";
 
 export default function NewUsersPage() {
-  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<PendingRegistration[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [processingId, setProcessingId] = useState<number | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const loadPendingRegistrations = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getPendingRegistrations('pending');
+      setPendingUsers(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load pending registrations.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let active = true;
-
-    getAdminInterns()
-      .then((data) => {
-        if (!active) return;
-        setPendingUsers(buildPendingUsers(data));
-        setIsLoading(false);
-      })
-      .catch((err) => {
-        if (!active) return;
-        setError(err instanceof Error ? err.message : "Failed to load pending users.");
-        setIsLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+    loadPendingRegistrations();
   }, []);
 
-  const pendingCount = pendingUsers.filter((u) => u.status === "Pending").length;
+  const handleApprove = async (id: number) => {
+    setProcessingId(id);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      const result = await approvePendingRegistration(id);
+      setSuccessMessage(
+        `Registration approved! User account created. Temporary password: ${result.temp_password}`
+      );
+      // Reload the list
+      await loadPendingRegistrations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to approve registration.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleReject = async (id: number) => {
+    if (!confirm("Are you sure you want to reject this registration request?")) {
+      return;
+    }
+    setProcessingId(id);
+    setError(null);
+    setSuccessMessage(null);
+    try {
+      await rejectPendingRegistration(id);
+      setSuccessMessage("Registration rejected successfully.");
+      // Reload the list
+      await loadPendingRegistrations();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reject registration.");
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const pendingCount = pendingUsers.filter((u) => u.status === "pending").length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -84,6 +91,20 @@ export default function NewUsersPage() {
           Review and approve new account signups before users can complete their registration.
         </p>
       </div>
+
+      {successMessage && (
+        <Alert className="border-green-200 bg-green-50">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-800">{successMessage}</AlertDescription>
+        </Alert>
+      )}
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <Card className="border-slate-200">
         <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -130,47 +151,52 @@ export default function NewUsersPage() {
                       <p className="text-[11px] text-slate-500">
                         {user.email}
                       </p>
-                      <p className="text-[11px] text-slate-500">
-                        {user.student_id} · {user.company_name}
-                      </p>
                       <p className="text-[11px] text-slate-400">
-                        Registered: {user.registered_date}
+                        Registered: {new Date(user.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {user.status === "Pending" ? (
+                    {user.status === "pending" ? (
                       <>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           className="h-8 gap-1 rounded-full border-green-200 bg-green-50 text-xs text-green-800 hover:bg-green-100"
-                          disabled
+                          onClick={() => handleApprove(user.id)}
+                          disabled={processingId === user.id}
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
-                          Accept
+                          {processingId === user.id ? "Processing..." : "Approve"}
                         </Button>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
                           className="h-8 gap-1 rounded-full border-red-200 bg-red-50 text-xs text-red-800 hover:bg-red-100"
-                          disabled
+                          onClick={() => handleReject(user.id)}
+                          disabled={processingId === user.id}
                         >
                           <XCircle className="h-3.5 w-3.5" />
-                          Reject
+                          {processingId === user.id ? "Processing..." : "Reject"}
                         </Button>
                       </>
                     ) : (
                       <Badge
                         className={
-                          user.status === "Approved"
+                          user.status === "approved"
                             ? "bg-blue-50 text-blue-800 ring-1 ring-blue-200"
                             : "bg-red-50 text-red-800 ring-1 ring-red-200"
                         }
                       >
-                        {user.status}
+                        {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
                       </Badge>
                     )}
                   </div>
@@ -187,7 +213,7 @@ export default function NewUsersPage() {
           <p className="flex items-center gap-2 text-[11px] text-slate-500">
             <UserCheck className="h-3.5 w-3.5 text-slate-500" />
             <span>
-              Wire the Accept/Reject buttons to your backend API to approve or decline new user registrations.
+              Approve registrations to create user accounts. Rejected registrations will be marked accordingly.
             </span>
           </p>
         </CardContent>
@@ -195,4 +221,3 @@ export default function NewUsersPage() {
     </div>
   );
 }
-
