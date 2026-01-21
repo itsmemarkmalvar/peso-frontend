@@ -3,7 +3,14 @@
  * Handles all HTTP requests to Laravel backend
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+// In dev we proxy `/api/*` → Laravel (see `next.config.ts` rewrites) to avoid CORS.
+// Override per-environment with NEXT_PUBLIC_API_URL, e.g. `http://127.0.0.1:8000/api`
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
+
+type LaravelValidationError = {
+  message?: string;
+  errors?: Record<string, string[]>;
+};
 
 export class ApiClient {
   private baseURL: string;
@@ -39,7 +46,21 @@ export class ApiClient {
     const response = await fetch(url, config);
 
     if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`);
+      // Try to extract a useful message (Laravel validation / API error payloads)
+      const contentType = response.headers.get('content-type') ?? '';
+      if (contentType.includes('application/json')) {
+        const body = (await response.json().catch(() => null)) as LaravelValidationError | null;
+        if (body?.errors) {
+          const firstField = Object.keys(body.errors)[0];
+          const firstMessage = firstField ? body.errors[firstField]?.[0] : undefined;
+          throw new Error(firstMessage ?? body.message ?? 'Request failed.');
+        }
+        if (body?.message) {
+          throw new Error(body.message);
+        }
+      }
+
+      throw new Error(`API Error (${response.status}): ${response.statusText}`);
     }
 
     return response.json();

@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { useState, type ReactNode } from "react"
+import { usePathname, useRouter } from "next/navigation"
+import { useEffect, useState, type ReactNode } from "react"
 import {
   CheckCircle2,
   ChevronLeft,
@@ -16,6 +16,7 @@ import {
 
 import { cn } from "@/lib/utils"
 import { internTheme } from "@/components/intern/internTheme"
+import { useAuth } from "@/hooks/useAuth"
 
 type NavItem = {
   label: string
@@ -73,11 +74,30 @@ type InternShellProps = {
 }
 
 export function InternShell({ children }: InternShellProps) {
+  const router = useRouter()
+  const { user, isLoading, logout } = useAuth()
   const pathname = usePathname() ?? ""
   const normalizedPath =
     pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  // Route protection: Intern dashboard requires authenticated intern user
+  // (Client-side guard because auth state lives in localStorage)
+  useEffect(() => {
+    if (isLoading) return
+    if (!user) {
+      router.replace("/login")
+      return
+    }
+    if (user.role !== "intern") {
+      router.replace("/dashboard/admin")
+    }
+  }, [isLoading, user, router])
+
+  if (isLoading || !user || user.role !== "intern") {
+    return null
+  }
 
   return (
     <div
@@ -204,9 +224,21 @@ export function InternShell({ children }: InternShellProps) {
                 </p>
               </div>
             </div>
-            <span className="hidden rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700 sm:inline-flex">
-              Testing build
-            </span>
+            <div className="hidden items-center gap-2 sm:flex">
+              <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
+                Intern
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  logout()
+                  router.replace("/login")
+                }}
+                className="rounded-full border border-[color:var(--dash-border)] bg-white px-3 py-1 text-xs font-semibold text-[color:var(--dash-muted)] transition hover:text-[color:var(--dash-ink)]"
+              >
+                Log out
+              </button>
+            </div>
           </header>
 
           <main className="flex-1 px-6 py-8">{children}</main>

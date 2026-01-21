@@ -22,10 +22,28 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 import pesoLogo from "@/assets/images/image-Photoroom.png";
 import { useAuth } from "@/hooks/useAuth";
+import { apiClient } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
 }
+
+type LoginResponse = {
+  success: boolean;
+  message: string;
+  data: {
+    user: {
+      id: number;
+      name?: string;
+      username?: string;
+      email: string;
+      role: "admin" | "intern" | "supervisor" | "coordinator";
+      status?: "active" | "inactive" | "suspended";
+    };
+    token: string;
+  };
+};
 
 export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,31 +86,44 @@ export default function LoginPage() {
     if (!isFormValid) return;
 
     setIsSubmitting(true);
-    // Development-only admin shortcut
-    if (
-      process.env.NODE_ENV === "development" &&
-      email.trim().toLowerCase() === "admin@example.com" &&
-      password === "admin12345"
-    ) {
+
+    try {
+      const res = await apiClient.post<LoginResponse>(API_ENDPOINTS.auth.login, {
+        email: email.trim(),
+        password,
+      });
+
+      const user = res?.data?.user;
+      const token = res?.data?.token;
+
+      if (!user || !token) {
+        throw new Error("Login failed. Missing session data.");
+      }
+
       login(
         {
-          id: 1,
-          username: "admin",
-          email: "admin@example.com",
-          role: "admin",
-          name: "System Admin",
+          id: user.id,
+          username: user.username ?? user.email.split("@")[0],
+          email: user.email,
+          role: user.role,
+          name: user.name,
         },
-        "dev-admin-token"
+        token
       );
-      router.push("/dashboard/admin");
-      setIsSubmitting(false);
-      return;
-    }
 
-    // UI-only: backend integration will be wired later (Laravel Sanctum).
-    await new Promise((r) => setTimeout(r, 600));
-    setFormError("Invalid credentials. Please verify your email and password.");
-    setIsSubmitting(false);
+      // Role-based redirect (2 dashboards: Admin/Staff vs Intern)
+      if (user.role === "intern") {
+        router.push("/dashboard/intern");
+      } else {
+        router.push("/dashboard/admin");
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Login failed. Please try again.";
+      setFormError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
