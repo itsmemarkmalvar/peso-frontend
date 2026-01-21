@@ -22,6 +22,7 @@ import {
   UserCircle2,
   Navigation2,
   UserPlus,
+  UserCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -38,7 +39,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/time-off", label: "Time Off", icon: Plane },
   { href: "/dashboard/reports", label: "Reports", icon: LineChart },
   { href: "/dashboard/people", label: "People", icon: Users },
-  { href: "/dashboard/promote", label: "Promote", icon: UserPlus },
+  { href: "/dashboard/promote", label: "New Users", icon: UserCheck },
   { href: "/dashboard/time-tracking", label: "Time Tracking", icon: Clock3 },
   { href: "/dashboard/work-schedules", label: "Work Schedules", icon: CalendarDays },
   { href: "/dashboard/settings", label: "Settings", icon: Settings },
