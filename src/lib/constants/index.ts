@@ -10,7 +10,6 @@ export const APP_CONFIG = {
 export const ROLES = {
   ADMIN: 'admin',
   INTERN: 'intern',
-  SUPERVISOR: 'supervisor',
   COORDINATOR: 'coordinator',
 } as const;
 
@@ -35,7 +34,6 @@ export const ROUTES = {
   LOGIN: '/login',
   DASHBOARD: {
     INTERN: '/dashboard/intern',
-    SUPERVISOR: '/dashboard/supervisor',
     COORDINATOR: '/dashboard/coordinator',
     ADMIN: '/dashboard/admin',
   },
