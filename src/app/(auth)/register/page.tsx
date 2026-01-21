@@ -382,38 +382,6 @@ export default function RegisterPage() {
               .
             </p>
           </div>
-
-          {process.env.NODE_ENV === "development" && (
-            <div className="mt-4 rounded-lg border border-dashed border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-900">
-              <p className="mb-1 font-semibold uppercase tracking-wide">
-                Development only
-              </p>
-              <p className="mb-2">
-                Bypass registration and log in as an admin with a dummy token
-                for local UI development. This does not call the backend.
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  login(
-                    {
-                      id: 1,
-                      username: "dev-admin",
-                      email: "admin@example.com",
-                      role: "admin",
-                      name: "Development Admin",
-                    },
-                    "dev-admin-token"
-                  );
-                  router.push("/dashboard/admin");
-                }}
-              >
-                Sign in as admin (dev bypass)
-              </Button>
-            </div>
-          )}
         </CardContent>
 
         <CardFooter className="flex flex-col gap-2 border-t">

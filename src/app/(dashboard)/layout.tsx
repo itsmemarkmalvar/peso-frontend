@@ -134,7 +134,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
 
           {/* Top header bar */}
-          <header className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+          <header className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-1 items-center gap-3">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">

@@ -178,35 +178,37 @@ export default function AdminDashboardPage() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.1fr)] gap-3 rounded-lg bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-500">
-              <span>Intern</span>
-              <span className="text-right">Time in</span>
-              <span className="text-right">Time out</span>
-              <span className="text-right">Status</span>
-            </div>
-            <div className="space-y-2">
-              {TODAY_ATTENDANCE.map((row) => (
-                <div
-                  key={row.id}
-                  className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.1fr)] items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-700"
-                >
-                  <div className="space-y-0.5">
-                    <p className="truncate font-medium text-slate-900">
-                      {row.name}
-                    </p>
-                    <p className="text-[11px] text-slate-500">{row.id}</p>
+            <div className="overflow-x-auto">
+              <div className="grid min-w-[640px] grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.1fr)] gap-3 rounded-lg bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-500">
+                <span>Intern</span>
+                <span className="text-right">Time in</span>
+                <span className="text-right">Time out</span>
+                <span className="text-right">Status</span>
+              </div>
+              <div className="mt-2 space-y-2 min-w-[640px]">
+                {TODAY_ATTENDANCE.map((row) => (
+                  <div
+                    key={row.id}
+                    className="grid grid-cols-[minmax(0,2.2fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.1fr)] items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-700"
+                  >
+                    <div className="space-y-0.5">
+                      <p className="truncate font-medium text-slate-900">
+                        {row.name}
+                      </p>
+                      <p className="text-[11px] text-slate-500">{row.id}</p>
+                    </div>
+                    <div className="text-right tabular-nums text-slate-900">
+                      {row.timeIn}
+                    </div>
+                    <div className="text-right tabular-nums text-slate-900">
+                      {row.timeOut}
+                    </div>
+                    <div className="text-right">
+                      <StatusChip tone={row.statusTone}>{row.status}</StatusChip>
+                    </div>
                   </div>
-                  <div className="text-right tabular-nums text-slate-900">
-                    {row.timeIn}
-                  </div>
-                  <div className="text-right tabular-nums text-slate-900">
-                    {row.timeOut}
-                  </div>
-                  <div className="text-right">
-                    <StatusChip tone={row.statusTone}>{row.status}</StatusChip>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>

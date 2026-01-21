@@ -173,7 +173,7 @@ export default function GeofencesPage() {
 
   return (
     <div className="flex flex-col gap-6 px-4 pb-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold text-slate-900">Geofence Locations</h1>
           <p className="text-sm text-slate-600">
@@ -205,7 +205,7 @@ export default function GeofencesPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-[600px] w-full">
+              <div className="h-[400px] w-full sm:h-[500px] lg:h-[600px]">
                 <GeofenceMapDynamic
                   locations={locations}
                   onLocationCreate={handleLocationCreate}
