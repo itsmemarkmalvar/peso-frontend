@@ -8,6 +8,8 @@ export const API_ENDPOINTS = {
   auth: {
     login: '/auth/login',
     register: '/auth/register',
+    registerRequest: '/auth/register-request',
+    setupPassword: '/auth/setup-password',
     logout: '/auth/logout',
     me: '/auth/me',
     refresh: '/auth/refresh',
@@ -17,6 +19,7 @@ export const API_ENDPOINTS = {
   interns: {
     list: '/interns',
     create: '/interns',
+    me: '/interns/me',
     show: (id: number) => `/interns/${id}`,
     update: (id: number) => `/interns/${id}`,
     delete: (id: number) => `/interns/${id}`,

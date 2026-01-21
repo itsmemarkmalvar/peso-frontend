@@ -81,6 +81,31 @@ export type AdminIntern = {
   is_active: boolean
 }
 
+export type InternProfile = {
+  id: number
+  user_id: number
+  full_name: string
+  school: string
+  program: string
+  phone: string
+  emergency_contact_name: string
+  emergency_contact_phone: string
+  required_hours: number | null
+  start_date: string | null
+  end_date: string | null
+  onboarded_at: string | null
+}
+
+export type InternOnboardingPayload = {
+  full_name: string
+  school: string
+  program: string
+  phone: string
+  emergency_contact_name: string
+  emergency_contact_phone: string
+  required_hours: number
+}
+
 export function getInternDashboard(): Promise<InternDashboardData> {
   return apiClient.get<InternDashboardData>(API_ENDPOINTS.intern.dashboard)
 }
@@ -107,4 +132,23 @@ export function getAdminInterns(search?: string): Promise<AdminIntern[]> {
   return apiClient.get<{ success: boolean; message: string; data: AdminIntern[] }>(
     endpoint
   ).then((res) => res.data ?? [])
+}
+
+export function getInternProfile(): Promise<InternProfile | null> {
+  return apiClient
+    .get<{ success: boolean; message: string; data: InternProfile | null }>(
+      API_ENDPOINTS.interns.me
+    )
+    .then((res) => res.data ?? null)
+}
+
+export function saveInternOnboarding(
+  payload: InternOnboardingPayload
+): Promise<InternProfile> {
+  return apiClient
+    .post<{ success: boolean; message: string; data: InternProfile }>(
+      API_ENDPOINTS.interns.me,
+      payload
+    )
+    .then((res) => res.data)
 }

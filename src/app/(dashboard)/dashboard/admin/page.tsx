@@ -39,7 +39,14 @@ type PendingItem = {
   submitted: string;
 };
 
-const DEFAULT_STATS = [
+type StatCard = {
+  label: string;
+  value: string;
+  delta: string;
+  trend: "up" | "down" | "neutral";
+};
+
+const DEFAULT_STATS: StatCard[] = [
   {
     label: "Total interns",
     value: "0",

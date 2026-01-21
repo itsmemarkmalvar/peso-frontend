@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState, type ReactNode } from "react"
@@ -16,7 +17,9 @@ import {
 
 import { cn } from "@/lib/utils"
 import { internTheme } from "@/components/intern/internTheme"
+import pesoLogo from "@/assets/images/image-Photoroom.png"
 import { useAuth } from "@/hooks/useAuth"
+import { getInternProfile } from "@/lib/api/intern"
 
 type NavItem = {
   label: string
@@ -79,8 +82,13 @@ export function InternShell({ children }: InternShellProps) {
   const pathname = usePathname() ?? ""
   const normalizedPath =
     pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname
+  const isOnboardingRoute =
+    normalizedPath.startsWith("/dashboard/intern/onboarding") ||
+    normalizedPath.startsWith("/intern/dashboard/onboarding")
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [profileChecked, setProfileChecked] = useState(false)
+  const [needsOnboarding, setNeedsOnboarding] = useState(false)
 
   // Route protection: Intern dashboard requires authenticated intern user
   // (Client-side guard because auth state lives in localStorage)
@@ -95,7 +103,46 @@ export function InternShell({ children }: InternShellProps) {
     }
   }, [isLoading, user, router])
 
+  useEffect(() => {
+    if (isLoading || !user || user.role !== "intern") {
+      return
+    }
+
+    let active = true
+
+    getInternProfile()
+      .then((profile) => {
+        if (!active) return
+        const hasOnboarded = Boolean(profile?.onboarded_at)
+        setNeedsOnboarding(!hasOnboarded)
+        setProfileChecked(true)
+
+        if (!hasOnboarded && !isOnboardingRoute) {
+          router.replace("/dashboard/intern/onboarding")
+        }
+        if (hasOnboarded && isOnboardingRoute) {
+          router.replace("/dashboard/intern")
+        }
+      })
+      .catch(() => {
+        if (!active) return
+        setProfileChecked(true)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [isLoading, isOnboardingRoute, router, user])
+
   if (isLoading || !user || user.role !== "intern") {
+    return null
+  }
+
+  if (!profileChecked) {
+    return null
+  }
+
+  if (needsOnboarding && !isOnboardingRoute) {
     return null
   }
 
@@ -127,8 +174,15 @@ export function InternShell({ children }: InternShellProps) {
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[color:var(--dash-accent)] text-sm font-semibold text-white">
-                PI
+              <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-white/80">
+                <Image
+                  src={pesoLogo}
+                  alt="PESO logo"
+                  fill
+                  className="object-contain"
+                  sizes="40px"
+                  priority
+                />
               </div>
               <div className={cn(collapsed ? "lg:hidden" : "opacity-100")}>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
