@@ -68,6 +68,19 @@ export type InternApprovalsData = {
   items: InternApprovalItem[]
 }
 
+export type AdminIntern = {
+  id: number
+  user_id: number
+  name: string
+  email: string | null
+  student_id: string
+  course: string
+  year_level: string | null
+  company_name: string
+  supervisor_name: string
+  is_active: boolean
+}
+
 export function getInternDashboard(): Promise<InternDashboardData> {
   return apiClient.get<InternDashboardData>(API_ENDPOINTS.intern.dashboard)
 }
@@ -82,4 +95,16 @@ export function getInternTimesheets(): Promise<InternTimesheetData> {
 
 export function getInternApprovals(): Promise<InternApprovalsData> {
   return apiClient.get<InternApprovalsData>(API_ENDPOINTS.intern.approvals)
+}
+
+export function getAdminInterns(search?: string): Promise<AdminIntern[]> {
+  const endpoint =
+    API_ENDPOINTS.interns.list +
+    (search && search.trim().length > 0
+      ? `?search=${encodeURIComponent(search.trim())}`
+      : "")
+
+  return apiClient.get<{ success: boolean; message: string; data: AdminIntern[] }>(
+    endpoint
+  ).then((res) => res.data ?? [])
 }
