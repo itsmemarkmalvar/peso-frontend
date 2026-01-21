@@ -123,7 +123,7 @@ const QUICK_LINKS = [
 
 export default function AdminDashboardPage() {
   return (
-    <div className="flex flex-col gap-6 px-4 pb-4">
+    <div className="flex flex-col gap-6">
       {/* Stats row */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {STATS.map((stat) => (

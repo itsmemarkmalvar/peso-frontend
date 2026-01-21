@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 export default function SettingsPage() {
   return (
-    <div className="flex flex-col gap-6 px-4 pb-4">
+    <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-lg font-semibold text-slate-900">Settings</h1>
         <p className="text-sm text-slate-600">

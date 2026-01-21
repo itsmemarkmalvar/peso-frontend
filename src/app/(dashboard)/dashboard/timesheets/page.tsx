@@ -47,7 +47,7 @@ const TIMESHEET_ROWS = [
 
 export default function TimesheetsPage() {
   return (
-    <div className="flex flex-col gap-6 px-4 pb-4">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold text-slate-900">Timesheets</h1>

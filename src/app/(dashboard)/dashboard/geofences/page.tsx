@@ -172,7 +172,7 @@ export default function GeofencesPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 px-4 pb-4">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-lg font-semibold text-slate-900">Geofence Locations</h1>
