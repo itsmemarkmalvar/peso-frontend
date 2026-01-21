@@ -23,6 +23,8 @@ import { Progress } from "@/components/ui/progress";
 
 import pesoLogo from "@/assets/images/image-Photoroom.png";
 import { useAuth } from "@/hooks/useAuth";
+import { apiClient } from "@/lib/api/client";
+import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
@@ -73,6 +75,22 @@ export default function RegisterPage() {
 
   const router = useRouter();
   const { login } = useAuth();
+
+  type RegisterResponse = {
+    success: boolean;
+    message: string;
+    data: {
+      user: {
+        id: number;
+        name?: string;
+        username?: string;
+        email: string;
+        role: "admin" | "intern" | "supervisor" | "coordinator";
+        status?: "active" | "inactive" | "suspended";
+      };
+      token: string;
+    };
+  };
 
   const fullNameError =
     touched.fullName && !fullName.trim()
@@ -134,10 +152,44 @@ export default function RegisterPage() {
     if (!isFormValid) return;
 
     setIsSubmitting(true);
-    // UI-only: backend integration will be wired later.
-    await new Promise((r) => setTimeout(r, 700));
-    setFormError("Registration is not yet enabled. Please contact PESO to coordinate access.");
-    setIsSubmitting(false);
+
+    try {
+      const res = await apiClient.post<RegisterResponse>(API_ENDPOINTS.auth.register, {
+        name: fullName.trim(),
+        email: email.trim(),
+        password,
+        password_confirmation: confirmPassword,
+      });
+
+      const user = res?.data?.user;
+      const token = res?.data?.token;
+
+      if (!user || !token) {
+        throw new Error("Registration failed. Missing session data.");
+      }
+
+      // All registrations default to intern (enforced by backend).
+      login(
+        {
+          id: user.id,
+          username: user.username ?? user.email.split("@")[0],
+          email: user.email,
+          role: user.role,
+          name: user.name ?? fullName.trim(),
+        },
+        token
+      );
+
+      router.push("/dashboard/intern");
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Registration failed. Please try again.";
+      setFormError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
