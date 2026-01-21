@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   Bell,
@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
+import { internTheme } from "@/components/intern/internTheme";
 
 const NAV_ITEMS = [
   { href: "/dashboard/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -43,6 +44,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (isLoading) return;
@@ -57,25 +59,49 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     NAV_ITEMS.find((item) => pathname?.startsWith(item.href)) ?? NAV_ITEMS[0];
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="mx-auto flex max-w-[1600px] gap-0 px-2 py-3 sm:px-3">
+    <div
+      style={internTheme}
+      className="relative min-h-screen overflow-hidden bg-[color:var(--dash-bg)] text-[color:var(--dash-ink)]"
+    >
+      {/* subtle background accents */}
+      <div className="pointer-events-none absolute -top-32 right-0 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-[-6rem] left-[-4rem] h-72 w-72 rounded-full bg-sky-100/60 blur-3xl" />
+
+      {mobileOpen ? (
+        <button
+          type="button"
+          aria-label="Close navigation"
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 z-30 bg-slate-900/20 lg:hidden"
+        />
+      ) : null}
+
+      <div className="relative flex min-h-screen">
         {/* Sidebar */}
-        <aside className="hidden w-60 shrink-0 flex-col rounded-2xl border border-slate-200 bg-white/90 px-3 py-4 shadow-sm lg:flex">
-          <div className="mb-4 flex items-center justify-between px-1">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                PESO Attendance
-              </p>
-              <p className="text-sm font-semibold text-slate-900">
-                Admin Console
-              </p>
+        <aside
+          className={cn(
+            "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[color:var(--dash-border)] bg-[color:var(--dash-card)]/95 px-4 py-5 backdrop-blur transition-transform lg:sticky lg:translate-x-0",
+            mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          )}
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[color:var(--dash-accent)] text-sm font-semibold text-white">
+                AD
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                  Admin Portal
+                </p>
+                <p className="text-sm font-semibold">PESO Attendance</p>
+              </div>
             </div>
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-blue-200">
               Admin
             </span>
           </div>
 
-          <nav className="flex-1 space-y-1 overflow-y-auto">
+          <nav className="mt-6 flex-1 space-y-1 overflow-y-auto">
             {NAV_ITEMS.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
@@ -84,146 +110,69 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <button
                   key={item.href}
                   type="button"
-                  onClick={() => router.push(item.href)}
+                  onClick={() => {
+                    setMobileOpen(false);
+                    router.push(item.href);
+                  }}
                   className={cn(
-                    "flex w-full items-center gap-2 rounded-xl px-2.5 py-2 text-left text-sm font-medium transition-colors",
-                    "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                    isActive &&
-                      "bg-slate-900 text-white hover:bg-slate-900 hover:text-white"
+                    "group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition",
+                    isActive
+                      ? "bg-[color:var(--dash-accent-soft)] text-[color:var(--dash-accent-strong)]"
+                      : "text-[color:var(--dash-muted)] hover:bg-slate-50 hover:text-[color:var(--dash-ink)]"
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon
+                    className={cn(
+                      "h-5 w-5",
+                      isActive
+                        ? "text-[color:var(--dash-accent)]"
+                        : "text-[color:var(--dash-muted)] group-hover:text-[color:var(--dash-ink)]"
+                    )}
+                  />
                   <span>{item.label}</span>
                 </button>
               );
             })}
           </nav>
 
-          <div className="mt-4 rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            <p className="font-semibold text-slate-800">Today&apos;s summary</p>
-            <p className="mt-1 text-[11px] leading-relaxed">
+          <div className="mt-auto rounded-xl border border-[color:var(--dash-border)] bg-[color:var(--dash-accent-soft)] p-4 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-accent-strong)]">
+              Admin view
+            </p>
+            <p className="mt-2 text-xs text-[color:var(--dash-muted)]">
               Review attendance, approvals, and schedules in one place.
             </p>
           </div>
         </aside>
 
         {/* Main content */}
-        <div className="flex min-h-[calc(100vh-24px)] flex-1 flex-col rounded-2xl border border-slate-200 bg-white/90 shadow-sm">
-          {/* Mobile header */}
-          <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-3 py-2 lg:hidden">
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon-sm"
-                className="shrink-0 border-slate-200"
+        <div className="flex h-screen flex-1 flex-col overflow-hidden">
+          <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[color:var(--dash-border)] bg-white/90 px-6 py-4 backdrop-blur">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                aria-label="Open navigation"
+                onClick={() => setMobileOpen(true)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--dash-border)] text-[color:var(--dash-muted)] transition hover:text-[color:var(--dash-ink)] lg:hidden"
               >
-                <Menu className="h-4 w-4" />
-              </Button>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  PESO Attendance
-                </p>
-                <p className="text-sm font-semibold text-slate-900">
-                  {currentNavItem.label}
-                </p>
-              </div>
-            </div>
-            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-blue-200">
-              Admin
-            </span>
-          </div>
-
-          {/* Top header bar */}
-          <header className="flex flex-col gap-3 border-b border-slate-200 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-1 items-center gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                  Admin dashboard
-                </p>
-                <h1 className="text-lg font-semibold text-slate-900">
-                  {currentNavItem.label}
-                </h1>
-              </div>
-
-              <div className="hidden items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium text-slate-600 sm:flex">
-                <button className="rounded-full px-2 py-1 hover:bg-white">
-                  Day
-                </button>
-                <button className="rounded-full bg-white px-2 py-1 shadow-xs">
-                  Week
-                </button>
-                <button className="rounded-full px-2 py-1 hover:bg-white">
-                  Month
-                </button>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="hidden items-center gap-2 md:flex">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1 rounded-full border-slate-200 bg-white text-xs"
-                >
-                  <MapPin className="h-3.5 w-3.5" />
-                  All Locations
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1 rounded-full border-slate-200 bg-white text-xs"
-                >
-                  <Users className="h-3.5 w-3.5" />
-                  All Groups
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1 rounded-full border-slate-200 bg-white text-xs"
-                >
-                  <CalendarDays className="h-3.5 w-3.5" />
-                  All Schedules
-                  <ChevronDown className="h-3 w-3" />
-                </Button>
-              </div>
-
-              <Button
-                size="sm"
-                className="h-8 rounded-full bg-blue-700 px-3 text-xs font-semibold text-white hover:bg-blue-800"
-              >
-                <Clock3 className="mr-1.5 h-3.5 w-3.5" />
-                Start tracking
-              </Button>
-
-              <Button
-                variant="outline"
-                size="icon-sm"
-                className="h-8 w-8 rounded-full border-slate-200 bg-white"
-              >
-                <Bell className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                className="h-8 w-8 rounded-full border-slate-200 bg-white"
-              >
-                <HelpCircle className="h-4 w-4" />
-              </Button>
-
-              <button className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-700">
-                <UserCircle2 className="h-5 w-5 text-slate-500" />
-                <span className="hidden sm:inline">
-                  {user?.name ?? "Admin"}
-                </span>
-                <ChevronDown className="h-3 w-3 text-slate-400" />
+                <Menu className="h-5 w-5" />
               </button>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                  Admin Dashboard
+                </p>
+                <p className="text-sm font-semibold">
+                  PESO OJT Attendance System
+                </p>
+              </div>
             </div>
+            <span className="hidden rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 sm:inline-flex">
+              Signed in as {user?.name ?? "Admin"}
+            </span>
           </header>
 
           {/* Access control + content */}
-          <main className="flex-1 overflow-y-auto bg-slate-50/80">
+          <main className="flex-1 overflow-y-auto bg-[color:var(--dash-bg)]">
             {!isAuthorized ? (
               <div className="flex h-full items-center justify-center px-4 py-10">
                 <div className="max-w-md rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900 shadow-sm">
@@ -235,12 +184,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 </div>
               </div>
             ) : (
-              children
+              <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
+                {children}
+              </div>
             )}
           </main>
 
           {/* Subtle footer strip */}
-          <footer className="border-t border-slate-200 bg-white/80 px-4 py-2 text-[11px] text-slate-500">
+          <footer className="border-t border-[color:var(--dash-border)] bg-white/80 px-6 py-2 text-[11px] text-[color:var(--dash-muted)]">
             <div className="flex items-center justify-between gap-2">
               <span>
                 PESO OJT Attendance · Admin view ·{" "}

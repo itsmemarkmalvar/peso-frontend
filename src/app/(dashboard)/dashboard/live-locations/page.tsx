@@ -40,7 +40,7 @@ const LIVE_LOCATIONS = [
 
 export default function LiveLocationsPage() {
   return (
-    <div className="flex flex-col gap-6 px-4 pb-4">
+    <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-lg font-semibold text-slate-900">Live locations</h1>
         <p className="text-sm text-slate-600">

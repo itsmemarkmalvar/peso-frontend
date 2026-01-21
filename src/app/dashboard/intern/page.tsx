@@ -23,6 +23,30 @@ const fallbackTimeline: InternActivityItem[] = [
   { time: "12:45 PM", title: "Break end", detail: "Back to work" },
 ] as const
 
+function parseTimeToMinutes(value: string): number {
+  // Expect formats like "08:10 AM", fall back to 0 when unknown
+  const match = value.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+  if (!match) return 0
+  let hours = Number(match[1])
+  const minutes = Number(match[2])
+  const period = match[3].toUpperCase()
+
+  if (period === "PM" && hours !== 12) {
+    hours += 12
+  }
+  if (period === "AM" && hours === 12) {
+    hours = 0
+  }
+
+  return hours * 60 + minutes
+}
+
+function sortActivityDescending(items: InternActivityItem[]): InternActivityItem[] {
+  return [...items].sort(
+    (a, b) => parseTimeToMinutes(b.time) - parseTimeToMinutes(a.time)
+  )
+}
+
 const quickLinks = [
   {
     label: "Home",
@@ -70,7 +94,7 @@ export default function InternDashboardPage() {
   const reduceMotion = useReducedMotion()
   const [stats, setStats] = useState<InternDashboardStat[]>(fallbackStats)
   const [timeline, setTimeline] =
-    useState<InternActivityItem[]>(fallbackTimeline)
+    useState<InternActivityItem[]>(sortActivityDescending(fallbackTimeline))
 
   useEffect(() => {
     let active = true
@@ -84,7 +108,7 @@ export default function InternDashboardPage() {
           setStats(data.stats)
         }
         if (data?.recentActivity?.length) {
-          setTimeline(data.recentActivity)
+          setTimeline(sortActivityDescending(data.recentActivity))
         }
       })
       .catch(() => {})
