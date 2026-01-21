@@ -94,15 +94,9 @@ export function LandingHeader({ links }: LandingHeaderProps) {
         <div className="flex items-center gap-3">
           <a
             href="/login"
-            className="hidden rounded-full border border-blue-200 bg-white px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 md:inline-flex"
+            className="inline-flex h-9 items-center justify-center whitespace-nowrap rounded-full border border-slate-200 bg-white px-3.5 text-sm font-semibold text-slate-900 shadow-sm transition hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
           >
-            Log In
-          </a>
-          <a
-            href="mailto:pesocabuyaocity@gmail.com?subject=PESO%20OJT%20Attendance%20System%20-%20Request%20Demo"
-            className="inline-flex rounded-full bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
-          >
-            Request Demo
+            Log in
           </a>
         </div>
       </div>
