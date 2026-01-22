@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,6 +29,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} w-full antialiased`}
       >
+        {process.env.NODE_ENV === "development" && (
+          <Script src="https://cdn.jsdelivr.net/npm/react-grab" />
+        )}
         {children}
       </body>
     </html>
