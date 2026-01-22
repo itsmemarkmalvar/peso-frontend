@@ -195,9 +195,9 @@ export function LandingPage() {
           id="about"
           className="mx-auto w-full max-w-[90%] scroll-mt-24 px-4 pb-6 pt-4 sm:max-w-2xl sm:px-6 lg:max-w-6xl lg:px-8 xl:max-w-7xl xl:px-12 2xl:max-w-[1600px] 2xl:px-16"
         >
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2 md:items-stretch">
             <Reveal>
-              <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm">
+              <div className="h-full rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
                   Mission
                 </p>
@@ -211,7 +211,7 @@ export function LandingPage() {
               </div>
             </Reveal>
             <Reveal delay={reduceMotion ? 0 : 0.06}>
-              <div className="rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm">
+              <div className="h-full rounded-2xl border border-slate-200 bg-white px-6 py-8 shadow-sm">
                 <p className="text-xs font-semibold uppercase tracking-wide text-red-600">
                   Vision
                 </p>
