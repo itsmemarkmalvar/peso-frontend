@@ -11,6 +11,7 @@ export const ROLES = {
   ADMIN: 'admin',
   INTERN: 'intern',
   COORDINATOR: 'coordinator',
+  SUPERVISOR: 'supervisor',
 } as const;
 
 export const ATTENDANCE_STATUS = {
@@ -36,6 +37,7 @@ export const ROUTES = {
     INTERN: '/dashboard/intern',
     COORDINATOR: '/dashboard/coordinator',
     ADMIN: '/dashboard/admin',
+    SUPERVISOR: '/dashboard/supervisor',
   },
   ATTENDANCE: {
     CLOCK: '/attendance/clock',

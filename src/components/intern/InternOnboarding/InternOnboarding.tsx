@@ -1,5 +1,6 @@
 "use client"
 
+import Image from "next/image"
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 
@@ -19,6 +20,7 @@ import {
   saveInternOnboarding,
   type InternOnboardingPayload,
 } from "@/lib/api/intern"
+import pesoLogo from "@/assets/images/image-Photoroom.png"
 
 type InternOnboardingForm = Omit<InternOnboardingPayload, "required_hours"> & {
   required_hours: string
@@ -119,7 +121,18 @@ export function InternOnboarding() {
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-      <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+      <Card className="relative overflow-hidden border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-700 via-blue-600 to-slate-900" />
+
+        <div className="pointer-events-none absolute -right-24 -top-24 opacity-[0.06]">
+          <Image
+            src={pesoLogo}
+            alt=""
+            width={360}
+            height={360}
+            className="h-[360px] w-[360px] rotate-6 object-contain"
+          />
+        </div>
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl text-[color:var(--dash-ink)]">
             Intern onboarding

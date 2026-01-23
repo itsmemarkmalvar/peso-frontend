@@ -99,6 +99,11 @@ export const API_ENDPOINTS = {
     list: '/departments',
   },
 
+  // Supervisors
+  supervisors: {
+    me: '/supervisors/me',
+  },
+
   // Pending Registrations (Legacy system)
   pendingRegistrations: {
     list: '/pending-registrations',

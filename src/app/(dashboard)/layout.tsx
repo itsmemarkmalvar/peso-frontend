@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { internTheme } from "@/components/intern/internTheme";
 import pesoLogo from "@/assets/images/image-Photoroom.png";
+import { getSupervisorProfile } from "@/lib/api/supervisor";
 
 const NAV_ITEMS = [
   { href: "/dashboard/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -52,16 +53,107 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [onboardingBypass, setOnboardingBypass] = useState(false);
+  const [bypassChecked, setBypassChecked] = useState(false);
+  const isStaff =
+    user?.role === "admin" ||
+    user?.role === "coordinator" ||
+    user?.role === "supervisor";
+  const isSupervisor = user?.role === "supervisor";
+  const [supervisorChecked, setSupervisorChecked] = useState(false);
+  const [needsSupervisorOnboarding, setNeedsSupervisorOnboarding] =
+    useState(false);
+  const isSupervisorOnboardingRoute =
+    pathname?.startsWith("/dashboard/supervisor/onboarding") ?? false;
+
+  useEffect(() => {
+    if (!isSupervisorOnboardingRoute || typeof window === "undefined") {
+      setOnboardingBypass(false);
+      setBypassChecked(true);
+      return;
+    }
+    const params = new URLSearchParams(window.location.search);
+    const devBypass =
+      process.env.NODE_ENV === "development" &&
+      params.get("dev-bypass") === "1";
+    const envBypass =
+      process.env.NEXT_PUBLIC_ONBOARDING_BYPASS === "1" &&
+      params.get("onboarding-bypass") === "1";
+    setOnboardingBypass(devBypass || envBypass);
+    setBypassChecked(true);
+  }, [isSupervisorOnboardingRoute]);
 
   useEffect(() => {
     if (isLoading) return;
-    if (!user || user.role !== "admin") {
+    if (isSupervisorOnboardingRoute && !bypassChecked) {
+      return;
+    }
+    if (onboardingBypass) return;
+    if (!user || !isStaff) {
       router.replace("/login");
       return;
     }
-  }, [isLoading, user, router]);
+  }, [
+    isLoading,
+    user,
+    router,
+    isStaff,
+    onboardingBypass,
+    bypassChecked,
+    isSupervisorOnboardingRoute,
+  ]);
 
-  const isAuthorized = !!user && user.role === "admin";
+  useEffect(() => {
+    if (isLoading) return;
+    if (isSupervisorOnboardingRoute && !bypassChecked) {
+      return;
+    }
+    if (onboardingBypass) {
+      setSupervisorChecked(true);
+      setNeedsSupervisorOnboarding(false);
+      return;
+    }
+    if (!user || !isSupervisor) {
+      setSupervisorChecked(true);
+      setNeedsSupervisorOnboarding(false);
+      return;
+    }
+
+    let active = true;
+
+    getSupervisorProfile()
+      .then((profile) => {
+        if (!active) return;
+        const hasOnboarded = Boolean(profile?.onboarded_at);
+        setNeedsSupervisorOnboarding(!hasOnboarded);
+        setSupervisorChecked(true);
+        if (!hasOnboarded) {
+          router.replace("/dashboard/supervisor/onboarding");
+        }
+      })
+      .catch(() => {
+        if (!active) return;
+        setSupervisorChecked(true);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [
+    isLoading,
+    isSupervisor,
+    router,
+    user,
+    onboardingBypass,
+    bypassChecked,
+    isSupervisorOnboardingRoute,
+  ]);
+
+  const isAuthorized = onboardingBypass || (!!user && isStaff);
+
+  if (isSupervisor && (!supervisorChecked || needsSupervisorOnboarding)) {
+    return null;
+  }
 
   // Show loading state to prevent layout from disappearing
   if (isLoading) {

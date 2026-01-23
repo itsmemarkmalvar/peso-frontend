@@ -53,10 +53,9 @@ export interface ApproveResponse {
 export async function getRegistrationRequests(
   status: 'pending' | 'approved' | 'rejected' | 'all' = 'pending'
 ): Promise<RegistrationRequest[]> {
-  const response = await apiClient.get<RegistrationRequestsResponse>(
-    API_ENDPOINTS.registrationRequests.list,
-    { params: { status } }
-  );
+  const query = new URLSearchParams({ status }).toString();
+  const endpoint = `${API_ENDPOINTS.registrationRequests.list}?${query}`;
+  const response = await apiClient.get<RegistrationRequestsResponse>(endpoint);
   return response.data;
 }
 

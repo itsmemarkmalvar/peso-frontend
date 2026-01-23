@@ -89,11 +89,38 @@ export function InternShell({ children }: InternShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileChecked, setProfileChecked] = useState(false)
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
+  const [onboardingBypass, setOnboardingBypass] = useState(false)
+  const [bypassChecked, setBypassChecked] = useState(false)
+  const bypassActive = isOnboardingRoute && onboardingBypass
+
+  useEffect(() => {
+    if (!isOnboardingRoute || typeof window === "undefined") {
+      setOnboardingBypass(false)
+      setBypassChecked(true)
+      return
+    }
+
+    const params = new URLSearchParams(window.location.search)
+    const devBypass =
+      process.env.NODE_ENV === "development" &&
+      params.get("dev-bypass") === "1"
+    const envBypass =
+      process.env.NEXT_PUBLIC_ONBOARDING_BYPASS === "1" &&
+      params.get("onboarding-bypass") === "1"
+    setOnboardingBypass(devBypass || envBypass)
+    setBypassChecked(true)
+  }, [isOnboardingRoute])
 
   // Route protection: Intern dashboard requires authenticated intern user
   // (Client-side guard because auth state lives in localStorage)
   useEffect(() => {
     if (isLoading) return
+    if (isOnboardingRoute && !bypassChecked) {
+      return
+    }
+    if (bypassActive) {
+      return
+    }
     if (!user) {
       router.replace("/login")
       return
@@ -101,9 +128,14 @@ export function InternShell({ children }: InternShellProps) {
     if (user.role !== "intern") {
       router.replace("/dashboard/admin")
     }
-  }, [isLoading, user, router])
+  }, [isLoading, user, router, bypassActive, bypassChecked, isOnboardingRoute])
 
   useEffect(() => {
+    if (bypassActive) {
+      setProfileChecked(true)
+      setNeedsOnboarding(false)
+      return
+    }
     if (isLoading || !user || user.role !== "intern") {
       return
     }
@@ -132,17 +164,17 @@ export function InternShell({ children }: InternShellProps) {
     return () => {
       active = false
     }
-  }, [isLoading, isOnboardingRoute, router, user])
+  }, [isLoading, isOnboardingRoute, router, user, bypassActive])
 
-  if (isLoading || !user || user.role !== "intern") {
+  if (!bypassActive && (isLoading || !user || user.role !== "intern")) {
     return null
   }
 
-  if (!profileChecked) {
+  if (!bypassActive && !profileChecked) {
     return null
   }
 
-  if (needsOnboarding && !isOnboardingRoute) {
+  if (!bypassActive && needsOnboarding && !isOnboardingRoute) {
     return null
   }
 

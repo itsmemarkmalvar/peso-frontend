@@ -155,6 +155,16 @@ function checkGeofence(
   return { inside, closest, matches }
 }
 
+function formatOverlayTimestamp(value: Date) {
+  const pad = (input: number) => String(input).padStart(2, "0")
+  const year = value.getFullYear()
+  const month = pad(value.getMonth() + 1)
+  const day = pad(value.getDate())
+  const hours = pad(value.getHours())
+  const minutes = pad(value.getMinutes())
+  return `${year}/${month}/${day} ${hours}:${minutes}`
+}
+
 const fallbackSummary: InternDashboardStat[] = [
   { label: "Today", value: "2h 10m", sub: "In progress" },
   { label: "This week", value: "18h 40m", sub: "40h target" },
@@ -220,6 +230,12 @@ export default function InternTimePage() {
     useState<VerificationAction | null>(null)
   const [selfieError, setSelfieError] = useState<string | null>(null)
   const [selfieImage, setSelfieImage] = useState<string | null>(null)
+  const [selfieOverlayTimestamp, setSelfieOverlayTimestamp] = useState<
+    string | null
+  >(null)
+  const [cameraOverlayTimestamp, setCameraOverlayTimestamp] = useState<
+    string | null
+  >(null)
   const [selfieCapturedAt, setSelfieCapturedAt] = useState<
     Partial<Record<VerificationAction, string>>
   >({})
@@ -306,6 +322,8 @@ export default function InternTimePage() {
       if (videoRef.current) {
         videoRef.current.srcObject = null
       }
+      setSelfieOverlayTimestamp(null)
+      setCameraOverlayTimestamp(null)
       return
     }
 
@@ -314,6 +332,8 @@ export default function InternTimePage() {
     const startCamera = async () => {
       setSelfieError(null)
       setSelfieImage(null)
+      setSelfieOverlayTimestamp(null)
+      setCameraOverlayTimestamp(null)
       try {
         if (!navigator.mediaDevices?.getUserMedia) {
           throw new Error("Camera not supported")
@@ -353,6 +373,21 @@ export default function InternTimePage() {
       }
     }
   }, [selfieAction])
+
+  useEffect(() => {
+    if (!selfieAction || selfieImage) {
+      setCameraOverlayTimestamp(null)
+      return
+    }
+    const updateTimestamp = () => {
+      setCameraOverlayTimestamp(formatOverlayTimestamp(new Date()))
+    }
+    updateTimestamp()
+    const intervalId = window.setInterval(updateTimestamp, 1000)
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [selfieAction, selfieImage])
 
   useEffect(() => {
     if (!selfieAction || !consent?.location) {
@@ -491,8 +526,23 @@ export default function InternTimePage() {
     }
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
+    const capturedAt = new Date()
     context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const overlayTimestamp = formatOverlayTimestamp(capturedAt)
+    const fontSize = Math.max(16, Math.round(canvas.width * 0.03))
+    const margin = Math.round(fontSize * 0.6)
+    context.save()
+    context.font = `${fontSize}px monospace`
+    context.textAlign = "left"
+    context.textBaseline = "bottom"
+    context.lineWidth = Math.max(2, Math.round(fontSize * 0.12))
+    context.strokeStyle = "rgba(0, 0, 0, 0.6)"
+    context.fillStyle = "rgba(255, 196, 0, 0.95)"
+    context.strokeText(overlayTimestamp, margin, canvas.height - margin)
+    context.fillText(overlayTimestamp, margin, canvas.height - margin)
+    context.restore()
     setSelfieImage(canvas.toDataURL("image/jpeg", 0.92))
+    setSelfieOverlayTimestamp(overlayTimestamp)
   }
 
   const handleConfirmSelfie = () => {
@@ -528,6 +578,9 @@ export default function InternTimePage() {
         : "clock-in"
     : ""
   const isLocationVerified = locationStatus === "success"
+  const overlayTimestamp = selfieImage
+    ? selfieOverlayTimestamp
+    : cameraOverlayTimestamp
   const insideMatch = locationCheck?.matches.find(
     (match) => match.distanceMeters <= match.geofence.radiusMeters
   )
@@ -747,7 +800,7 @@ export default function InternTimePage() {
                   {selfieError}
                 </div>
               ) : (
-                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+                <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
                   {selfieImage ? (
                     <img
                       src={selfieImage}
@@ -763,6 +816,11 @@ export default function InternTimePage() {
                       muted
                     />
                   )}
+                  {overlayTimestamp ? (
+                    <div className="pointer-events-none absolute bottom-2 left-2 rounded bg-black/40 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
+                      <span className="font-mono">{overlayTimestamp}</span>
+                    </div>
+                  ) : null}
                 </div>
               )}
 
@@ -855,7 +913,10 @@ export default function InternTimePage() {
                       type="button"
                       variant="outline"
                       className="h-10 border-slate-200"
-                      onClick={() => setSelfieImage(null)}
+                      onClick={() => {
+                        setSelfieImage(null)
+                        setSelfieOverlayTimestamp(null)
+                      }}
                       disabled={!isLocationVerified}
                     >
                       Retake
