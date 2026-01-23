@@ -2,7 +2,12 @@
  * TypeScript Type Definitions
  */
 
-export type UserRole = 'admin' | 'intern' | 'coordinator' | 'supervisor';
+export type UserRole =
+  | 'admin'
+  | 'supervisor'
+  | 'gip'
+  | 'intern'
+  | 'coordinator';
 
 export interface User {
   id: number;

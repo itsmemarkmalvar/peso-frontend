@@ -111,10 +111,11 @@ export default function LoginPage() {
         token
       );
 
-      // Role-based redirect (2 dashboards: Admin/Staff vs Intern)
-      if (user.role === "intern") {
+      // Role-based redirect
+      if (user.role === "intern" || user.role === "gip") {
         router.push("/dashboard/intern");
       } else {
+        // Admin and Supervisor go to admin dashboard
         router.push("/dashboard/admin");
       }
     } catch (err) {

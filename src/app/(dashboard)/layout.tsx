@@ -150,6 +150,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   ]);
 
   const isAuthorized = onboardingBypass || (!!user && isStaff);
+  const roleLabel = user?.role
+    ? `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}`
+    : "Admin";
 
   if (isSupervisor && (!supervisorChecked || needsSupervisorOnboarding)) {
     return null;
@@ -220,7 +223,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </div>
             </div>
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-blue-200">
-              Admin
+              {roleLabel}
             </span>
           </div>
 
@@ -313,9 +316,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             {!isAuthorized ? (
               <div className="flex h-full items-center justify-center px-4 py-10">
                 <div className="max-w-md rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900 shadow-sm">
-                  <p className="font-semibold">Admin access only</p>
+                  <p className="font-semibold">
+                    Admin/Coordinator/Supervisor access only
+                  </p>
                   <p className="mt-1 text-xs leading-relaxed">
-                    You must be signed in as an administrator to view this
+                    You must be signed in as an administrator, coordinator, or supervisor to view this
                     dashboard. Redirecting to the login page…
                   </p>
                 </div>

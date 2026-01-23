@@ -116,7 +116,7 @@ export function InvitationAcceptClient() {
       setSuccess(true)
 
       setTimeout(() => {
-        if (user.role === "intern") {
+        if (user.role === "intern" || user.role === "gip") {
           router.push("/dashboard/intern")
         } else {
           router.push("/dashboard/admin")
