@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   Bell,
   CalendarDays,
@@ -29,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { internTheme } from "@/components/intern/internTheme";
+import pesoLogo from "@/assets/images/image-Photoroom.png";
 
 const NAV_ITEMS = [
   { href: "/dashboard/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -91,8 +93,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         >
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="grid h-10 w-10 place-items-center rounded-xl bg-[color:var(--dash-accent)] text-sm font-semibold text-white">
-                AD
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-white p-1.5 shadow-sm">
+                <Image
+                  src={pesoLogo}
+                  alt="PESO Logo"
+                  width={32}
+                  height={32}
+                  className="h-full w-full object-contain"
+                />
               </div>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">

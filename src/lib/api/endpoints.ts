@@ -13,6 +13,8 @@ export const API_ENDPOINTS = {
     logout: '/auth/logout',
     me: '/auth/me',
     refresh: '/auth/refresh',
+    invitationVerify: '/invitation/verify',
+    invitationAccept: '/invitation/accept',
   },
 
   // Interns
@@ -76,7 +78,20 @@ export const API_ENDPOINTS = {
     approvals: '/intern/approvals',
   },
 
-  // Pending Registrations
+  // Registration Requests (New system)
+  registrationRequests: {
+    list: '/registration-requests',
+    show: (id: number) => `/registration-requests/${id}`,
+    approve: (id: number) => `/registration-requests/${id}/approve`,
+    reject: (id: number) => `/registration-requests/${id}/reject`,
+  },
+
+  // Departments
+  departments: {
+    list: '/departments',
+  },
+
+  // Pending Registrations (Legacy system)
   pendingRegistrations: {
     list: '/pending-registrations',
     show: (id: number) => `/pending-registrations/${id}`,

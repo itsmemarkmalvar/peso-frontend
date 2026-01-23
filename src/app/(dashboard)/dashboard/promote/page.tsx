@@ -14,49 +14,65 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
-  getPendingRegistrations,
-  approvePendingRegistration,
-  rejectPendingRegistration,
-  type PendingRegistration,
-} from "@/lib/api/pendingRegistrations";
+  getRegistrationRequests,
+  approveRegistrationRequest,
+  rejectRegistrationRequest,
+  type RegistrationRequest,
+} from "@/lib/api/registrationRequests";
+import { ApprovalModal } from "@/components/admin/ApprovalModal";
 
 export default function NewUsersPage() {
-  const [pendingUsers, setPendingUsers] = useState<PendingRegistration[]>([]);
+  const [pendingUsers, setPendingUsers] = useState<RegistrationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [approvalModalOpen, setApprovalModalOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<RegistrationRequest | null>(null);
 
-  const loadPendingRegistrations = async () => {
+  const loadRegistrationRequests = async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await getPendingRegistrations('pending');
+      const data = await getRegistrationRequests('pending');
       setPendingUsers(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load pending registrations.");
+      setError(err instanceof Error ? err.message : "Failed to load registration requests.");
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadPendingRegistrations();
+    loadRegistrationRequests();
   }, []);
 
-  const handleApprove = async (id: number) => {
-    setProcessingId(id);
+  const handleApproveClick = (user: RegistrationRequest) => {
+    setSelectedRequest(user);
+    setApprovalModalOpen(true);
+  };
+
+  const handleApprove = async (role: string, departmentId: number | null) => {
+    if (!selectedRequest) return;
+
+    setProcessingId(selectedRequest.id);
     setError(null);
     setSuccessMessage(null);
     try {
-      const result = await approvePendingRegistration(id);
+      const result = await approveRegistrationRequest(
+        selectedRequest.id,
+        role,
+        departmentId
+      );
       setSuccessMessage(
-        `Registration approved! User account created. Temporary password: ${result.temp_password}`
+        `Registration approved! User account created with role "${role}". Invitation email has been sent to ${selectedRequest.email}.`
       );
       // Reload the list
-      await loadPendingRegistrations();
+      await loadRegistrationRequests();
+      setApprovalModalOpen(false);
+      setSelectedRequest(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to approve registration.");
+      setError(err instanceof Error ? err.message : "Failed to approve registration request.");
     } finally {
       setProcessingId(null);
     }
@@ -70,12 +86,12 @@ export default function NewUsersPage() {
     setError(null);
     setSuccessMessage(null);
     try {
-      await rejectPendingRegistration(id);
-      setSuccessMessage("Registration rejected successfully.");
+      await rejectRegistrationRequest(id);
+      setSuccessMessage("Registration request rejected successfully.");
       // Reload the list
-      await loadPendingRegistrations();
+      await loadRegistrationRequests();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reject registration.");
+      setError(err instanceof Error ? err.message : "Failed to reject registration request.");
     } finally {
       setProcessingId(null);
     }
@@ -142,11 +158,11 @@ export default function NewUsersPage() {
                 >
                   <div className="flex items-start gap-3">
                     <div className="mt-0.5 flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600">
-                      {user.name.charAt(0).toUpperCase()}
+                      {user.full_name.charAt(0).toUpperCase()}
                     </div>
                     <div className="space-y-0.5">
                       <p className="text-sm font-medium text-slate-900">
-                        {user.name}
+                        {user.full_name}
                       </p>
                       <p className="text-[11px] text-slate-500">
                         {user.email}
@@ -170,7 +186,7 @@ export default function NewUsersPage() {
                           variant="outline"
                           size="sm"
                           className="h-8 gap-1 rounded-full border-green-200 bg-green-50 text-xs text-green-800 hover:bg-green-100"
-                          onClick={() => handleApprove(user.id)}
+                          onClick={() => handleApproveClick(user)}
                           disabled={processingId === user.id}
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
@@ -218,6 +234,13 @@ export default function NewUsersPage() {
           </p>
         </CardContent>
       </Card>
+
+      <ApprovalModal
+        open={approvalModalOpen}
+        onOpenChange={setApprovalModalOpen}
+        registrationRequest={selectedRequest}
+        onApprove={handleApprove}
+      />
     </div>
   );
 }
