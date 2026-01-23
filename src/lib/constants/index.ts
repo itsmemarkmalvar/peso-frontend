@@ -9,8 +9,9 @@ export const APP_CONFIG = {
 
 export const ROLES = {
   ADMIN: 'admin',
+  SUPERVISOR: 'supervisor',
+  GIP: 'gip',
   INTERN: 'intern',
-  COORDINATOR: 'coordinator',
 } as const;
 
 export const ATTENDANCE_STATUS = {

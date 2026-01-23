@@ -90,7 +90,7 @@ export function InternShell({ children }: InternShellProps) {
   const [profileChecked, setProfileChecked] = useState(false)
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
 
-  // Route protection: Intern dashboard requires authenticated intern user
+  // Route protection: Intern dashboard requires authenticated intern or GIP user
   // (Client-side guard because auth state lives in localStorage)
   useEffect(() => {
     if (isLoading) return
@@ -98,13 +98,13 @@ export function InternShell({ children }: InternShellProps) {
       router.replace("/login")
       return
     }
-    if (user.role !== "intern") {
+    if (user.role !== "intern" && user.role !== "gip") {
       router.replace("/dashboard/admin")
     }
   }, [isLoading, user, router])
 
   useEffect(() => {
-    if (isLoading || !user || user.role !== "intern") {
+    if (isLoading || !user || (user.role !== "intern" && user.role !== "gip")) {
       return
     }
 
@@ -134,7 +134,7 @@ export function InternShell({ children }: InternShellProps) {
     }
   }, [isLoading, isOnboardingRoute, router, user])
 
-  if (isLoading || !user || user.role !== "intern") {
+  if (isLoading || !user || (user.role !== "intern" && user.role !== "gip")) {
     return null
   }
 

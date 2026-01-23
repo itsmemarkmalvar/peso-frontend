@@ -55,13 +55,13 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (isLoading) return;
-    if (!user || user.role !== "admin") {
+    if (!user || (user.role !== "admin" && user.role !== "supervisor")) {
       router.replace("/login");
       return;
     }
   }, [isLoading, user, router]);
 
-  const isAuthorized = !!user && user.role === "admin";
+  const isAuthorized = !!user && (user.role === "admin" || user.role === "supervisor");
 
   // Show loading state to prevent layout from disappearing
   if (isLoading) {
@@ -128,7 +128,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
               </div>
             </div>
             <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700 ring-1 ring-blue-200">
-              Admin
+              {user?.role === "admin" ? "Admin" : "Supervisor"}
             </span>
           </div>
 
@@ -221,9 +221,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             {!isAuthorized ? (
               <div className="flex h-full items-center justify-center px-4 py-10">
                 <div className="max-w-md rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900 shadow-sm">
-                  <p className="font-semibold">Admin access only</p>
+                  <p className="font-semibold">Admin/Supervisor access only</p>
                   <p className="mt-1 text-xs leading-relaxed">
-                    You must be signed in as an administrator to view this
+                    You must be signed in as an administrator or supervisor to view this
                     dashboard. Redirecting to the login page…
                   </p>
                 </div>

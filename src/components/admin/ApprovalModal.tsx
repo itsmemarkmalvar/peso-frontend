@@ -68,9 +68,9 @@ export function ApprovalModal({
   const handleApprove = async () => {
     if (!registrationRequest) return;
 
-    // Validate: Department is required for intern role
-    if (role === "intern" && !departmentId) {
-      alert("Please select a department for intern role.");
+    // Validate: Department is required for intern and GIP roles
+    if ((role === "intern" || role === "gip") && !departmentId) {
+      alert(`Please select a department for ${role} role.`);
       return;
     }
 
@@ -110,7 +110,8 @@ export function ApprovalModal({
               className="w-full"
             >
               <option value="admin">Administrator</option>
-              <option value="coordinator">Coordinator / Supervisor</option>
+              <option value="supervisor">Supervisor</option>
+              <option value="gip">GIP</option>
               <option value="intern">Intern</option>
             </Select>
             <p className="text-xs text-slate-500 mt-1.5">
@@ -120,7 +121,7 @@ export function ApprovalModal({
 
           <div className="space-y-2.5">
             <Label htmlFor="department" className="text-sm font-semibold text-slate-700">
-              Department / Office {role === "intern" && <span className="text-red-600">*</span>}
+              Department / Office {(role === "intern" || role === "gip") && <span className="text-red-600">*</span>}
             </Label>
             <Select
               id="department"
@@ -146,8 +147,8 @@ export function ApprovalModal({
               ))}
             </Select>
             <p className="text-xs text-slate-500 mt-1.5">
-              {role === "intern"
-                ? "Required: Select the department where this intern will be deployed"
+              {(role === "intern" || role === "gip")
+                ? `Required: Select the department where this ${role} will be deployed`
                 : "Optional: Assign to a specific department"}
             </p>
           </div>
@@ -166,7 +167,7 @@ export function ApprovalModal({
           <Button
             type="button"
             onClick={handleApprove}
-            disabled={isSubmitting || (role === "intern" && !departmentId)}
+            disabled={isSubmitting || ((role === "intern" || role === "gip") && !departmentId)}
             className="min-w-[140px] bg-blue-600 hover:bg-blue-700 text-white shadow-sm font-medium"
           >
             {isSubmitting ? "Processing..." : "Confirm Approval"}
