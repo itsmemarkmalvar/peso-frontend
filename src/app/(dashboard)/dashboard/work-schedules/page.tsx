@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Clock, Edit2, Save, X, Info } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Clock, Edit2, Save, X, Info, Users } from "lucide-react";
 
 import {
   Card,
@@ -14,6 +14,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
 
 const DAYS_OF_WEEK = [
   { id: "monday", label: "Monday", short: "M" },
@@ -29,6 +38,23 @@ type DaySchedule = {
   startTime: string;
   endTime: string;
 };
+
+type ExcusedIntern = {
+  name: string;
+  student_id: string;
+  class_time: string;
+  course: string;
+};
+
+const WEEKDAYS = [
+  { id: "monday", label: "Monday" },
+  { id: "tuesday", label: "Tuesday" },
+  { id: "wednesday", label: "Wednesday" },
+  { id: "thursday", label: "Thursday" },
+  { id: "friday", label: "Friday" },
+  { id: "saturday", label: "Saturday" },
+  { id: "sunday", label: "Sunday" },
+];
 
 export default function WorkSchedulesPage() {
   const [isEditing, setIsEditing] = useState(false);
@@ -49,6 +75,9 @@ export default function WorkSchedulesPage() {
   });
   const [lunchBreakStart, setLunchBreakStart] = useState("12:00");
   const [lunchBreakEnd, setLunchBreakEnd] = useState("13:00");
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const [excusedInterns, setExcusedInterns] = useState<Record<string, ExcusedIntern[]>>({});
+  const [isLoadingExcused, setIsLoadingExcused] = useState(true);
 
   // Calculate break duration automatically
   const calculateBreakDuration = (start: string, end: string): number => {
@@ -92,6 +121,71 @@ export default function WorkSchedulesPage() {
     const ampm = hour >= 12 ? "pm" : "am";
     const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
     return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  // Load excused interns data
+  useEffect(() => {
+    let active = true;
+
+    getAdminInterns()
+      .then((interns) => {
+        if (!active) return;
+        
+        // Generate mock data for excused interns by day
+        const classTimes = [
+          "8:00 AM - 10:00 AM",
+          "1:00 PM - 3:00 PM",
+          "9:00 AM - 11:00 AM",
+          "2:00 PM - 4:00 PM",
+          "10:00 AM - 12:00 PM",
+        ];
+        
+        const courses = [
+          "Computer Science",
+          "Information Technology",
+          "Business Administration",
+          "Engineering",
+          "Education",
+        ];
+
+        const excused: Record<string, ExcusedIntern[]> = {};
+        
+        WEEKDAYS.forEach((day, dayIndex) => {
+          // Only assign interns to work days (not rest days)
+          // For rest days, the array will be empty
+          if (selectedDays.includes(day.id)) {
+            // Assign 2-4 interns per work day
+            const count = 2 + (dayIndex % 3);
+            excused[day.id] = interns.slice(dayIndex * 2, dayIndex * 2 + count).map((intern, index) => ({
+              name: intern.name,
+              student_id: intern.student_id,
+              class_time: classTimes[index % classTimes.length],
+              course: courses[index % courses.length],
+            }));
+          } else {
+            excused[day.id] = [];
+          }
+        });
+
+        setExcusedInterns(excused);
+        setIsLoadingExcused(false);
+      })
+      .catch(() => {
+        if (!active) return;
+        setIsLoadingExcused(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedDays]);
+
+  const handleDayClick = (dayId: string) => {
+    setSelectedDay(dayId);
+  };
+
+  const getDayExcusedCount = (dayId: string): number => {
+    return excusedInterns[dayId]?.length || 0;
   };
 
   return (
@@ -316,6 +410,110 @@ export default function WorkSchedulesPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Excused due to school schedule */}
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">Excused due to school schedule</CardTitle>
+          <CardDescription>
+            View OJT employees with scheduled school classes by day of the week.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingExcused ? (
+            <p className="text-sm text-slate-500 py-4">Loading excused schedules…</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
+              {WEEKDAYS.map((day) => {
+                const count = getDayExcusedCount(day.id);
+                const isRestDay = !selectedDays.includes(day.id);
+                return (
+                  <Button
+                    key={day.id}
+                    type="button"
+                    variant="outline"
+                    onClick={() => !isRestDay && handleDayClick(day.id)}
+                    disabled={isRestDay}
+                    className={`h-20 w-full flex-col gap-1 ${
+                      isRestDay
+                        ? "border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed opacity-60"
+                        : "border-slate-200 hover:border-blue-300 hover:bg-blue-50"
+                    }`}
+                  >
+                    <span className={`text-xs font-semibold ${isRestDay ? "text-slate-400" : "text-slate-700"}`}>
+                      {day.label}
+                    </span>
+                    {isRestDay ? (
+                      <span className="text-[10px] text-slate-400">Rest day</span>
+                    ) : (
+                      <Badge
+                        variant="secondary"
+                        className="text-[10px] font-medium"
+                      >
+                        {count} {count === 1 ? "intern" : "interns"}
+                      </Badge>
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Day Excused Modal */}
+      <Dialog open={selectedDay !== null} onOpenChange={(open) => !open && setSelectedDay(null)}>
+        <DialogContent onClose={() => setSelectedDay(null)} className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedDay ? `${WEEKDAYS.find((d) => d.id === selectedDay)?.label} - Excused Interns` : ""}
+            </DialogTitle>
+            <DialogDescription>
+              OJT employees with scheduled school classes on this day.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedDay && excusedInterns[selectedDay] && (
+            <div className="space-y-4 py-4">
+              {excusedInterns[selectedDay].length === 0 ? (
+                <p className="text-sm text-slate-500 text-center py-4">
+                  No interns excused for {WEEKDAYS.find((d) => d.id === selectedDay)?.label}.
+                </p>
+              ) : (
+                <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
+                  {excusedInterns[selectedDay].map((intern, index) => (
+                    <div
+                      key={`${intern.student_id}-${index}`}
+                      className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2"
+                    >
+                      <div className="hidden h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500 sm:flex shrink-0">
+                        {intern.name
+                          .split(" ")[0]
+                          .charAt(0)
+                          .toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <p className="truncate text-sm font-medium text-slate-900">
+                          {intern.name}
+                        </p>
+                        <p className="text-[11px] text-slate-500">{intern.student_id}</p>
+                      </div>
+                      <div className="text-right space-y-0.5">
+                        <p className="text-xs font-medium text-slate-700">{intern.class_time}</p>
+                        <p className="text-[11px] text-slate-500">{intern.course}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedDay(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

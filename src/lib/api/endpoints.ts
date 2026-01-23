@@ -56,6 +56,14 @@ export const API_ENDPOINTS = {
     reject: (id: number) => `/approvals/${id}/reject`,
   },
 
+  // Leaves
+  leaves: {
+    list: '/leaves',
+    pending: '/leaves/pending',
+    approve: (id: number) => `/leaves/${id}/approve`,
+    reject: (id: number) => `/leaves/${id}/reject`,
+  },
+
   // Reports
   reports: {
     dtr: '/reports/dtr',

@@ -38,7 +38,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/approvals", label: "Approvals", icon: CheckCircle2 },
   { href: "/dashboard/live-locations", label: "Live Locations", icon: MapPin },
   { href: "/dashboard/geofences", label: "Geofences", icon: Navigation2 },
-  { href: "/dashboard/time-off", label: "Time Off", icon: Plane },
+  { href: "/dashboard/time-off", label: "Leave", icon: Plane },
   { href: "/dashboard/reports", label: "Reports", icon: LineChart },
   { href: "/dashboard/people", label: "People", icon: Users },
   { href: "/dashboard/promote", label: "New Users", icon: UserCheck },
@@ -57,10 +57,28 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     if (isLoading) return;
     if (!user || user.role !== "admin") {
       router.replace("/login");
+      return;
     }
   }, [isLoading, user, router]);
 
   const isAuthorized = !!user && user.role === "admin";
+
+  // Show loading state to prevent layout from disappearing
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto" />
+          <p className="text-sm text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render layout if not authorized (will redirect)
+  if (!isAuthorized) {
+    return null;
+  }
 
   const currentNavItem =
     NAV_ITEMS.find((item) => pathname?.startsWith(item.href)) ?? NAV_ITEMS[0];
@@ -87,7 +105,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         {/* Sidebar */}
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[color:var(--dash-border)] bg-[color:var(--dash-card)]/95 px-4 py-5 backdrop-blur transition-transform lg:sticky lg:translate-x-0",
+            "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[color:var(--dash-border)] bg-[color:var(--dash-card)]/95 px-4 py-5 backdrop-blur transition-transform lg:sticky lg:translate-x-0 lg:z-auto",
             mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           )}
         >
@@ -160,7 +178,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
         {/* Main content */}
         <div className="flex h-screen flex-1 flex-col overflow-hidden">
-          <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[color:var(--dash-border)] bg-white/90 px-6 py-4 backdrop-blur">
+          <header className="sticky top-0 z-30 flex items-center justify-between border-b border-[color:var(--dash-border)] bg-white/90 px-6 py-4 backdrop-blur">
             <div className="flex items-center gap-3">
               <button
                 type="button"
