@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogClose,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -90,8 +89,7 @@ export function ApprovalModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[540px]">
-        <DialogClose onClose={() => onOpenChange(false)} />
+      <DialogContent className="sm:max-w-[540px]" onClose={() => onOpenChange(false)}>
         <DialogHeader>
           <DialogTitle>Approve Registration Request</DialogTitle>
           <DialogDescription>
