@@ -186,8 +186,6 @@ export function InternShell({ children }: InternShellProps) {
       style={internTheme}
       className="relative min-h-screen overflow-hidden bg-[color:var(--dash-bg)] text-[color:var(--dash-ink)]"
     >
-      <div className="pointer-events-none absolute -top-32 right-0 h-72 w-72 rounded-full bg-red-200/50 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-[-6rem] left-[-4rem] h-72 w-72 rounded-full bg-yellow-200/50 blur-3xl" />
       <div className="pointer-events-none absolute left-1/2 top-20 h-64 w-64 -translate-x-1/2 rounded-full bg-blue-200/40 blur-3xl" />
 
       {mobileOpen ? (

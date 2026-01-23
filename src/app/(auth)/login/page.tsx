@@ -38,7 +38,7 @@ type LoginResponse = {
       name?: string;
       username?: string;
       email: string;
-      role: "admin" | "intern" | "supervisor" | "coordinator";
+      role: "admin" | "intern" | "supervisor" | "coordinator" | "gip";
       status?: "active" | "inactive" | "suspended";
     };
     token: string;
