@@ -37,6 +37,19 @@ export interface LeaveActionResponse {
   message: string;
 }
 
+export interface CreateLeavePayload {
+  type: LeaveType;
+  reason_title: string;
+  start_date: string;
+  end_date?: string | null;
+  notes?: string | null;
+}
+
+export interface LeaveCreateResponse {
+  data: LeaveRequest | null;
+  message?: string;
+}
+
 /**
  * Get all leave requests
  */
@@ -52,6 +65,13 @@ export function getPendingLeaves(): Promise<LeavesListResponse> {
 }
 
 /**
+ * Create a leave request
+ */
+export function createLeave(payload: CreateLeavePayload): Promise<LeaveCreateResponse> {
+  return apiClient.post<LeaveCreateResponse>(API_ENDPOINTS.leaves.create, payload);
+}
+
+/**
  * Approve a leave request
  */
 export function approveLeave(id: number, comments?: string): Promise<LeaveActionResponse> {
@@ -63,8 +83,13 @@ export function approveLeave(id: number, comments?: string): Promise<LeaveAction
 /**
  * Reject a leave request
  */
-export function rejectLeave(id: number, reason: string): Promise<LeaveActionResponse> {
+export function rejectLeave(
+  id: number,
+  reason: string,
+  comments?: string
+): Promise<LeaveActionResponse> {
   return apiClient.post<LeaveActionResponse>(API_ENDPOINTS.leaves.reject(id), {
     reason,
+    comments,
   });
 }

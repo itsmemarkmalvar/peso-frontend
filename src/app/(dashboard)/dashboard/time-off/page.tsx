@@ -71,6 +71,7 @@ export default function LeavePage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [adminNotes, setAdminNotes] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -120,6 +121,7 @@ export default function LeavePage() {
     setSelectedRequest(request);
     setIsDialogOpen(true);
     setRejectReason("");
+    setAdminNotes("");
   };
 
   const handleApprove = async () => {
@@ -127,7 +129,7 @@ export default function LeavePage() {
 
     setIsProcessing(true);
     try {
-      await approveLeave(selectedRequest.id);
+      await approveLeave(selectedRequest.id, adminNotes.trim() || undefined);
       // Update the row in the list
       setRows((prev) =>
         prev.map((r) =>
@@ -138,6 +140,7 @@ export default function LeavePage() {
       );
       setIsDialogOpen(false);
       setSelectedRequest(null);
+      setAdminNotes("");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to approve request");
     } finally {
@@ -153,7 +156,11 @@ export default function LeavePage() {
 
     setIsProcessing(true);
     try {
-      await rejectLeave(selectedRequest.id, rejectReason);
+      await rejectLeave(
+        selectedRequest.id,
+        rejectReason,
+        adminNotes.trim() || undefined
+      );
       // Update the row in the list
       setRows((prev) =>
         prev.map((r) =>
@@ -165,6 +172,7 @@ export default function LeavePage() {
       setIsDialogOpen(false);
       setSelectedRequest(null);
       setRejectReason("");
+      setAdminNotes("");
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to reject request");
     } finally {
@@ -339,6 +347,17 @@ export default function LeavePage() {
               )}
               {selectedRequest.status === "Pending" && (
                 <div className="space-y-2 pt-2">
+                  <div>
+                    <label className="text-xs font-semibold text-slate-500 uppercase mb-1 block">
+                      Admin Notes (optional)
+                    </label>
+                    <textarea
+                      value={adminNotes}
+                      onChange={(e) => setAdminNotes(e.target.value)}
+                      placeholder="Add notes for this request..."
+                      className="w-full min-h-[80px] px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
                   <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase mb-1 block">
                       Rejection Reason (if rejecting)

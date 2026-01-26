@@ -9,7 +9,18 @@ import {
   type InternActivityItem,
   type InternDashboardStat,
 } from "@/lib/api/intern"
+import { createLeave } from "@/lib/api/leaves"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 const fallbackStats: InternDashboardStat[] = [
   { label: "Hours logged", value: "18h 40m", sub: "This week" },
@@ -95,6 +106,14 @@ export default function InternDashboardPage() {
   const [stats, setStats] = useState<InternDashboardStat[]>(fallbackStats)
   const [timeline, setTimeline] =
     useState<InternActivityItem[]>(sortActivityDescending(fallbackTimeline))
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
+  const [leaveReason, setLeaveReason] = useState("")
+  const [leaveStartDate, setLeaveStartDate] = useState(
+    new Date().toISOString().split("T")[0]
+  )
+  const [leaveEndDate, setLeaveEndDate] = useState("")
+  const [isSubmittingLeave, setIsSubmittingLeave] = useState(false)
+  const [leaveError, setLeaveError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
@@ -117,6 +136,53 @@ export default function InternDashboardPage() {
       active = false
     }
   }, [])
+
+  const openLeaveDialog = () => {
+    setLeaveReason("")
+    setLeaveStartDate(new Date().toISOString().split("T")[0])
+    setLeaveEndDate("")
+    setLeaveError(null)
+    setIsLeaveDialogOpen(true)
+  }
+
+  const handleSubmitLeave = async () => {
+    setLeaveError(null)
+    const trimmedReason = leaveReason.trim()
+    if (!trimmedReason) {
+      setLeaveError("Please provide a reason for your leave.")
+      return
+    }
+    if (!leaveStartDate) {
+      setLeaveError("Please select a start date.")
+      return
+    }
+    if (leaveEndDate && leaveEndDate < leaveStartDate) {
+      setLeaveError("End date cannot be earlier than start date.")
+      return
+    }
+
+    setIsSubmittingLeave(true)
+    try {
+      await createLeave({
+        type: "Leave",
+        reason_title: trimmedReason,
+        start_date: leaveStartDate,
+        end_date: leaveEndDate ? leaveEndDate : null,
+      })
+      setIsLeaveDialogOpen(false)
+      setLeaveReason("")
+      setLeaveStartDate(new Date().toISOString().split("T")[0])
+      setLeaveEndDate("")
+      setLeaveError(null)
+      alert("Leave request submitted for review.")
+    } catch (err) {
+      setLeaveError(
+        err instanceof Error ? err.message : "Failed to submit leave request"
+      )
+    } finally {
+      setIsSubmittingLeave(false)
+    }
+  }
 
   return (
     <motion.div
@@ -153,6 +219,13 @@ export default function InternDashboardPage() {
             className="w-full justify-center border-[color:var(--dash-border)] text-[color:var(--dash-ink)] sm:w-auto"
           >
             <Link href="/dashboard/intern/timesheets">View Timesheets</Link>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={openLeaveDialog}
+            className="w-full justify-center border-[color:var(--dash-border)] text-[color:var(--dash-ink)] sm:w-auto"
+          >
+            File A Leave
           </Button>
         </div>
       </motion.header>
@@ -281,6 +354,89 @@ export default function InternDashboardPage() {
           </Link>
         ))}
       </motion.div>
+
+      <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
+        <DialogContent onClose={() => setIsLeaveDialogOpen(false)} className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>File A Leave</DialogTitle>
+            <DialogDescription>
+              Submit a leave request for admin review.
+            </DialogDescription>
+          </DialogHeader>
+          {leaveError && (
+            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {leaveError}
+            </div>
+          )}
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="leave-reason" className="text-xs font-semibold text-slate-700">
+                Reason for leave
+              </Label>
+              <textarea
+                id="leave-reason"
+                value={leaveReason}
+                onChange={(e) => setLeaveReason(e.target.value)}
+                placeholder="Share the reason for your leave..."
+                className="w-full min-h-[96px] px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isSubmittingLeave}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700">
+                Duration of leave
+              </Label>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="leave-start" className="text-xs text-slate-500">
+                    Start date
+                  </Label>
+                  <Input
+                    id="leave-start"
+                    type="date"
+                    value={leaveStartDate}
+                    onChange={(e) => setLeaveStartDate(e.target.value)}
+                    disabled={isSubmittingLeave}
+                    className="text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="leave-end" className="text-xs text-slate-500">
+                    End date
+                  </Label>
+                  <Input
+                    id="leave-end"
+                    type="date"
+                    value={leaveEndDate}
+                    onChange={(e) => setLeaveEndDate(e.target.value)}
+                    disabled={isSubmittingLeave}
+                    className="text-sm"
+                  />
+                </div>
+              </div>
+              <p className="text-[11px] text-slate-500">
+                Leave end date blank if the leave is for one day only.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsLeaveDialogOpen(false)}
+              disabled={isSubmittingLeave}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitLeave}
+              disabled={isSubmittingLeave}
+              className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+            >
+              {isSubmittingLeave ? "Submitting..." : "Submit Leave"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   )
 }

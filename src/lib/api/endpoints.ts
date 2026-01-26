@@ -60,6 +60,7 @@ export const API_ENDPOINTS = {
   leaves: {
     list: '/leaves',
     pending: '/leaves/pending',
+    create: '/leaves',
     approve: (id: number) => `/leaves/${id}/approve`,
     reject: (id: number) => `/leaves/${id}/reject`,
   },

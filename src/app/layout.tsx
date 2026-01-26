@@ -1,17 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "PESO OJT Attendance System",
@@ -26,9 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="w-full">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} w-full antialiased`}
-      >
+      <body className="w-full font-sans antialiased">
         {process.env.NODE_ENV === "development" && (
           <Script src="https://cdn.jsdelivr.net/npm/react-grab" />
         )}
