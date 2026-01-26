@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { MapContainer, TileLayer, Circle, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import type { GeofenceLocation as ApiGeofenceLocation } from "@/lib/api/geofenceLocations";
 
 // Fix for default marker icon in Next.js
 if (typeof window !== "undefined") {
@@ -15,21 +16,16 @@ if (typeof window !== "undefined") {
   });
 }
 
-export interface GeofenceLocation {
-  id?: number;
-  name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-  radius_meters: number;
-  is_active?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
+export type GeofenceLocation = ApiGeofenceLocation;
+
+type GeofenceCreateInput = Omit<
+  GeofenceLocation,
+  "id" | "is_active" | "created_at" | "updated_at"
+>;
 
 interface GeofenceMapProps {
   locations?: GeofenceLocation[];
-  onLocationCreate?: (location: Omit<GeofenceLocation, "id">) => void;
+  onLocationCreate?: (location: GeofenceCreateInput) => void;
   onLocationUpdate?: (location: GeofenceLocation) => void;
   onLocationSelect?: (location: GeofenceLocation | null) => void;
   selectedLocation?: GeofenceLocation | null;

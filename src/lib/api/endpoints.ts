@@ -109,6 +109,11 @@ export const API_ENDPOINTS = {
     delete: (id: number) => `/geofence-locations/${id}`,
   },
 
+  // Supervisors
+  supervisors: {
+    me: '/supervisors/me',
+  },
+
   // Pending Registrations (Legacy system)
   pendingRegistrations: {
     list: '/pending-registrations',
