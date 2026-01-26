@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { isWithinGeofence } from "@/lib/geolocation";
-import { GeofenceLocation } from "@/components/map/GeofenceMap";
+import { getGeofenceLocations, type GeofenceLocation } from "@/lib/api/geofenceLocations";
 
 // Dynamic import for map (SSR disabled)
 const GeofenceMapDynamic = dynamic(
@@ -34,20 +34,30 @@ export default function ClockInPage() {
   const [clockedIn, setClockedIn] = useState(false);
   const [clocking, setClocking] = useState(false);
 
-  // Fetch geofence locations on mount
+  // Fetch geofence locations from API on mount
   useEffect(() => {
-    // TODO: Fetch from API
-    // For now, using example data
-    setGeofenceLocations([
-      {
-        id: 1,
-        name: "Cabuyao City Hall",
-        address: "Cabuyao City Hall, Laguna",
-        latitude: 14.2486,
-        longitude: 121.1258,
-        radius_meters: 100,
-      },
-    ]);
+    let active = true;
+
+    const loadGeofences = async () => {
+      try {
+        const data = await getGeofenceLocations(true); // active_only = true for intern/GIP
+        if (active) {
+          setGeofenceLocations(data);
+        }
+      } catch (err) {
+        console.error("Failed to load geofence locations:", err);
+        // Fallback to empty array if API fails
+        if (active) {
+          setGeofenceLocations([]);
+        }
+      }
+    };
+
+    loadGeofences();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Check geofence when location changes
