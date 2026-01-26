@@ -79,6 +79,7 @@ export type AdminIntern = {
   company_name: string
   supervisor_name: string
   is_active: boolean
+  role: string
 }
 
 export type InternProfile = {
