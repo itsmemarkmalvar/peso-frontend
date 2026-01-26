@@ -111,24 +111,10 @@ export default function ClockInPage() {
       return;
     }
 
-    setClocking(true);
-    try {
-      // TODO: Call API to clock in
-      // await apiClient.post(API_ENDPOINTS.attendance.clockIn, {
-      //   latitude: location.latitude,
-      //   longitude: location.longitude,
-      //   geofence_id: geofenceCheck.locationName,
-      // });
-      
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      setClockedIn(true);
-    } catch (err) {
-      alert("Failed to clock in. Please try again.");
-    } finally {
-      setClocking(false);
-    }
+    // Note: This page doesn't have selfie capture, so it's a simplified version
+    // For full functionality, use InternTimePage which has selfie capture
+    alert("Please use the Time & Clock page for full clock-in functionality with selfie verification.");
+    return;
   };
 
   return (

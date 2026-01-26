@@ -73,6 +73,12 @@ export const API_ENDPOINTS = {
     export: '/reports/export',
   },
 
+  // Timesheets
+  timesheets: {
+    list: '/timesheets',
+    show: (internId: number) => `/timesheets/${internId}`,
+  },
+
   // Dashboard
   dashboard: {
     stats: '/dashboard/stats',
