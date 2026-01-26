@@ -2,61 +2,20 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, Plus, Trash2, Edit2, Save, X } from "lucide-react";
+import { MapPin, Plus, Trash2, Edit2, Save, X, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GeofenceMap, GeofenceLocation } from "@/components/map/GeofenceMap";
-
-const geofenceStorageKey = "intern-geofences-v1";
-
-const defaultLocations: GeofenceLocation[] = [
-  {
-    id: 1,
-    name: "Cabuyao City Hall",
-    address: "Cabuyao City Hall, Laguna",
-    latitude: 14.2486,
-    longitude: 121.1258,
-    radius_meters: 100,
-  },
-];
-
-function parseStoredLocations(raw: string | null): GeofenceLocation[] | null {
-  if (!raw) {
-    return null;
-  }
-  try {
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return null;
-    }
-    const cleaned = parsed.flatMap((item, index) => {
-      if (!item || typeof item !== "object") {
-        return [];
-      }
-      const lat = Number(item.latitude);
-      const lng = Number(item.longitude);
-      const radius = Number(item.radius_meters);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(radius)) {
-        return [];
-      }
-      return [
-        {
-          id: typeof item.id === "number" ? item.id : Date.now() + index,
-          name: typeof item.name === "string" ? item.name : `Location ${index + 1}`,
-          address: typeof item.address === "string" ? item.address : "",
-          latitude: lat,
-          longitude: lng,
-          radius_meters: radius,
-        },
-      ];
-    });
-    return cleaned.length ? cleaned : null;
-  } catch {
-    return null;
-  }
-}
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { GeofenceMap } from "@/components/map/GeofenceMap";
+import {
+  getGeofenceLocations,
+  createGeofenceLocation,
+  updateGeofenceLocation,
+  deleteGeofenceLocation,
+  type GeofenceLocation,
+} from "@/lib/api/geofenceLocations";
 
 // Dynamic import to avoid SSR issues with Leaflet
 const GeofenceMapDynamic = dynamic(
@@ -73,48 +32,69 @@ const GeofenceMapDynamic = dynamic(
 
 export default function GeofencesPage() {
   const [locations, setLocations] = useState<GeofenceLocation[]>([]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const stored = parseStoredLocations(window.localStorage.getItem(geofenceStorageKey));
-    setLocations(stored ?? defaultLocations);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    if (!locations.length) {
-      window.localStorage.removeItem(geofenceStorageKey);
-      return;
-    }
-    window.localStorage.setItem(geofenceStorageKey, JSON.stringify(locations));
-  }, [locations]);
-
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<GeofenceLocation | null>(null);
   const [mode, setMode] = useState<"view" | "create" | "edit">("view");
   const [editingLocation, setEditingLocation] = useState<GeofenceLocation | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     address: "",
     radius_meters: 100,
   });
 
-  const handleLocationCreate = (location: Omit<GeofenceLocation, "id">) => {
-    const newLocation: GeofenceLocation = {
-      ...location,
-      id: Date.now(), // Temporary ID, will be replaced by backend
-      name: formData.name || `Location ${locations.length + 1}`,
-      address: formData.address || "Address to be determined",
-      radius_meters: formData.radius_meters,
+  // Load geofences from API
+  useEffect(() => {
+    let active = true;
+
+    const loadGeofences = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const data = await getGeofenceLocations(false); // Admin/Supervisor: get all
+        if (active) {
+          setLocations(data);
+        }
+      } catch (err) {
+        if (active) {
+          setError(err instanceof Error ? err.message : "Failed to load geofence locations");
+        }
+      } finally {
+        if (active) {
+          setIsLoading(false);
+        }
+      }
     };
-    setLocations((prev) => [...prev, newLocation]);
-    setSelectedLocation(newLocation);
-    setMode("view");
-    setFormData({ name: "", address: "", radius_meters: 100 });
-    // TODO: Call API to save location
+
+    loadGeofences();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleLocationCreate = async (location: Omit<GeofenceLocation, "id" | "is_active" | "created_at" | "updated_at">) => {
+    setIsSaving(true);
+    setError(null);
+    try {
+      const newLocation = await createGeofenceLocation({
+        name: location.name,
+        address: location.address,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        radius_meters: location.radius_meters,
+      });
+      setLocations((prev) => [...prev, newLocation]);
+      setSelectedLocation(newLocation);
+      setMode("view");
+      setFormData({ name: "", address: "", radius_meters: 100 });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create geofence location");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleLocationSelect = (location: GeofenceLocation | null) => {
@@ -135,33 +115,47 @@ export default function GeofencesPage() {
     }
   };
 
-  const handleSave = () => {
-    if (editingLocation) {
-      const updated = locations.map((loc) =>
-        loc.id === editingLocation.id
-          ? {
-              ...loc,
-              name: formData.name,
-              address: formData.address,
-              radius_meters: formData.radius_meters,
-            }
-          : loc
+  const handleSave = async () => {
+    if (!editingLocation) return;
+
+    setIsSaving(true);
+    setError(null);
+    try {
+      const updated = await updateGeofenceLocation(editingLocation.id, {
+        name: formData.name,
+        address: formData.address,
+        radius_meters: formData.radius_meters,
+      });
+      setLocations((prev) =>
+        prev.map((loc) => (loc.id === updated.id ? updated : loc))
       );
-      setLocations(updated);
-      setSelectedLocation(updated.find((loc) => loc.id === editingLocation.id) || null);
+      setSelectedLocation(updated);
       setEditingLocation(null);
       setMode("view");
-      // TODO: Call API to update location
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update geofence location");
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm("Are you sure you want to delete this location?")) {
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this location?")) {
+      return;
+    }
+
+    setIsDeleting(true);
+    setError(null);
+    try {
+      await deleteGeofenceLocation(id);
       setLocations((prev) => prev.filter((loc) => loc.id !== id));
       if (selectedLocation?.id === id) {
         setSelectedLocation(null);
       }
-      // TODO: Call API to delete location
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete geofence location");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -184,11 +178,20 @@ export default function GeofencesPage() {
           onClick={handleCreateMode}
           className="bg-blue-700 hover:bg-blue-800"
           size="sm"
+          disabled={isLoading}
         >
           <Plus className="h-4 w-4 mr-2" />
           Create Location
         </Button>
       </div>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Map Section */}
@@ -205,17 +208,26 @@ export default function GeofencesPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-[400px] w-full sm:h-[500px] lg:h-[600px]">
-                <GeofenceMapDynamic
-                  locations={locations}
-                  onLocationCreate={handleLocationCreate}
-                  onLocationSelect={handleLocationSelect}
-                  selectedLocation={selectedLocation}
-                  mode={mode}
-                  initialCenter={[14.2486, 121.1258]} // Cabuyao, Laguna
-                  initialZoom={13}
-                />
-              </div>
+              {isLoading ? (
+                <div className="h-[400px] w-full sm:h-[500px] lg:h-[600px] flex items-center justify-center bg-slate-50 rounded-lg">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="h-6 w-6 animate-spin text-blue-700" />
+                    <p className="text-sm text-slate-600">Loading geofence locations...</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="h-[400px] w-full sm:h-[500px] lg:h-[600px]">
+                  <GeofenceMapDynamic
+                    locations={locations}
+                    onLocationCreate={handleLocationCreate}
+                    onLocationSelect={handleLocationSelect}
+                    selectedLocation={selectedLocation}
+                    mode={mode}
+                    initialCenter={[14.2486, 121.1258]} // Cabuyao, Laguna
+                    initialZoom={13}
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -244,8 +256,13 @@ export default function GeofencesPage() {
                           size="sm"
                           onClick={() => handleDelete(selectedLocation.id!)}
                           className="h-7"
+                          disabled={isDeleting}
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          {isDeleting ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3.5 w-3.5" />
+                          )}
                         </Button>
                       </>
                     )}
@@ -256,8 +273,13 @@ export default function GeofencesPage() {
                           size="sm"
                           onClick={handleSave}
                           className="h-7"
+                          disabled={isSaving}
                         >
-                          <Save className="h-3.5 w-3.5" />
+                          {isSaving ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Save className="h-3.5 w-3.5" />
+                          )}
                         </Button>
                         <Button
                           variant="outline"

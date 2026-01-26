@@ -22,6 +22,9 @@ export interface GeofenceLocation {
   latitude: number;
   longitude: number;
   radius_meters: number;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface GeofenceMapProps {
@@ -69,6 +72,8 @@ export function GeofenceMap({
     lat: number;
     lng: number;
     radius: number;
+    name: string;
+    address: string;
   } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
@@ -96,15 +101,15 @@ export function GeofenceMap({
 
   const handleMapClick = (lat: number, lng: number) => {
     if (mode === "create") {
-      setNewLocation({ lat, lng, radius: 100 }); // Default 100m radius
+      setNewLocation({ lat, lng, radius: 100, name: "", address: "" }); // Default 100m radius
     }
   };
 
   const handleCreateLocation = () => {
-    if (newLocation && onLocationCreate) {
+    if (newLocation && onLocationCreate && newLocation.name?.trim() && newLocation.address?.trim()) {
       onLocationCreate({
-        name: "",
-        address: "",
+        name: newLocation.name.trim(),
+        address: newLocation.address.trim(),
         latitude: newLocation.lat,
         longitude: newLocation.lng,
         radius_meters: newLocation.radius,
@@ -200,11 +205,49 @@ export function GeofenceMap({
 
       {/* Create location form overlay */}
       {newLocation && mode === "create" && (
-        <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-4 border border-slate-200 min-w-[300px]">
+        <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-4 border border-slate-200 min-w-[300px] max-w-[400px]">
           <h3 className="text-sm font-semibold text-slate-900 mb-3">
             Create New Geofence Location
           </h3>
           <div className="space-y-3">
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">
+                Location Name *
+              </label>
+              <input
+                type="text"
+                id="create-name"
+                placeholder="e.g., Cabuyao City Hall"
+                value={newLocation.name || ""}
+                onChange={(e) =>
+                  setNewLocation({
+                    ...newLocation,
+                    name: e.target.value,
+                  })
+                }
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-700 block mb-1">
+                Address *
+              </label>
+              <input
+                type="text"
+                id="create-address"
+                placeholder="Full address"
+                value={newLocation.address || ""}
+                onChange={(e) =>
+                  setNewLocation({
+                    ...newLocation,
+                    address: e.target.value,
+                  })
+                }
+                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
             <div>
               <label className="text-xs font-medium text-slate-700 block mb-1">
                 Coordinates
@@ -215,7 +258,7 @@ export function GeofenceMap({
             </div>
             <div>
               <label className="text-xs font-medium text-slate-700 block mb-1">
-                Radius (meters)
+                Radius (meters) *
               </label>
               <input
                 type="number"
@@ -229,12 +272,14 @@ export function GeofenceMap({
                   })
                 }
                 className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
               />
             </div>
             <div className="flex gap-2 pt-2">
               <button
                 onClick={handleCreateLocation}
-                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-blue-700 rounded-md hover:bg-blue-800"
+                disabled={!newLocation.name?.trim() || !newLocation.address?.trim()}
+                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-blue-700 rounded-md hover:bg-blue-800 disabled:bg-slate-300 disabled:cursor-not-allowed"
               >
                 Create
               </button>

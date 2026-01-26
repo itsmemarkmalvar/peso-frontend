@@ -100,9 +100,13 @@ export const API_ENDPOINTS = {
     list: '/departments',
   },
 
-  // Supervisors
-  supervisors: {
-    me: '/supervisors/me',
+  // Geofence Locations
+  geofenceLocations: {
+    list: '/geofence-locations',
+    create: '/geofence-locations',
+    show: (id: number) => `/geofence-locations/${id}`,
+    update: (id: number) => `/geofence-locations/${id}`,
+    delete: (id: number) => `/geofence-locations/${id}`,
   },
 
   // Pending Registrations (Legacy system)

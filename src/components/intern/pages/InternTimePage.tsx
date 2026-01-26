@@ -11,6 +11,7 @@ import {
   type InternTimeClockSnapshot,
   type InternTimeClockWeekItem,
 } from "@/lib/api/intern"
+import { getGeofenceLocations } from "@/lib/api/geofenceLocations"
 import { Button } from "@/components/ui/button"
 
 type VerificationAction = "clock-in" | "break" | "clock-out"
@@ -315,14 +316,44 @@ export default function InternTimePage() {
   }, [])
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return
+    let active = true
+
+    const loadGeofences = async () => {
+      try {
+        const data = await getGeofenceLocations(true) // active_only = true for intern/GIP
+        if (active) {
+          // Convert API geofences to GeofenceArea format
+          const converted = data
+            .map((loc, index) => ({
+              id: String(loc.id || `geofence-${index + 1}`),
+              name: loc.name,
+              lat: loc.latitude,
+              lng: loc.longitude,
+              radiusMeters: loc.radius_meters,
+            }))
+            .filter((item) => Number.isFinite(item.lat) && Number.isFinite(item.lng) && Number.isFinite(item.radiusMeters))
+          if (converted.length) {
+            setGeofences(converted)
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load geofence locations:", err)
+        // Fallback: try localStorage if API fails
+        if (active && typeof window !== "undefined") {
+          const storedGeofences = parseStoredGeofences(
+            window.localStorage.getItem(geofenceStorageKey)
+          )
+          if (storedGeofences?.length) {
+            setGeofences(storedGeofences)
+          }
+        }
+      }
     }
-    const storedGeofences = parseStoredGeofences(
-      window.localStorage.getItem(geofenceStorageKey)
-    )
-    if (storedGeofences?.length) {
-      setGeofences(storedGeofences)
+
+    loadGeofences()
+
+    return () => {
+      active = false
     }
   }, [])
 
