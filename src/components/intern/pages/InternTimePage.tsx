@@ -1,5 +1,6 @@
 "use client"
 
+import dynamic from "next/dynamic"
 import { useEffect, useRef, useState } from "react"
 
 import {
@@ -58,6 +59,14 @@ type GeofenceCheck = {
 
 const consentStorageKey = "intern-consent-v1"
 const geofenceStorageKey = "intern-geofences-v1"
+
+const MapBackdrop = dynamic(
+  () => import("@/components/map/MapBackdrop").then((mod) => mod.MapBackdrop),
+  {
+    ssr: false,
+    loading: () => <div className="h-full w-full bg-slate-100" />,
+  }
+)
 
 const defaultStoredGeofences: StoredGeofenceLocation[] = [
   {
@@ -247,6 +256,10 @@ export default function InternTimePage() {
   const [locationCapture, setLocationCapture] = useState<
     Partial<Record<VerificationAction, LocationCapture>>
   >({})
+  const [userLocation, setUserLocation] = useState<{
+    lat: number
+    lng: number
+  } | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
@@ -312,6 +325,30 @@ export default function InternTimePage() {
       setGeofences(storedGeofences)
     }
   }, [])
+
+  useEffect(() => {
+    if (!consent?.location || userLocation) {
+      return
+    }
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        })
+      },
+      () => {},
+      {
+        enableHighAccuracy: true,
+        timeout: 8000,
+        maximumAge: 60000,
+      }
+    )
+  }, [consent, userLocation])
 
   useEffect(() => {
     if (!selfieAction) {
@@ -416,6 +453,7 @@ export default function InternTimePage() {
         })
         const lat = position.coords.latitude
         const lng = position.coords.longitude
+        setUserLocation({ lat, lng })
         setLocationCapture((prev) => ({
           ...prev,
           [action]: {
@@ -590,121 +628,143 @@ export default function InternTimePage() {
       : locationStatus === "loading"
         ? "Checking your location..."
         : "Waiting for location verification..."
+  const mapCenter: [number, number] = userLocation
+    ? [userLocation.lat, userLocation.lng]
+    : geofences.length
+      ? [geofences[0].lat, geofences[0].lng]
+      : [14.2486, 121.1258]
+  const mapZoom = userLocation ? 16 : geofences.length ? 15 : 13
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
-          Time and Clock
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold">Time clock</h1>
-        <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
-          Clock in, manage breaks, and review your day in one screen.
-        </p>
-      </header>
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <section className="relative min-h-[360px] overflow-hidden rounded-3xl border border-[color:var(--dash-border)] md:min-h-[480px]">
+          <MapBackdrop
+            center={mapCenter}
+            zoom={mapZoom}
+            interactive
+            geofences={geofences}
+            userLocation={userLocation}
+            className="h-full w-full"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-white/50" />
+        </section>
 
-      <section className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
+        <div className="flex flex-col gap-4">
+          <header className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
-              Current time
+              Time and Clock
             </p>
-            <div className="mt-3 flex items-end gap-2">
-              <span className="text-5xl font-semibold tracking-tight">
-                {header.currentTime}
-              </span>
-              <span className="pb-2 text-sm font-semibold text-[color:var(--dash-muted)]">
-                {header.meridiem}
-              </span>
+            <h1 className="mt-2 text-2xl font-semibold">Time clock</h1>
+            <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+              Clock in, manage breaks, and review your day in one screen.
+            </p>
+          </header>
+
+          <section className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
+            <div className="flex flex-col gap-6">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                  Current time
+                </p>
+                <div className="mt-3 flex items-end gap-2">
+                  <span className="text-5xl font-semibold tracking-tight">
+                    {header.currentTime}
+                  </span>
+                  <span className="pb-2 text-sm font-semibold text-[color:var(--dash-muted)]">
+                    {header.meridiem}
+                  </span>
+                </div>
+                <p className="mt-2 text-sm text-[color:var(--dash-muted)]">
+                  {header.dateLabel}
+                </p>
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClassName}`}
+                  >
+                    {header.statusLabel}
+                  </span>
+                  <span className="text-xs text-[color:var(--dash-muted)]">
+                    {header.shiftLabel}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid gap-3 rounded-xl border border-[color:var(--dash-border)] bg-white px-4 py-4 text-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-[color:var(--dash-muted)]">Last clock</span>
+                  <span className="font-semibold">{snapshot.lastClock}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[color:var(--dash-muted)]">Break</span>
+                  <span className="font-semibold">{snapshot.breakLabel}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[color:var(--dash-muted)]">Location</span>
+                  <span className="font-semibold">{snapshot.locationLabel}</span>
+                </div>
+              </div>
             </div>
-            <p className="mt-2 text-sm text-[color:var(--dash-muted)]">
-              {header.dateLabel}
-            </p>
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClassName}`}
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <Button
+                className="h-12 w-full bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+                onClick={() => openVerification("clock-in")}
               >
-                {header.statusLabel}
-              </span>
-              <span className="text-xs text-[color:var(--dash-muted)]">
-                {header.shiftLabel}
-              </span>
+                Clock In
+              </Button>
+              <Button
+                className="h-12 w-full bg-yellow-300 text-yellow-900 hover:bg-yellow-400"
+                onClick={() => openVerification("break")}
+                disabled={!isClockedIn}
+              >
+                Start Break
+              </Button>
+              <Button
+                className="h-12 w-full bg-red-600 text-white hover:bg-red-700"
+                onClick={() => openVerification("clock-out")}
+                disabled={!isClockedIn}
+              >
+                Clock Out
+              </Button>
             </div>
-          </div>
-
-          <div className="grid gap-3 rounded-xl border border-[color:var(--dash-border)] bg-white px-4 py-4 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-[color:var(--dash-muted)]">Last clock</span>
-              <span className="font-semibold">{snapshot.lastClock}</span>
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[color:var(--dash-muted)]">
+              <span>Selfie and location verification are required for clock-in, breaks, and clock-out.</span>
+              <div className="flex flex-wrap gap-2">
+                {selfieCapturedAt["clock-in"] ? (
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold text-blue-700">
+                    Clock In selfie {selfieCapturedAt["clock-in"]}
+                  </span>
+                ) : null}
+                {selfieCapturedAt["break"] ? (
+                  <span className="rounded-full bg-yellow-50 px-3 py-1 text-[11px] font-semibold text-yellow-800">
+                    Break selfie {selfieCapturedAt["break"]}
+                  </span>
+                ) : null}
+                {selfieCapturedAt["clock-out"] ? (
+                  <span className="rounded-full bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-700">
+                    Clock Out selfie {selfieCapturedAt["clock-out"]}
+                  </span>
+                ) : null}
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[color:var(--dash-muted)]">Break</span>
-              <span className="font-semibold">{snapshot.breakLabel}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[color:var(--dash-muted)]">Location</span>
-              <span className="font-semibold">{snapshot.locationLabel}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <Button
-            className="h-12 w-full bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
-            onClick={() => openVerification("clock-in")}
-          >
-            Clock In
-          </Button>
-          <Button
-            className="h-12 w-full bg-yellow-300 text-yellow-900 hover:bg-yellow-400"
-            onClick={() => openVerification("break")}
-            disabled={!isClockedIn}
-          >
-            Start Break
-          </Button>
-          <Button
-            className="h-12 w-full bg-red-600 text-white hover:bg-red-700"
-            onClick={() => openVerification("clock-out")}
-            disabled={!isClockedIn}
-          >
-            Clock Out
-          </Button>
-        </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[color:var(--dash-muted)]">
-          <span>Selfie and location verification are required for clock-in, breaks, and clock-out.</span>
-          <div className="flex flex-wrap gap-2">
-            {selfieCapturedAt["clock-in"] ? (
-              <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold text-blue-700">
-                Clock In selfie {selfieCapturedAt["clock-in"]}
-              </span>
+            {consentNotice ? (
+              <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                {consentNotice}
+              </p>
             ) : null}
-            {selfieCapturedAt["break"] ? (
-              <span className="rounded-full bg-yellow-50 px-3 py-1 text-[11px] font-semibold text-yellow-800">
-                Break selfie {selfieCapturedAt["break"]}
-              </span>
+            {clockNotice ? (
+              <p className="mt-2 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
+                {clockNotice}
+              </p>
+            ) : !isClockedIn ? (
+              <p className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                Clock in to enable break and clock out.
+              </p>
             ) : null}
-            {selfieCapturedAt["clock-out"] ? (
-              <span className="rounded-full bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-700">
-                Clock Out selfie {selfieCapturedAt["clock-out"]}
-              </span>
-            ) : null}
-          </div>
+          </section>
         </div>
-        {consentNotice ? (
-          <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
-            {consentNotice}
-          </p>
-        ) : null}
-        {clockNotice ? (
-          <p className="mt-2 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
-            {clockNotice}
-          </p>
-        ) : !isClockedIn ? (
-          <p className="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
-            Clock in to enable break and clock out.
-          </p>
-        ) : null}
-      </section>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         {summary.map((item) => (
@@ -769,7 +829,7 @@ export default function InternTimePage() {
       </div>
 
       {selfieOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 px-4 py-6">
           <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -947,7 +1007,7 @@ export default function InternTimePage() {
       ) : null}
 
       {consentOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-6">
+        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 px-4 py-6">
           <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
