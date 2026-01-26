@@ -12,6 +12,7 @@ import {
   type InternTimeClockWeekItem,
 } from "@/lib/api/intern"
 import { getGeofenceLocations } from "@/lib/api/geofenceLocations"
+import { clockIn, clockOut } from "@/lib/api/attendance"
 import { Button } from "@/components/ui/button"
 
 type VerificationAction = "clock-in" | "break" | "clock-out"
@@ -614,29 +615,94 @@ export default function InternTimePage() {
     setSelfieOverlayTimestamp(overlayTimestamp)
   }
 
-  const handleConfirmSelfie = () => {
+  const handleConfirmSelfie = async () => {
     if (!selfieAction) {
       return
     }
     if (locationStatus !== "success") {
       return
     }
-    const timestamp = new Date().toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-    })
-    setSelfieCapturedAt((prev) => ({
-      ...prev,
-      [selfieAction]: timestamp,
-    }))
-    if (selfieAction === "clock-in") {
-      setIsClockedIn(true)
+    if (!selfieImage) {
+      return
     }
-    if (selfieAction === "clock-out") {
-      setIsClockedIn(false)
+    if (!locationCapture[selfieAction]?.coords) {
+      return
     }
-    setClockNotice(null)
-    setSelfieAction(null)
+
+    const action = selfieAction
+    const coords = locationCapture[action]!.coords
+    const geofenceId = insideMatch?.geofence.id ? parseInt(insideMatch.geofence.id) : undefined
+
+    try {
+      setClockNotice(null)
+      
+      if (action === "clock-in") {
+        const response = await clockIn({
+          location_lat: coords.lat,
+          location_lng: coords.lng,
+          photo: selfieImage,
+          geofence_location_id: geofenceId,
+        })
+        
+        if (response.success) {
+          setIsClockedIn(true)
+          const timestamp = new Date().toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+          })
+          setSelfieCapturedAt((prev) => ({
+            ...prev,
+            [action]: timestamp,
+          }))
+          setClockNotice(response.data?.message || "Clocked in successfully")
+        }
+      } else if (action === "clock-out") {
+        const response = await clockOut({
+          location_lat: coords.lat,
+          location_lng: coords.lng,
+          photo: selfieImage,
+          geofence_location_id: geofenceId,
+        })
+        
+        if (response.success) {
+          setIsClockedIn(false)
+          const timestamp = new Date().toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+          })
+          setSelfieCapturedAt((prev) => ({
+            ...prev,
+            [action]: timestamp,
+          }))
+          setClockNotice(
+            response.data?.message || 
+            `Clocked out successfully. Total hours: ${response.data?.total_hours || 0}h`
+          )
+        }
+      } else if (action === "break") {
+        // Break functionality can be added later if needed
+        const timestamp = new Date().toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+        })
+        setSelfieCapturedAt((prev) => ({
+          ...prev,
+          [action]: timestamp,
+        }))
+        setClockNotice("Break recorded")
+      }
+      
+      setSelfieAction(null)
+      setSelfieImage(null)
+      setSelfieOverlayTimestamp(null)
+    } catch (error) {
+      console.error("Failed to submit:", error)
+      setClockNotice(
+        error instanceof Error 
+          ? error.message 
+          : "Failed to submit. Please try again."
+      )
+    }
   }
 
   const actionLabel = selfieAction

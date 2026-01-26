@@ -16,6 +16,7 @@ export interface Attendance {
   break_end: string | null;
   location_lat: number | null;
   location_lng: number | null;
+  location_address: string | null;
   clock_in_photo: string | null;
   clock_out_photo: string | null;
   status: "pending" | "approved" | "rejected";
@@ -26,6 +27,7 @@ export interface Attendance {
   is_late: boolean;
   is_undertime: boolean;
   is_overtime: boolean;
+  geofence_location_id: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -34,6 +36,53 @@ export interface AttendanceListResponse {
   success: boolean;
   message: string;
   data: Attendance[];
+}
+
+export interface ClockInRequest {
+  location_lat: number;
+  location_lng: number;
+  photo: string; // base64 encoded image
+  geofence_location_id?: number;
+}
+
+export interface ClockOutRequest {
+  location_lat: number;
+  location_lng: number;
+  photo: string; // base64 encoded image
+  geofence_location_id?: number;
+}
+
+export interface ClockInResponse {
+  success: boolean;
+  message: string;
+  data: {
+    attendance: Attendance;
+    message: string;
+  };
+}
+
+export interface ClockOutResponse {
+  success: boolean;
+  message: string;
+  data: {
+    attendance: Attendance;
+    total_hours: number;
+    message: string;
+  };
+}
+
+/**
+ * Clock in
+ */
+export function clockIn(data: ClockInRequest): Promise<ClockInResponse> {
+  return apiClient.post<ClockInResponse>(API_ENDPOINTS.attendance.clockIn, data);
+}
+
+/**
+ * Clock out
+ */
+export function clockOut(data: ClockOutRequest): Promise<ClockOutResponse> {
+  return apiClient.post<ClockOutResponse>(API_ENDPOINTS.attendance.clockOut, data);
 }
 
 /**
@@ -55,4 +104,26 @@ export function getAttendanceList(params?: {
   return apiClient.get<AttendanceListResponse>(
     `${API_ENDPOINTS.attendance.list}${query ? `?${query}` : ""}`
   );
+}
+
+/**
+ * Get today's attendance
+ */
+export function getTodayAttendance(intern_id?: number): Promise<{ success: boolean; message: string; data: Attendance | null }> {
+  const queryParams = new URLSearchParams();
+  if (intern_id) queryParams.append("intern_id", intern_id.toString());
+  const query = queryParams.toString();
+  return apiClient.get(`${API_ENDPOINTS.attendance.today}${query ? `?${query}` : ""}`);
+}
+
+/**
+ * Get attendance history
+ */
+export function getAttendanceHistory(params?: {
+  intern_id?: number;
+  start_date?: string;
+  end_date?: string;
+  status?: "pending" | "approved" | "rejected";
+}): Promise<AttendanceListResponse> {
+  return getAttendanceList(params);
 }

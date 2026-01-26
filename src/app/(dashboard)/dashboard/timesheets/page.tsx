@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { CalendarDays, ChevronLeft, ChevronRight, FileDown, Filter, FileSpreadsheet } from "lucide-react";
 
 import {
@@ -12,69 +13,11 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
+import { getTimesheets, type TimesheetRow, type TimesheetDay } from "@/lib/api/timesheets";
 
-type WeeklyDay = {
-  label: string;
-  hours: string;
-  isRestDay?: boolean;
-};
+// Types are now imported from @/lib/api/timesheets
 
-type WeeklyTimesheetRow = {
-  intern: string;
-  company: string;
-  id: string;
-  days: WeeklyDay[];
-  total: string;
-};
-
-const DEFAULT_ROWS: WeeklyTimesheetRow[] = [
-  {
-    intern: "Abamonga, Angelica Lou P.",
-    company: "LCR",
-    id: "INT-2026-001",
-    days: [
-      { label: "8h 16m", hours: "8h 16m" },
-      { label: "8h 14m", hours: "8h 14m" },
-      { label: "0h 54m", hours: "0h 54m" },
-      { label: "-", hours: "-" },
-      { label: "-", hours: "-" },
-      { label: "Rest day", hours: "Rest day", isRestDay: true },
-      { label: "-", hours: "-" },
-    ],
-    total: "17h 24m",
-  },
-  {
-    intern: "Aidalla, James Patrick C.",
-    company: "PESO",
-    id: "INT-2026-002",
-    days: [
-      { label: "8h 1m", hours: "8h 1m" },
-      { label: "8h 22m", hours: "8h 22m" },
-      { label: "0h 54m", hours: "0h 54m" },
-      { label: "-", hours: "-" },
-      { label: "-", hours: "-" },
-      { label: "Rest day", hours: "Rest day", isRestDay: true },
-      { label: "-", hours: "-" },
-    ],
-    total: "17h 17m",
-  },
-  {
-    intern: "Alimagno, Rio Myca P.",
-    company: "PESO",
-    id: "INT-2026-003",
-    days: [
-      { label: "6h 19m", hours: "6h 19m" },
-      { label: "-", hours: "-" },
-      { label: "-", hours: "-" },
-      { label: "-", hours: "-" },
-      { label: "-", hours: "-" },
-      { label: "Rest day", hours: "Rest day", isRestDay: true },
-      { label: "-", hours: "-" },
-    ],
-    total: "6h 19m",
-  },
-];
+// Removed DEFAULT_ROWS - using real API data
 
 function getStartOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -111,17 +54,17 @@ function formatWeekRange(week: Date[]): string {
 }
 
 export default function TimesheetsPage() {
+  const router = useRouter();
   const [startOfWeek, setStartOfWeek] = useState<Date>(() =>
     getStartOfWeek(new Date())
   );
   const [searchTerm, setSearchTerm] = useState("");
-  const [rows, setRows] = useState<WeeklyTimesheetRow[]>(DEFAULT_ROWS);
+  const [rows, setRows] = useState<TimesheetRow[]>([]);
+  const [weekDates, setWeekDates] = useState<Date[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalInterns, setTotalInterns] = useState<number>(DEFAULT_ROWS.length);
 
-  const weekDates = getWeekDates(startOfWeek);
-  const weekRangeLabel = formatWeekRange(weekDates);
+  const weekRangeLabel = formatWeekRange(weekDates.length > 0 ? weekDates : getWeekDates(startOfWeek));
 
   const goToPreviousWeek = () => {
     setStartOfWeek((prev) => {
@@ -141,38 +84,31 @@ export default function TimesheetsPage() {
 
   useEffect(() => {
     let active = true;
+    setIsLoading(true);
+    setError(null);
 
-    getAdminInterns()
-      .then((interns) => {
+    const weekStartStr = startOfWeek.toISOString().split('T')[0];
+
+    getTimesheets({ week_start: weekStartStr })
+      .then((data) => {
         if (!active) return;
-        if (interns.length) {
-          setTotalInterns(interns.length);
-          const mapped: WeeklyTimesheetRow[] = interns.slice(0, 50).map((intern, index) => {
-            const pattern = DEFAULT_ROWS[index % DEFAULT_ROWS.length];
-            return {
-              intern: intern.name,
-              company: intern.company_name,
-              id: intern.id.toString(),
-              days: pattern.days,
-              total: pattern.total,
-            };
-          });
-          setRows(mapped);
-        } else {
-          setIsLoading(false);
-        }
+        
+        // Convert week_dates strings to Date objects
+        const dates = data.week_dates.map((dateStr) => new Date(dateStr));
+        setWeekDates(dates);
+        setRows(data.rows);
         setIsLoading(false);
       })
       .catch((err) => {
         if (!active) return;
-        setError(err instanceof Error ? err.message : "Failed to load interns.");
+        setError(err instanceof Error ? err.message : "Failed to load timesheets.");
         setIsLoading(false);
       });
 
     return () => {
       active = false;
     };
-  }, []);
+  }, [startOfWeek]);
 
   const filteredRows = rows.filter((row) => {
     if (!searchTerm.trim()) return true;
@@ -279,7 +215,7 @@ export default function TimesheetsPage() {
             />
             {searchTerm && (
               <p className="text-[11px] text-slate-500">
-                Showing {filteredRows.length} of {totalInterns} interns
+                Showing {filteredRows.length} of {rows.length} interns
               </p>
             )}
           </div>
@@ -323,8 +259,9 @@ export default function TimesheetsPage() {
                 !error &&
                 filteredRows.map((row) => (
                 <div
-                  key={row.id}
-                  className="grid grid-cols-[minmax(0,3.2fr)_repeat(7,minmax(0,1fr))_minmax(0,1.4fr)] items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-700"
+                  key={row.intern_id}
+                  onClick={() => router.push(`/dashboard/timesheets/${row.intern_id}`)}
+                  className="grid grid-cols-[minmax(0,3.2fr)_repeat(7,minmax(0,1fr))_minmax(0,1.4fr)] items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-700 cursor-pointer hover:bg-slate-50 hover:border-slate-200 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className="hidden h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500 sm:flex">
@@ -346,7 +283,7 @@ export default function TimesheetsPage() {
 
                   {row.days.map((day, index) => (
                     <div
-                      key={`${row.id}-day-${index}`}
+                      key={`${row.intern_id}-day-${index}`}
                       className="flex justify-center text-[11px] tabular-nums"
                     >
                       {day.isRestDay ? (
@@ -371,10 +308,6 @@ export default function TimesheetsPage() {
               )}
             </div>
           </div>
-          <p className="text-[11px] text-slate-500">
-            This is a layout-only grid. Replace with a virtualized table or
-            paginated list when connected to real data.
-          </p>
         </CardContent>
       </Card>
     </div>
