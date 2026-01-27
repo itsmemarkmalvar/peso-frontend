@@ -43,10 +43,7 @@ type DaySchedule = {
 type ExcusedIntern = {
   name: string;
   student_id: string;
-  class_time: string;
   course: string;
-  subject?: string | null;
-  room?: string | null;
 };
 
 const WEEKDAYS = [
@@ -163,10 +160,7 @@ export default function WorkSchedulesPage() {
             excused[day.id] = interns.map((intern) => ({
               name: intern.name,
               student_id: intern.student_id,
-              class_time: intern.class_time || '',
               course: intern.course,
-              subject: intern.subject,
-              room: intern.room,
             }));
           } else {
             excused[day.id] = [];
@@ -575,14 +569,7 @@ export default function WorkSchedulesPage() {
                         <p className="text-[11px] text-slate-500">{intern.student_id}</p>
                       </div>
                       <div className="text-right space-y-0.5">
-                        <p className="text-xs font-medium text-slate-700">{intern.class_time}</p>
-                        <p className="text-[11px] text-slate-500">{intern.course}</p>
-                        {intern.subject && (
-                          <p className="text-[10px] text-slate-400">{intern.subject}</p>
-                        )}
-                        {intern.room && (
-                          <p className="text-[10px] text-slate-400">Room: {intern.room}</p>
-                        )}
+                        <p className="text-xs font-medium text-slate-700">{intern.course}</p>
                       </div>
                     </div>
                   ))}

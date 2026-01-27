@@ -25,6 +25,7 @@ import { useRouter } from "next/navigation";
 import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
 import { getPendingApprovals, type ApprovalRequest } from "@/lib/api/approvals";
 import { getLeaves, type LeaveRequest } from "@/lib/api/leaves";
+import { getExcusedInterns } from "@/lib/api/schedule";
 
 type AttendanceRow = {
   name: string;
@@ -110,35 +111,10 @@ function buildTodayAttendance(interns: AdminIntern[]): AttendanceRow[] {
   });
 }
 
-function buildExcusedRows(interns: AdminIntern[]): ExcusedRow[] {
-  if (!interns.length) return [];
-
-  const classSchedules = [
-    "Monday 8:00 AM - 10:00 AM",
-    "Tuesday 1:00 PM - 3:00 PM",
-    "Wednesday 9:00 AM - 11:00 AM",
-    "Thursday 2:00 PM - 4:00 PM",
-    "Friday 10:00 AM - 12:00 PM",
-  ];
-
-  const today = new Date();
-  const todayString = today.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-
-  // Only show interns with school classes scheduled for today
-  // In a real implementation, this would check intern schedules/class schedules
-  // This is separate from leave requests - it's for regular scheduled classes
-  return interns.slice(0, 5).map((intern, index) => {
-    return {
-      name: intern.name,
-      student_id: intern.student_id,
-      reason: `School class: ${classSchedules[index % classSchedules.length]}`,
-      date: todayString,
-    };
-  });
+// Helper function to get day name from day of week number
+function getDayName(dayOfWeek: number): string {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  return days[dayOfWeek] || 'Unknown';
 }
 
 const QUICK_LINKS = [
@@ -305,14 +281,27 @@ export default function AdminDashboardPage() {
       });
 
     // Load today's excused interns with school classes
-    // This should check intern schedules/class schedules, not leave requests
+    // This checks intern school schedules, not leave requests
     // Leave requests (examinations, events, etc.) are handled separately
-    getAdminInterns()
-      .then((interns) => {
+    const today = new Date();
+    const todayDayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+    const todayString = today.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    getExcusedInterns(todayDayOfWeek)
+      .then((excusedInterns) => {
         if (!active) return;
-        // In a real implementation, this would check intern class schedules
-        // For now, use mock data showing interns with scheduled classes today
-        setExcusedRows(buildExcusedRows(interns));
+        // Map excused interns to ExcusedRow format
+        const rows: ExcusedRow[] = excusedInterns.map((intern) => ({
+          name: intern.name,
+          student_id: intern.student_id,
+          reason: `School class: ${getDayName(todayDayOfWeek)}`,
+          date: todayString,
+        }));
+        setExcusedRows(rows);
         setIsLoadingExcused(false);
       })
       .catch((err) => {

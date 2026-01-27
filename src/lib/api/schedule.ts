@@ -57,9 +57,6 @@ export interface ExcusedIntern {
   name: string;
   student_id: string;
   course: string;
-  class_time: string | null;
-  subject: string | null;
-  room: string | null;
 }
 
 export interface ExcusedInternsResponse {
