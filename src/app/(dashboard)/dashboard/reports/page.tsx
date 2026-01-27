@@ -320,6 +320,232 @@ export default function ReportsPage() {
     }
   };
 
+  const renderPreviewTable = (reportType: "dtr" | "attendance" | "hours" | null, data: any) => {
+    if (!data || !reportType) return null;
+
+    // Extract the actual data array from the response
+    const reportData = Array.isArray(data.data) ? data.data : data;
+    const summary = data.summary || {};
+
+    if (!Array.isArray(reportData) || reportData.length === 0) {
+      return (
+        <div className="p-4 text-center text-sm text-slate-500">
+          No data available for the selected date range.
+        </div>
+      );
+    }
+
+    if (reportType === "dtr") {
+      return (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Date</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Day</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Intern Name</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Student ID</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Clock In</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Clock Out</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Hours</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {reportData.slice(0, 20).map((record: any, index: number) => (
+                <tr key={index} className="hover:bg-slate-50">
+                  <td className="px-3 py-2 text-slate-700">{record.date || "N/A"}</td>
+                  <td className="px-3 py-2 text-slate-600">{record.day || "N/A"}</td>
+                  <td className="px-3 py-2 text-slate-700">{record.intern_name || "N/A"}</td>
+                  <td className="px-3 py-2 text-slate-600">{record.student_id || "N/A"}</td>
+                  <td className="px-3 py-2 text-slate-600">{record.clock_in || "N/A"}</td>
+                  <td className="px-3 py-2 text-slate-600">{record.clock_out || "N/A"}</td>
+                  <td className="px-3 py-2 text-slate-700">{record.total_hours || 0}</td>
+                  <td className="px-3 py-2">
+                    <Badge variant={record.status === "approved" ? "default" : "secondary"} className="text-xs">
+                      {record.status || "N/A"}
+                    </Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {reportData.length > 20 && (
+            <div className="px-3 py-2 text-xs text-slate-500 bg-slate-50 border-t border-slate-200">
+              Showing first 20 of {reportData.length} records
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (reportType === "attendance") {
+      return (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Date</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Intern Name</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Student ID</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Clock In</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Clock Out</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Status</th>
+                <th className="px-3 py-2 text-left font-semibold text-slate-700">Late</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {reportData.slice(0, 20).map((record: any, index: number) => (
+                <tr key={index} className="hover:bg-slate-50">
+                  <td className="px-3 py-2 text-slate-700">{record.date || "N/A"}</td>
+                  <td className="px-3 py-2 text-slate-700">{record.intern_name || "N/A"}</td>
+                  <td className="px-3 py-2 text-slate-600">{record.student_id || "N/A"}</td>
+                  <td className="px-3 py-2 text-slate-600">{record.clock_in || "N/A"}</td>
+                  <td className="px-3 py-2 text-slate-600">{record.clock_out || "N/A"}</td>
+                  <td className="px-3 py-2">
+                    <Badge 
+                      variant={
+                        record.status === "present" || record.status === "approved" 
+                          ? "default" 
+                          : record.status === "absent" 
+                          ? "destructive" 
+                          : "secondary"
+                      } 
+                      className="text-xs"
+                    >
+                      {record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : "N/A"}
+                    </Badge>
+                  </td>
+                  <td className="px-3 py-2 text-slate-600">
+                    {record.is_late ? (
+                      <Badge variant="outline" className="text-xs text-yellow-700 border-yellow-300">
+                        Yes
+                      </Badge>
+                    ) : (
+                      <span className="text-slate-400">No</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {reportData.length > 20 && (
+            <div className="px-3 py-2 text-xs text-slate-500 bg-slate-50 border-t border-slate-200">
+              Showing first 20 of {reportData.length} records
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (reportType === "hours") {
+      // Hours report can have different structures based on group_by
+      const firstRecord = reportData[0];
+      const hasGroupBy = firstRecord && (firstRecord.intern_name || firstRecord.company || firstRecord.date);
+
+      if (firstRecord?.intern_name) {
+        // Grouped by intern
+        return (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Intern Name</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Student ID</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Total Hours</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Total Days</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Avg Hours/Day</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {reportData.slice(0, 20).map((record: any, index: number) => (
+                  <tr key={index} className="hover:bg-slate-50">
+                    <td className="px-3 py-2 text-slate-700">{record.intern_name || "N/A"}</td>
+                    <td className="px-3 py-2 text-slate-600">{record.student_id || "N/A"}</td>
+                    <td className="px-3 py-2 text-slate-700 font-medium">{record.total_hours || 0}</td>
+                    <td className="px-3 py-2 text-slate-600">{record.total_days || 0}</td>
+                    <td className="px-3 py-2 text-slate-600">{record.average_hours_per_day || 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {reportData.length > 20 && (
+              <div className="px-3 py-2 text-xs text-slate-500 bg-slate-50 border-t border-slate-200">
+                Showing first 20 of {reportData.length} records
+              </div>
+            )}
+          </div>
+        );
+      } else if (firstRecord?.company) {
+        // Grouped by company
+        return (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Company</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Total Hours</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Total Days</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Intern Count</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Avg Hours/Intern</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {reportData.slice(0, 20).map((record: any, index: number) => (
+                  <tr key={index} className="hover:bg-slate-50">
+                    <td className="px-3 py-2 text-slate-700">{record.company || "N/A"}</td>
+                    <td className="px-3 py-2 text-slate-700 font-medium">{record.total_hours || 0}</td>
+                    <td className="px-3 py-2 text-slate-600">{record.total_days || 0}</td>
+                    <td className="px-3 py-2 text-slate-600">{record.intern_count || 0}</td>
+                    <td className="px-3 py-2 text-slate-600">{record.average_hours_per_intern || 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {reportData.length > 20 && (
+              <div className="px-3 py-2 text-xs text-slate-500 bg-slate-50 border-t border-slate-200">
+                Showing first 20 of {reportData.length} records
+              </div>
+            )}
+          </div>
+        );
+      } else {
+        // Daily breakdown
+        return (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Date</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Intern Name</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Student ID</th>
+                  <th className="px-3 py-2 text-left font-semibold text-slate-700">Hours</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {reportData.slice(0, 20).map((record: any, index: number) => (
+                  <tr key={index} className="hover:bg-slate-50">
+                    <td className="px-3 py-2 text-slate-700">{record.date || "N/A"}</td>
+                    <td className="px-3 py-2 text-slate-700">{record.intern_name || "N/A"}</td>
+                    <td className="px-3 py-2 text-slate-600">{record.student_id || "N/A"}</td>
+                    <td className="px-3 py-2 text-slate-700 font-medium">{record.hours || 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {reportData.length > 20 && (
+              <div className="px-3 py-2 text-xs text-slate-500 bg-slate-50 border-t border-slate-200">
+                Showing first 20 of {reportData.length} records
+              </div>
+            )}
+          </div>
+        );
+      }
+    }
+
+    return null;
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -329,20 +555,19 @@ export default function ReportsPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,2.8fr)]">
-        <Card className="border-slate-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div className="flex-1">
-              <CardTitle className="text-base">Attendance summary</CardTitle>
-              <CardDescription>
-                Overview of present, late, and absent trends for the selected period.
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge className="bg-blue-600 text-white">Live Data</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
+      <Card className="border-slate-200">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div className="flex-1">
+            <CardTitle className="text-base">Attendance summary</CardTitle>
+            <CardDescription>
+              Overview of present, late, and absent trends for the selected period.
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-blue-600 text-white">Live Data</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
             <div className="space-y-4">
               {/* Period Selector */}
               <div className="space-y-2">
@@ -411,41 +636,37 @@ export default function ReportsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-slate-200">
-          <CardHeader>
-            <CardTitle className="text-base">Quick export options</CardTitle>
-            <CardDescription>
-              One-click access to the most common attendance reports.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <ExportRow
-              title="Daily Time Record (DTR)"
-              description="Per intern or per group, ready for printing or digital submission."
-              onPreview={() => handlePreview("dtr")}
-              onExport={() => handleExportClick("dtr")}
-              onQuickExport={(format, period) => handleQuickExport("dtr", format, period)}
-              isExporting={isExporting}
-            />
-            <ExportRow
-              title="Late / Absent Summary"
-              description="List of late arrivals and absences for a selected period."
-              onPreview={() => handlePreview("attendance")}
-              onExport={() => handleExportClick("attendance")}
-              onQuickExport={(format, period) => handleQuickExport("attendance", format, period)}
-              isExporting={isExporting}
-            />
-            <ExportRow
-              title="Hours Rendered"
-              description="Total hours per intern per date range, grouped by company or supervisor."
-              onPreview={() => handlePreview("hours")}
-              onExport={() => handleExportClick("hours")}
-              onQuickExport={(format, period) => handleQuickExport("hours", format, period)}
-              isExporting={isExporting}
-            />
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="border-slate-200">
+        <CardHeader>
+          <CardTitle className="text-base">Attendance Reports</CardTitle>
+          <CardDescription>
+            Generate and preview attendance reports with custom date ranges.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ExportRow
+            title="Daily Time Record (DTR)"
+            description="Per intern or per group, ready for printing or digital submission."
+            onPreview={() => handlePreview("dtr")}
+            onExport={() => handleExportClick("dtr")}
+            isExporting={isExporting}
+          />
+          <ExportRow
+            title="Late / Absent Summary"
+            description="List of late arrivals and absences for a selected period."
+            onPreview={() => handlePreview("attendance")}
+            onExport={() => handleExportClick("attendance")}
+            isExporting={isExporting}
+          />
+          <ExportRow
+            title="Hours Rendered"
+            description="Total hours per intern per date range, grouped by company or supervisor."
+            onPreview={() => handlePreview("hours")}
+            onExport={() => handleExportClick("hours")}
+            isExporting={isExporting}
+          />
+        </CardContent>
+      </Card>
 
       {/* Report Configuration Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -525,10 +746,8 @@ export default function ReportsPage() {
             {isPreview && previewData && (
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">Preview Data</Label>
-                <div className="max-h-64 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-3">
-                  <pre className="text-xs text-slate-700 whitespace-pre-wrap">
-                    {JSON.stringify(previewData, null, 2)}
-                  </pre>
+                <div className="max-h-96 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+                  {renderPreviewTable(selectedReport, previewData)}
                 </div>
               </div>
             )}
@@ -575,26 +794,22 @@ function ExportRow({
   description,
   onPreview,
   onExport,
-  onQuickExport,
   isExporting,
 }: {
   title: string;
   description: string;
   onPreview: () => void;
   onExport: () => void;
-  onQuickExport?: (format: "pdf" | "excel", period?: "today" | "week" | "month") => void;
   isExporting?: boolean;
 }) {
-  const [showQuickOptions, setShowQuickOptions] = useState(false);
-
   return (
     <div className="rounded-lg border border-slate-100 bg-white px-3 py-3 text-xs text-slate-700">
-      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-0.5 flex-1">
+      <div className="flex flex-col gap-3">
+        <div className="space-y-0.5">
           <p className="text-sm font-medium text-slate-900">{title}</p>
           <p className="text-[11px] text-slate-500">{description}</p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -613,97 +828,8 @@ function ExportRow({
             disabled={isExporting}
           >
             <Download className="h-3.5 w-3.5" />
-            Configure
+            Export
           </Button>
-          {onQuickExport && (
-            <div className="relative">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1 rounded-full border-blue-200 bg-blue-50 text-blue-800 text-xs hover:bg-blue-100"
-                onClick={() => setShowQuickOptions(!showQuickOptions)}
-                disabled={isExporting}
-              >
-                {isExporting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <>
-                    <Download className="h-3.5 w-3.5" />
-                    Quick Export
-                  </>
-                )}
-              </Button>
-              {showQuickOptions && !isExporting && (
-                <div className="absolute right-0 top-full mt-1 z-10 w-48 rounded-lg border border-slate-200 bg-white shadow-lg p-2 space-y-1">
-                  <div className="text-[10px] font-semibold text-slate-500 uppercase px-2 py-1">Today</div>
-                  <button
-                    onClick={() => {
-                      onQuickExport("pdf", "today");
-                      setShowQuickOptions(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <FileText className="h-3 w-3" />
-                    Export PDF
-                  </button>
-                  <button
-                    onClick={() => {
-                      onQuickExport("excel", "today");
-                      setShowQuickOptions(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <Download className="h-3 w-3" />
-                    Export Excel
-                  </button>
-                  <div className="border-t border-slate-200 my-1"></div>
-                  <div className="text-[10px] font-semibold text-slate-500 uppercase px-2 py-1">This Week</div>
-                  <button
-                    onClick={() => {
-                      onQuickExport("pdf", "week");
-                      setShowQuickOptions(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <FileText className="h-3 w-3" />
-                    Export PDF
-                  </button>
-                  <button
-                    onClick={() => {
-                      onQuickExport("excel", "week");
-                      setShowQuickOptions(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <Download className="h-3 w-3" />
-                    Export Excel
-                  </button>
-                  <div className="border-t border-slate-200 my-1"></div>
-                  <div className="text-[10px] font-semibold text-slate-500 uppercase px-2 py-1">This Month</div>
-                  <button
-                    onClick={() => {
-                      onQuickExport("pdf", "month");
-                      setShowQuickOptions(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <FileText className="h-3 w-3" />
-                    Export PDF
-                  </button>
-                  <button
-                    onClick={() => {
-                      onQuickExport("excel", "month");
-                      setShowQuickOptions(false);
-                    }}
-                    className="w-full text-left px-2 py-1.5 text-xs rounded hover:bg-slate-50 flex items-center gap-2"
-                  >
-                    <Download className="h-3 w-3" />
-                    Export Excel
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </div>
