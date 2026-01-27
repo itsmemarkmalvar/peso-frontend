@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock, Edit2, Save, X, Info, Users } from "lucide-react";
+import { Clock, Edit2, Save, X, Info, Users, Loader2 } from "lucide-react";
 
 import {
   Card,
@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
+import { updateDefaultSchedule, getExcusedInterns, type ExcusedIntern as ExcusedInternType } from "@/lib/api/schedule";
 
 const DAYS_OF_WEEK = [
   { id: "monday", label: "Monday", short: "M" },
@@ -42,7 +43,6 @@ type DaySchedule = {
 type ExcusedIntern = {
   name: string;
   student_id: string;
-  class_time: string;
   course: string;
 };
 
@@ -78,6 +78,9 @@ export default function WorkSchedulesPage() {
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [excusedInterns, setExcusedInterns] = useState<Record<string, ExcusedIntern[]>>({});
   const [isLoadingExcused, setIsLoadingExcused] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   // Calculate break duration automatically
   const calculateBreakDuration = (start: string, end: string): number => {
@@ -123,57 +126,61 @@ export default function WorkSchedulesPage() {
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  // Load excused interns data
+  // Map day name to day_of_week number (0=Sunday, 1=Monday, ..., 6=Saturday)
+  const getDayOfWeek = (dayId: string): number => {
+    const dayMap: Record<string, number> = {
+      sunday: 0,
+      monday: 1,
+      tuesday: 2,
+      wednesday: 3,
+      thursday: 4,
+      friday: 5,
+      saturday: 6,
+    };
+    return dayMap[dayId] ?? 1;
+  };
+
+  // Load excused interns data from API
   useEffect(() => {
     let active = true;
+    setIsLoadingExcused(true);
 
-    getAdminInterns()
-      .then((interns) => {
-        if (!active) return;
-        
-        // Generate mock data for excused interns by day
-        const classTimes = [
-          "8:00 AM - 10:00 AM",
-          "1:00 PM - 3:00 PM",
-          "9:00 AM - 11:00 AM",
-          "2:00 PM - 4:00 PM",
-          "10:00 AM - 12:00 PM",
-        ];
-        
-        const courses = [
-          "Computer Science",
-          "Information Technology",
-          "Business Administration",
-          "Engineering",
-          "Education",
-        ];
-
-        const excused: Record<string, ExcusedIntern[]> = {};
-        
-        WEEKDAYS.forEach((day, dayIndex) => {
-          // Only assign interns to work days (not rest days)
-          // For rest days, the array will be empty
+    const loadExcusedInterns = async () => {
+      const excused: Record<string, ExcusedIntern[]> = {};
+      
+      // Fetch excused interns for each day
+      const promises = WEEKDAYS.map(async (day) => {
+        const dayOfWeek = getDayOfWeek(day.id);
+        try {
+          const interns = await getExcusedInterns(dayOfWeek);
+          if (!active) return;
+          
+          // Only show excused interns on work days (not rest days)
           if (selectedDays.includes(day.id)) {
-            // Assign 2-4 interns per work day
-            const count = 2 + (dayIndex % 3);
-            excused[day.id] = interns.slice(dayIndex * 2, dayIndex * 2 + count).map((intern, index) => ({
+            excused[day.id] = interns.map((intern) => ({
               name: intern.name,
               student_id: intern.student_id,
-              class_time: classTimes[index % classTimes.length],
-              course: courses[index % courses.length],
+              course: intern.course,
             }));
           } else {
             excused[day.id] = [];
           }
-        });
-
-        setExcusedInterns(excused);
-        setIsLoadingExcused(false);
-      })
-      .catch(() => {
-        if (!active) return;
-        setIsLoadingExcused(false);
+        } catch (error) {
+          if (!active) return;
+          console.error(`Failed to load excused interns for ${day.label}:`, error);
+          excused[day.id] = [];
+        }
       });
+
+      await Promise.all(promises);
+      
+      if (!active) return;
+      
+      setExcusedInterns(excused);
+      setIsLoadingExcused(false);
+    };
+
+    loadExcusedInterns();
 
     return () => {
       active = false;
@@ -186,6 +193,43 @@ export default function WorkSchedulesPage() {
 
   const getDayExcusedCount = (dayId: string): number => {
     return excusedInterns[dayId]?.length || 0;
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+    setSaveSuccess(false);
+
+    try {
+      // Convert day schedules to the format expected by the API
+      const days = selectedDays.map((dayId) => {
+        const schedule = daySchedules[dayId];
+        return {
+          day_of_week: getDayOfWeek(dayId),
+          start_time: schedule.startTime,
+          end_time: schedule.endTime,
+        };
+      });
+
+      await updateDefaultSchedule({
+        name: scheduleName,
+        days,
+        lunch_break_start: lunchBreakStart,
+        lunch_break_end: lunchBreakEnd,
+      });
+
+      setSaveSuccess(true);
+      setIsEditing(false);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save schedule");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -390,22 +434,49 @@ export default function WorkSchedulesPage() {
             </div>
 
             {/* Save Button */}
-            <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditing(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="gap-2"
-                disabled
-              >
-                <Save className="h-4 w-4" />
-                Save Schedule
-              </Button>
+            <div className="flex flex-col gap-3 border-t border-slate-200 pt-4">
+              {saveError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                  <p className="text-sm text-red-800">{saveError}</p>
+                </div>
+              )}
+              {saveSuccess && (
+                <div className="rounded-lg border border-green-200 bg-green-50 p-3">
+                  <p className="text-sm text-green-800">Schedule saved successfully!</p>
+                </div>
+              )}
+              <div className="flex items-center justify-end gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsEditing(false);
+                    setSaveError(null);
+                    setSaveSuccess(false);
+                  }}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  className="gap-2"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Save Schedule
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -498,8 +569,7 @@ export default function WorkSchedulesPage() {
                         <p className="text-[11px] text-slate-500">{intern.student_id}</p>
                       </div>
                       <div className="text-right space-y-0.5">
-                        <p className="text-xs font-medium text-slate-700">{intern.class_time}</p>
-                        <p className="text-[11px] text-slate-500">{intern.course}</p>
+                        <p className="text-xs font-medium text-slate-700">{intern.course}</p>
                       </div>
                     </div>
                   ))}

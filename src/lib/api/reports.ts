@@ -102,10 +102,49 @@ export function exportReport(type: "dtr" | "attendance" | "hours", format: "pdf"
       ...(token && { Authorization: `Bearer ${token}` }),
       Accept: format === "pdf" ? "application/pdf" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     },
-  }).then((res) => {
-    if (!res.ok) {
-      throw new Error(`Export failed: ${res.statusText}`);
+  }).then(async (res) => {
+    // Check content type to detect if it's an error (JSON) or a file
+    const contentType = res.headers.get("content-type") || "";
+    
+    // If response is JSON, it's likely an error
+    if (contentType.includes("application/json")) {
+      const errorData = await res.json();
+      const errorMessage = errorData.message || errorData.error || "Export failed";
+      throw new Error(errorMessage);
     }
-    return res.blob();
+    
+    // If response is not OK, try to get error message
+    if (!res.ok) {
+      // Try to parse as JSON for error details
+      try {
+        const errorData = await res.clone().json();
+        const errorMessage = errorData.message || errorData.error || `Export failed: ${res.statusText}`;
+        throw new Error(errorMessage);
+      } catch {
+        // If not JSON, use status text
+        throw new Error(`Export failed: ${res.statusText} (${res.status})`);
+      }
+    }
+    
+    // Verify it's actually a file blob
+    const blob = await res.blob();
+    
+    // Check if blob is actually JSON (error response)
+    if (blob.type.includes("json") || blob.size < 100) {
+      // Small size or JSON type might indicate an error
+      const text = await blob.text();
+      try {
+        const errorData = JSON.parse(text);
+        const errorMessage = errorData.message || errorData.error || "Export endpoint returned an error";
+        throw new Error(errorMessage);
+      } catch {
+        // If not parseable JSON, it might be a small valid file
+        if (text.includes('"success"') || text.includes('"error"') || text.includes('"message"')) {
+          throw new Error("Backend returned an error response instead of a file. The export endpoint may not be fully implemented yet.");
+        }
+      }
+    }
+    
+    return blob;
   });
 }
