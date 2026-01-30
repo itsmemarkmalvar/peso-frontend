@@ -81,6 +81,7 @@ export default function WorkSchedulesPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [adminNotes, setAdminNotes] = useState("");
 
   // Calculate break duration automatically
   const calculateBreakDuration = (start: string, end: string): number => {
@@ -216,6 +217,7 @@ export default function WorkSchedulesPage() {
         days,
         lunch_break_start: lunchBreakStart,
         lunch_break_end: lunchBreakEnd,
+        admin_notes: adminNotes.trim() ? adminNotes.trim() : undefined,
       });
 
       setSaveSuccess(true);
@@ -431,6 +433,19 @@ export default function WorkSchedulesPage() {
                   Duration: <span className="font-semibold text-slate-900">{lunchBreakDuration} minutes</span>
                 </p>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="admin-notes" className="text-xs font-semibold text-slate-700">
+                Admin notes (shown to interns)
+              </Label>
+              <textarea
+                id="admin-notes"
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+                placeholder="Add a note for interns about this schedule change."
+                className="min-h-[90px] w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              />
             </div>
 
             {/* Save Button */}

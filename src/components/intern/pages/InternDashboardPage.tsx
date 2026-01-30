@@ -26,6 +26,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  getNotifications,
+  respondToScheduleAvailability,
+  type NotificationRecord,
+} from "@/lib/api/notifications"
 
 type StatCard = {
   label: string
@@ -143,6 +156,14 @@ export default function InternDashboardPage() {
   const [stats, setStats] = useState<InternDashboardStat[]>(fallbackStats)
   const [timeline, setTimeline] =
     useState<InternActivityItem[]>(fallbackTimeline)
+  const [notifications, setNotifications] = useState<NotificationRecord[]>([])
+  const [notificationsError, setNotificationsError] = useState<string | null>(
+    null
+  )
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true)
+  const [selectedNotification, setSelectedNotification] =
+    useState<NotificationRecord | null>(null)
+  const [isResponding, setIsResponding] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -165,6 +186,65 @@ export default function InternDashboardPage() {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    let active = true
+    setIsLoadingNotifications(true)
+    setNotificationsError(null)
+
+    getNotifications()
+      .then((data) => {
+        if (!active) return
+        setNotifications(data)
+      })
+      .catch((err) => {
+        if (!active) return
+        setNotificationsError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load notifications."
+        )
+      })
+      .finally(() => {
+        if (!active) return
+        setIsLoadingNotifications(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const selectedNotificationData =
+    (selectedNotification?.data as Record<string, unknown> | null) ?? null
+  const scheduleDayLabel =
+    (selectedNotificationData?.day_label as string | undefined) ?? "Saturday"
+  const scheduleStart = selectedNotificationData?.start_time as string | undefined
+  const scheduleEnd = selectedNotificationData?.end_time as string | undefined
+  const adminNotes = selectedNotificationData?.admin_notes as string | undefined
+  const responseData = selectedNotificationData?.response as
+    | { status?: string }
+    | undefined
+  const responseStatus = responseData?.status
+
+  const handleRespond = async (status: "available" | "not_available") => {
+    if (!selectedNotification) return
+    setIsResponding(true)
+    try {
+      const updated = await respondToScheduleAvailability(
+        selectedNotification.id,
+        status
+      )
+      setNotifications((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item))
+      )
+      setSelectedNotification(updated)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to save response.")
+    } finally {
+      setIsResponding(false)
+    }
+  }
 
   const statCards = useMemo(
     () =>
@@ -193,6 +273,66 @@ export default function InternDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6 px-4 pb-4">
+      <Card className="border-slate-200">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base">Notifications</CardTitle>
+            <CardDescription>
+              Updates from your coordinator and schedule changes.
+            </CardDescription>
+          </div>
+          <Badge className="bg-slate-100 text-slate-700">
+            {notifications.filter((item) => !item.is_read).length} Unread
+          </Badge>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {isLoadingNotifications && (
+            <p className="text-xs text-slate-500">Loading notifications...</p>
+          )}
+          {notificationsError && !isLoadingNotifications && (
+            <p className="text-xs text-red-600">{notificationsError}</p>
+          )}
+          {!isLoadingNotifications &&
+            !notificationsError &&
+            notifications.length === 0 && (
+              <p className="text-xs text-slate-500">
+                No notifications yet. We&apos;ll let you know when something needs your attention.
+              </p>
+            )}
+          {!isLoadingNotifications &&
+            !notificationsError &&
+            notifications.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setSelectedNotification(item)}
+                className={`w-full rounded-lg border px-3 py-2 text-left text-xs transition ${
+                  item.is_read
+                    ? "border-slate-100 bg-white hover:border-slate-200"
+                    : "border-blue-200 bg-blue-50/60 hover:border-blue-300"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-600">
+                      {item.message}
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-slate-400">
+                    {new Date(item.created_at).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+              </button>
+            ))}
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {statCards.map((stat) => (
           <Card
@@ -383,6 +523,79 @@ export default function InternDashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={selectedNotification !== null}
+        onOpenChange={(open) => !open && setSelectedNotification(null)}
+      >
+        <DialogContent onClose={() => setSelectedNotification(null)} className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{selectedNotification?.title ?? "Notification"}</DialogTitle>
+            <DialogDescription>
+              {selectedNotification?.message}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedNotification?.type === "schedule_availability_request" && (
+            <div className="space-y-4 py-2 text-sm">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                <p className="font-semibold text-slate-700">
+                  Schedule change: {scheduleDayLabel}
+                </p>
+                {scheduleStart && scheduleEnd && (
+                  <p className="mt-1">
+                    {scheduleStart} - {scheduleEnd}
+                  </p>
+                )}
+              </div>
+              {adminNotes && (
+                <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                  <p className="text-[11px] font-semibold uppercase text-slate-500">
+                    Admin notes
+                  </p>
+                  <p className="mt-1 text-xs text-slate-700">{adminNotes}</p>
+                </div>
+              )}
+              <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                <p className="text-[11px] font-semibold uppercase text-slate-500">
+                  Are you available?
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 rounded-full border-green-200 bg-green-50 text-green-800 hover:bg-green-100"
+                    onClick={() => handleRespond("available")}
+                    disabled={isResponding}
+                  >
+                    Available
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 rounded-full border-red-200 bg-red-50 text-red-800 hover:bg-red-100"
+                    onClick={() => handleRespond("not_available")}
+                    disabled={isResponding}
+                  >
+                    Not available
+                  </Button>
+                  {responseStatus && (
+                    <span className="text-[11px] text-slate-500">
+                      Current response: {responseStatus.replace("_", " ")}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSelectedNotification(null)}>
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

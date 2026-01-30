@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { motion, useReducedMotion } from "framer-motion"
+import { Bell } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import {
@@ -10,8 +11,6 @@ import {
   type InternDashboardStat,
 } from "@/lib/api/intern"
 import { createLeave } from "@/lib/api/leaves"
-import { getInternOrGipRoleLabel } from "@/lib/constants"
-import { useAuth } from "@/hooks/useAuth"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -117,6 +116,15 @@ export default function InternDashboardPage() {
   const [leaveEndDate, setLeaveEndDate] = useState("")
   const [isSubmittingLeave, setIsSubmittingLeave] = useState(false)
   const [leaveError, setLeaveError] = useState<string | null>(null)
+  const [notifications, setNotifications] = useState<NotificationRecord[]>([])
+  const [notificationsError, setNotificationsError] = useState<string | null>(
+    null
+  )
+  const [isLoadingNotifications, setIsLoadingNotifications] = useState(true)
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [selectedNotification, setSelectedNotification] =
+    useState<NotificationRecord | null>(null)
+  const [isResponding, setIsResponding] = useState(false)
 
   useEffect(() => {
     let active = true
@@ -139,6 +147,67 @@ export default function InternDashboardPage() {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    let active = true
+    setIsLoadingNotifications(true)
+    setNotificationsError(null)
+
+    getNotifications()
+      .then((data) => {
+        if (!active) return
+        setNotifications(data)
+      })
+      .catch((err) => {
+        if (!active) return
+        setNotificationsError(
+          err instanceof Error
+            ? err.message
+            : "Unable to load notifications."
+        )
+      })
+      .finally(() => {
+        if (!active) return
+        setIsLoadingNotifications(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  const unreadCount = notifications.filter((item) => !item.is_read).length
+
+  const selectedNotificationData =
+    (selectedNotification?.data as Record<string, unknown> | null) ?? null
+  const scheduleDayLabel =
+    (selectedNotificationData?.day_label as string | undefined) ?? "Saturday"
+  const scheduleStart = selectedNotificationData?.start_time as string | undefined
+  const scheduleEnd = selectedNotificationData?.end_time as string | undefined
+  const adminNotes = selectedNotificationData?.admin_notes as string | undefined
+  const responseData = selectedNotificationData?.response as
+    | { status?: string }
+    | undefined
+  const responseStatus = responseData?.status
+
+  const handleRespond = async (status: "available" | "not_available") => {
+    if (!selectedNotification) return
+    setIsResponding(true)
+    try {
+      const updated = await respondToScheduleAvailability(
+        selectedNotification.id,
+        status
+      )
+      setNotifications((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item))
+      )
+      setSelectedNotification(updated)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to save response.")
+    } finally {
+      setIsResponding(false)
+    }
+  }
 
   const openLeaveDialog = () => {
     setLeaveReason("")
@@ -210,6 +279,23 @@ export default function InternDashboardPage() {
           </p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setIsNotificationsOpen(true)
+              setSelectedNotification(null)
+            }}
+            className="relative w-full justify-center border-[color:var(--dash-border)] text-[color:var(--dash-ink)] sm:w-auto"
+          >
+            <Bell className="h-4 w-4" />
+            Notifications
+            {unreadCount > 0 && (
+              <span className="absolute -right-2 -top-2 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {unreadCount}
+              </span>
+            )}
+          </Button>
           <Button
             asChild
             className="w-full justify-center bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)] sm:w-auto"
@@ -357,6 +443,166 @@ export default function InternDashboardPage() {
           </Link>
         ))}
       </motion.div>
+
+      <Dialog
+        open={isNotificationsOpen}
+        onOpenChange={(open) => {
+          setIsNotificationsOpen(open)
+          if (!open) {
+            setSelectedNotification(null)
+          }
+        }}
+      >
+        <DialogContent
+          onClose={() => setIsNotificationsOpen(false)}
+          className="max-w-xl"
+        >
+          <DialogHeader className="gap-3 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
+            <div>
+              <DialogTitle>Notifications</DialogTitle>
+              <DialogDescription>
+                Schedule changes and updates from your coordinator.
+              </DialogDescription>
+            </div>
+            <Badge variant="secondary">{unreadCount} Unread</Badge>
+          </DialogHeader>
+
+          {selectedNotification ? (
+            <div className="space-y-4 py-4 text-sm">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <p className="font-semibold text-slate-900">
+                  {selectedNotification.title}
+                </p>
+                <p className="mt-1 text-slate-600">
+                  {selectedNotification.message}
+                </p>
+              </div>
+              {selectedNotification.type === "schedule_availability_request" && (
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
+                    <p className="font-semibold text-slate-700">
+                      Schedule change: {scheduleDayLabel}
+                    </p>
+                    {scheduleStart && scheduleEnd && (
+                      <p className="mt-1">
+                        {scheduleStart} - {scheduleEnd}
+                      </p>
+                    )}
+                  </div>
+                  {adminNotes && (
+                    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                      <p className="text-[11px] font-semibold uppercase text-slate-500">
+                        Admin notes
+                      </p>
+                      <p className="mt-1 text-xs text-slate-700">
+                        {adminNotes}
+                      </p>
+                    </div>
+                  )}
+                  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+                    <p className="text-[11px] font-semibold uppercase text-slate-500">
+                      Are you available?
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-full border-green-200 bg-green-50 text-green-800 hover:bg-green-100"
+                        onClick={() => handleRespond("available")}
+                        disabled={isResponding}
+                      >
+                        Available
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-full border-red-200 bg-red-50 text-red-800 hover:bg-red-100"
+                        onClick={() => handleRespond("not_available")}
+                        disabled={isResponding}
+                      >
+                        Not available
+                      </Button>
+                      {responseStatus && (
+                        <span className="text-[11px] text-slate-500">
+                          Current response: {responseStatus.replace("_", " ")}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-3 py-4">
+              {isLoadingNotifications && (
+                <p className="text-xs text-slate-500">
+                  Loading notifications...
+                </p>
+              )}
+              {notificationsError && !isLoadingNotifications && (
+                <p className="text-xs text-red-600">{notificationsError}</p>
+              )}
+              {!isLoadingNotifications &&
+                !notificationsError &&
+                notifications.length === 0 && (
+                  <p className="text-xs text-slate-500">
+                    No notifications yet. We&apos;ll let you know when something needs your attention.
+                  </p>
+                )}
+              {!isLoadingNotifications &&
+                !notificationsError &&
+                notifications.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedNotification(item)}
+                    className={`w-full rounded-lg border px-3 py-2 text-left text-xs transition ${
+                      item.is_read
+                        ? "border-slate-100 bg-white hover:border-slate-200"
+                        : "border-blue-200 bg-blue-50/60 hover:border-blue-300"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {item.title}
+                        </p>
+                        <p className="mt-1 text-[11px] text-slate-600">
+                          {item.message}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-slate-400">
+                        {new Date(item.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  </button>
+                ))}
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            {selectedNotification && (
+              <Button
+                variant="outline"
+                onClick={() => setSelectedNotification(null)}
+              >
+                Back to list
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => setIsNotificationsOpen(false)}
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
         <DialogContent onClose={() => setIsLeaveDialogOpen(false)} className="max-w-lg">

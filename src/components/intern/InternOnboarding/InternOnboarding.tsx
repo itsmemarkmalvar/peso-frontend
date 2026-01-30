@@ -21,12 +21,58 @@ import {
   getInternProfile,
   saveInternOnboarding,
   type InternOnboardingPayload,
+  type InternWeeklyAvailability,
+  type InternAvailabilityOption,
 } from "@/lib/api/intern"
 import pesoLogo from "@/assets/images/image-Photoroom.png"
+import { cn } from "@/lib/utils"
+
+type WeekdayKey = keyof InternWeeklyAvailability
 
 type InternOnboardingForm = Omit<InternOnboardingPayload, "required_hours"> & {
   required_hours: string
 }
+
+const WEEKDAYS: { id: WeekdayKey; label: string }[] = [
+  { id: "monday", label: "Monday" },
+  { id: "tuesday", label: "Tuesday" },
+  { id: "wednesday", label: "Wednesday" },
+  { id: "thursday", label: "Thursday" },
+  { id: "friday", label: "Friday" },
+]
+
+const AVAILABILITY_OPTIONS: {
+  value: InternAvailabilityOption
+  label: string
+}[] = [
+  { value: "available", label: "Available" },
+  { value: "not_available", label: "Not available" },
+]
+
+const DEFAULT_WEEKLY_AVAILABILITY: InternWeeklyAvailability = {
+  monday: "available",
+  tuesday: "available",
+  wednesday: "available",
+  thursday: "available",
+  friday: "available",
+}
+
+const coerceAvailability = (value?: string | null): InternAvailabilityOption => {
+  if (value === "not_available") {
+    return "not_available"
+  }
+  return "available"
+}
+
+const normalizeAvailability = (
+  availability?: Partial<Record<WeekdayKey, string>> | null
+): InternWeeklyAvailability => ({
+  monday: coerceAvailability(availability?.monday),
+  tuesday: coerceAvailability(availability?.tuesday),
+  wednesday: coerceAvailability(availability?.wednesday),
+  thursday: coerceAvailability(availability?.thursday),
+  friday: coerceAvailability(availability?.friday),
+})
 
 const EMPTY_FORM: InternOnboardingForm = {
   full_name: "",
@@ -36,6 +82,7 @@ const EMPTY_FORM: InternOnboardingForm = {
   emergency_contact_name: "",
   emergency_contact_phone: "",
   required_hours: "",
+  weekly_availability: DEFAULT_WEEKLY_AVAILABILITY,
 }
 
 export function InternOnboarding() {
@@ -63,6 +110,9 @@ export function InternOnboarding() {
             profile.required_hours === null
               ? ""
               : String(profile.required_hours),
+          weekly_availability: normalizeAvailability(
+            profile.weekly_availability
+          ),
         })
       })
       .catch(() => {})
@@ -82,6 +132,9 @@ export function InternOnboarding() {
     form.required_hours.trim().length > 0 &&
     Number.isFinite(requiredHours) &&
     requiredHours > 0
+  const hasAvailability = Object.values(form.weekly_availability).every(
+    (value) => Boolean(value)
+  )
 
   const isFormValid = Boolean(
     form.full_name.trim() &&
@@ -90,7 +143,8 @@ export function InternOnboarding() {
       form.phone.trim() &&
       form.emergency_contact_name.trim() &&
       form.emergency_contact_phone.trim() &&
-      hasValidRequiredHours
+      hasValidRequiredHours &&
+      hasAvailability
   )
 
   const updateField =
@@ -98,6 +152,17 @@ export function InternOnboarding() {
     (event: ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value
       setForm((prev) => ({ ...prev, [field]: value }))
+    }
+
+  const updateAvailability =
+    (day: WeekdayKey, value: InternAvailabilityOption) => () => {
+      setForm((prev) => ({
+        ...prev,
+        weekly_availability: {
+          ...prev.weekly_availability,
+          [day]: value,
+        },
+      }))
     }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -214,6 +279,59 @@ export function InternOnboarding() {
                 inputMode="numeric"
                 required
               />
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Weekly availability (Mon - Fri)
+                </Label>
+                <p className="text-xs text-[color:var(--dash-muted)]">
+                  Let us know which weekdays you can report for OJT.
+                </p>
+              </div>
+              <div className="space-y-3">
+                {WEEKDAYS.map((day) => {
+                  const value = form.weekly_availability[day.id]
+                  return (
+                    <div
+                      key={day.id}
+                      className="rounded-xl border border-[color:var(--dash-border)] bg-white p-4 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-[color:var(--dash-ink)]">
+                            {day.label}
+                          </p>
+                          <p className="text-xs text-[color:var(--dash-muted)]">
+                            Select if you can attend OJT on this day.
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {AVAILABILITY_OPTIONS.map((option) => {
+                            const isActive = value === option.value
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                onClick={updateAvailability(day.id, option.value)}
+                                className={cn(
+                                  "rounded-full border px-3 py-1 text-xs font-semibold transition",
+                                  isActive
+                                    ? "border-[color:var(--dash-accent)] bg-[color:var(--dash-accent)] text-white"
+                                    : "border-[color:var(--dash-border)] bg-white text-[color:var(--dash-muted)] hover:border-slate-300"
+                                )}
+                              >
+                                {option.label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
