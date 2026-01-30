@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Calendar, Clock, Image as ImageIcon, MapPin } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Play, Square } from "lucide-react";
 import Image from "next/image";
 
 import {
@@ -164,7 +164,7 @@ export default function TimesheetDetailPage() {
         <CardHeader>
           <CardTitle className="text-base">Daily Attendance Records</CardTitle>
           <CardDescription>
-            Clock-in/out times, photos, and tracked hours
+            Clock in, break start, break end, and clock out records with photos and tracked hours
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -217,6 +217,32 @@ export default function TimesheetDetailPage() {
                             />
                           </div>
                         )}
+                      </div>
+
+                      {/* Break Start */}
+                      <div className="mt-3 flex items-start gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100">
+                          <Play className="h-4 w-4 text-amber-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-slate-600">Break Start</p>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {record.break_start_time_label || "—"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Break End */}
+                      <div className="mt-3 flex items-start gap-3">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-100">
+                          <Square className="h-4 w-4 text-orange-600" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-slate-600">Break End</p>
+                          <p className="text-sm font-semibold text-slate-900">
+                            {record.break_end_time_label || "—"}
+                          </p>
+                        </div>
                       </div>
 
                       {/* Clock Out */}

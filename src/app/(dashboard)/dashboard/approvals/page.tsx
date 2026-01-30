@@ -324,7 +324,12 @@ export default function ApprovalsPage() {
                   <div>
                     <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Clock In</p>
                     <p className="text-sm text-slate-900">
-                      {new Date(selectedRequest.clock_in_time).toLocaleTimeString()}
+                      {new Date(selectedRequest.clock_in_time).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                        timeZone: "Asia/Manila",
+                      })}
                     </p>
                   </div>
                 )}
@@ -332,7 +337,12 @@ export default function ApprovalsPage() {
                   <div>
                     <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Clock Out</p>
                     <p className="text-sm text-slate-900">
-                      {new Date(selectedRequest.clock_out_time).toLocaleTimeString()}
+                      {new Date(selectedRequest.clock_out_time).toLocaleTimeString("en-US", {
+                        hour: "numeric",
+                        minute: "2-digit",
+                        hour12: true,
+                        timeZone: "Asia/Manila",
+                      })}
                     </p>
                   </div>
                 )}

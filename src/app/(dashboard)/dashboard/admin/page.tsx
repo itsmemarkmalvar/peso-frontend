@@ -26,12 +26,15 @@ import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
 import { getPendingApprovals, type ApprovalRequest } from "@/lib/api/approvals";
 import { getLeaves, type LeaveRequest } from "@/lib/api/leaves";
 import { getExcusedInterns } from "@/lib/api/schedule";
+import { getTodayAttendanceAll, type Attendance } from "@/lib/api/attendance";
 
 type AttendanceRow = {
   name: string;
   student_id: string;
   timeIn: string;
   timeOut: string;
+  breakStart: string;
+  breakEnd: string;
   status: string;
   statusTone: "success" | "warning" | "destructive";
 };
@@ -77,36 +80,70 @@ const DEFAULT_STATS: StatCard[] = [
   },
 ];
 
-function buildTodayAttendance(interns: AdminIntern[]): AttendanceRow[] {
-  if (!interns.length) return [];
+/** Format time in Philippine timezone (Asia/Manila) - API sends UTC ISO strings */
+function formatTime(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+      timeZone: "Asia/Manila",
+    });
+  } catch {
+    return "—";
+  }
+}
 
-  const patterns: Omit<AttendanceRow, "name" | "student_id">[] = [
-    {
-      timeIn: "08:02 AM",
-      timeOut: "05:01 PM",
-      status: "On time",
-      statusTone: "success",
-    },
-    {
-      timeIn: "08:17 AM",
-      timeOut: "—",
-      status: "Late",
-      statusTone: "warning",
-    },
-    {
-      timeIn: "—",
-      timeOut: "—",
-      status: "Absent",
-      statusTone: "destructive",
-    },
-  ];
+function buildTodayAttendanceFromApi(
+  interns: AdminIntern[],
+  todayRecords: Attendance[]
+): AttendanceRow[] {
+  const byInternId = new Map<number, Attendance>();
+  todayRecords.forEach((a) => byInternId.set(a.intern_id, a));
 
-  return interns.slice(0, 10).map((intern, index) => {
-    const pattern = patterns[index % patterns.length];
+  return interns.slice(0, 20).map((intern) => {
+    const att = byInternId.get(intern.id);
+    if (!att) {
+      return {
+        name: intern.name,
+        student_id: intern.student_id,
+        timeIn: "—",
+        timeOut: "—",
+        breakStart: "—",
+        breakEnd: "—",
+        status: "Absent",
+        statusTone: "destructive" as const,
+      };
+    }
+    const hasClockIn = Boolean(att.clock_in_time);
+    const hasClockOut = Boolean(att.clock_out_time);
+    const onBreak = hasClockIn && !hasClockOut && Boolean(att.break_start) && !att.break_end;
+    let status: string;
+    let statusTone: "success" | "warning" | "destructive";
+    if (!hasClockIn) {
+      status = "Absent";
+      statusTone = "destructive";
+    } else if (onBreak) {
+      status = "On break";
+      statusTone = "warning";
+    } else if (hasClockOut) {
+      status = att.is_late ? "Late" : "On time";
+      statusTone = att.is_late ? "warning" : "success";
+    } else {
+      status = att.is_late ? "Late" : "Clocked in";
+      statusTone = att.is_late ? "warning" : "success";
+    }
     return {
       name: intern.name,
       student_id: intern.student_id,
-      ...pattern,
+      timeIn: formatTime(att.clock_in_time),
+      timeOut: formatTime(att.clock_out_time),
+      breakStart: formatTime(att.break_start),
+      breakEnd: formatTime(att.break_end),
+      status,
+      statusTone,
     };
   });
 }
@@ -151,11 +188,12 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     let active = true;
 
-    // Load interns and today's attendance
-    getAdminInterns()
-      .then((interns) => {
+    // Load interns and today's attendance (real clock-in/out and break data from API)
+    Promise.all([getAdminInterns(), getTodayAttendanceAll()])
+      .then(([interns, todayResponse]) => {
         if (!active) return;
         const internCount = interns.length;
+        const todayRecords = todayResponse.data ?? [];
 
         setStats((prev) => [
           { ...prev[0], value: internCount.toString() },
@@ -164,26 +202,26 @@ export default function AdminDashboardPage() {
           prev[3],
         ]);
 
-        const attendance = buildTodayAttendance(interns);
+        const attendance = buildTodayAttendanceFromApi(interns, todayRecords);
         setTodayAttendance(attendance);
-        
-        // Calculate stats
+
+        // Calculate stats from real data
         const activeToday = attendance.filter((a) => a.timeIn !== "—").length;
         const totalInterns = interns.length;
         const attendanceRate = totalInterns > 0 ? Math.round((activeToday / totalInterns) * 100) : 0;
-        
+
         setStats((prev) => [
           { ...prev[0], value: internCount.toString() },
           { ...prev[1], value: activeToday.toString(), delta: `${activeToday} clocked in today` },
           prev[2],
           { ...prev[3], value: `${attendanceRate}%`, delta: `${activeToday} of ${totalInterns} interns` },
         ]);
-        
+
         setIsLoading(false);
       })
       .catch((err) => {
         if (!active) return;
-        setError(err instanceof Error ? err.message : "Failed to load interns.");
+        setError(err instanceof Error ? err.message : "Failed to load attendance.");
         setIsLoading(false);
       });
 
@@ -375,7 +413,7 @@ export default function AdminDashboardPage() {
             <div>
               <CardTitle className="text-base">Today&apos;s attendance</CardTitle>
               <CardDescription>
-                Snapshot of recent clock-ins from interns.
+                Live clock-in, clock-out, and break start/end from interns.
               </CardDescription>
             </div>
             <Button
@@ -404,7 +442,7 @@ export default function AdminDashboardPage() {
                   <div
                     key={`${row.name}-${index}`}
                     onClick={() => router.push("/dashboard/timesheets")}
-                    className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-700 cursor-pointer transition-colors hover:bg-slate-50"
+                    className="flex flex-wrap items-center gap-2 sm:gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-700 cursor-pointer transition-colors hover:bg-slate-50"
                   >
                     <div className="hidden h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500 sm:flex shrink-0">
                       {row.name
@@ -418,11 +456,14 @@ export default function AdminDashboardPage() {
                       </p>
                       <p className="text-[11px] text-slate-500">{row.student_id}</p>
                     </div>
-                    <div className="text-right tabular-nums text-slate-900 text-sm">
+                    <div className="text-right tabular-nums text-slate-900 text-sm shrink-0" title="Clock in">
                       {row.timeIn}
                     </div>
-                    <div className="text-right tabular-nums text-slate-900 text-sm">
+                    <div className="text-right tabular-nums text-slate-900 text-sm shrink-0" title="Clock out">
                       {row.timeOut}
+                    </div>
+                    <div className="text-right tabular-nums text-slate-500 text-[11px] shrink-0" title="Break start – Break end">
+                      {row.breakStart === "—" && row.breakEnd === "—" ? "—" : `${row.breakStart} – ${row.breakEnd}`}
                     </div>
                     <div className="shrink-0">
                       <StatusChip tone={row.statusTone}>{row.status}</StatusChip>

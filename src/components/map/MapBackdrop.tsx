@@ -1,6 +1,6 @@
 "use client"
 
-import { Fragment, useEffect, useState } from "react"
+import { Fragment, useEffect, useRef, useState } from "react"
 import { Circle, MapContainer, Marker, TileLayer } from "react-leaflet"
 import L from "leaflet"
 import "leaflet/dist/leaflet.css"
@@ -46,6 +46,7 @@ export function MapBackdrop({
   className,
 }: MapBackdropProps) {
   const [isMounted, setIsMounted] = useState(false)
+  const [mapKey, setMapKey] = useState(0)
   const enableInteraction = Boolean(interactive)
   const userLocationIcon = L.divIcon({
     className: "map-user-marker",
@@ -59,6 +60,8 @@ export function MapBackdrop({
 
   useEffect(() => {
     setIsMounted(true)
+    // Force remount on Fast Refresh to prevent "already initialized" error
+    setMapKey((prev) => prev + 1)
   }, [])
 
   return (
@@ -71,6 +74,7 @@ export function MapBackdrop({
     >
       {isMounted ? (
         <MapContainer
+          key={mapKey}
           center={center}
           zoom={zoom}
           style={{ height: "100%", width: "100%" }}

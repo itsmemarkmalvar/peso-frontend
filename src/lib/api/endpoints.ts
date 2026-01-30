@@ -31,10 +31,13 @@ export const API_ENDPOINTS = {
   attendance: {
     clockIn: '/attendance/clock-in',
     clockOut: '/attendance/clock-out',
+    breakStart: '/attendance/break-start',
+    breakEnd: '/attendance/break-end',
     list: '/attendance',
     show: (id: number) => `/attendance/${id}`,
     update: (id: number) => `/attendance/${id}`,
     today: '/attendance/today',
+    todayAll: '/attendance/today-all',
     history: '/attendance/history',
   },
 

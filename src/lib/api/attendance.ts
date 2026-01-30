@@ -85,6 +85,32 @@ export function clockOut(data: ClockOutRequest): Promise<ClockOutResponse> {
   return apiClient.post<ClockOutResponse>(API_ENDPOINTS.attendance.clockOut, data);
 }
 
+export interface BreakStartResponse {
+  success: boolean;
+  message: string;
+  data: { attendance: Attendance; message: string };
+}
+
+export interface BreakEndResponse {
+  success: boolean;
+  message: string;
+  data: { attendance: Attendance; message: string };
+}
+
+/**
+ * Record break start (same payload as clock-in: photo, optional location/geofence)
+ */
+export function breakStart(data: ClockInRequest): Promise<BreakStartResponse> {
+  return apiClient.post<BreakStartResponse>(API_ENDPOINTS.attendance.breakStart, data);
+}
+
+/**
+ * Record break end (same payload as clock-out: photo, optional location/geofence)
+ */
+export function breakEnd(data: ClockOutRequest): Promise<BreakEndResponse> {
+  return apiClient.post<BreakEndResponse>(API_ENDPOINTS.attendance.breakEnd, data);
+}
+
 /**
  * Get all attendance records
  */
@@ -107,13 +133,23 @@ export function getAttendanceList(params?: {
 }
 
 /**
- * Get today's attendance
+ * Get today's attendance (single intern or current user)
  */
 export function getTodayAttendance(intern_id?: number): Promise<{ success: boolean; message: string; data: Attendance | null }> {
   const queryParams = new URLSearchParams();
   if (intern_id) queryParams.append("intern_id", intern_id.toString());
   const query = queryParams.toString();
   return apiClient.get(`${API_ENDPOINTS.attendance.today}${query ? `?${query}` : ""}`);
+}
+
+/**
+ * Get all today's attendance records (admin/supervisor only).
+ * Reflects real clock-in, clock-out, break start, and break end from interns.
+ */
+export function getTodayAttendanceAll(): Promise<{ success: boolean; message: string; data: Attendance[] }> {
+  return apiClient.get<{ success: boolean; message: string; data: Attendance[] }>(
+    API_ENDPOINTS.attendance.todayAll
+  );
 }
 
 /**

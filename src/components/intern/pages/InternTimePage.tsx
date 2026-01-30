@@ -14,10 +14,10 @@ import {
 import { getGeofenceLocations } from "@/lib/api/geofenceLocations"
 import { getSettings } from "@/lib/api/settings"
 import type { SystemSettings } from "@/types"
-import { clockIn, clockOut, getTodayAttendance } from "@/lib/api/attendance"
+import { clockIn, clockOut, breakStart, breakEnd, getTodayAttendance } from "@/lib/api/attendance"
 import { Button } from "@/components/ui/button"
 
-type VerificationAction = "clock-in" | "break" | "clock-out"
+type VerificationAction = "clock-in" | "break-start" | "break-end" | "clock-out"
 
 type ConsentState = {
   camera: boolean
@@ -178,11 +178,16 @@ function formatOverlayTimestamp(value: Date) {
   return `${year}/${month}/${day} ${hours}:${minutes}`
 }
 
-/** Format API clock time (ISO string) for display e.g. "8:10 AM" */
+/** Format API clock time (ISO string) for display in Philippine time e.g. "8:10 AM" */
 function formatClockTime(isoTime: string | null): string {
   if (!isoTime) return "—"
   const d = new Date(isoTime)
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+    timeZone: "Asia/Manila",
+  })
 }
 
 const fallbackSummary: InternDashboardStat[] = [
@@ -259,6 +264,7 @@ export default function InternTimePage() {
   const [selfieCapturedAt, setSelfieCapturedAt] = useState<
     Partial<Record<VerificationAction, string>>
   >({})
+  const [isSubmittingSelfie, setIsSubmittingSelfie] = useState(false)
   const [locationStatus, setLocationStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle")
@@ -329,6 +335,10 @@ export default function InternTimePage() {
     }
   }, [])
 
+  // Today's break state (for Start Break / End Break button and API choice)
+  const [todayBreakStart, setTodayBreakStart] = useState<string | null>(null)
+  const [todayBreakEnd, setTodayBreakEnd] = useState<string | null>(null)
+
   // Load today's attendance so clock-in state reflects server (real-time on load)
   useEffect(() => {
     let active = true
@@ -340,6 +350,8 @@ export default function InternTimePage() {
         const hasClockIn = Boolean(att.clock_in_time)
         const hasClockOut = Boolean(att.clock_out_time)
         setIsClockedIn(hasClockIn && !hasClockOut)
+        setTodayBreakStart(att.break_start ?? null)
+        setTodayBreakEnd(att.break_end ?? null)
         // Update snapshot and header from real attendance
         if (hasClockOut) {
           setSnapshot((prev) => ({
@@ -637,7 +649,7 @@ export default function InternTimePage() {
   const openVerification = (action: VerificationAction) => {
     setConsentNotice(null)
     setClockNotice(null)
-    if ((action === "break" || action === "clock-out") && !isClockedIn) {
+    if ((action === "break-start" || action === "break-end" || action === "clock-out") && !isClockedIn) {
       setClockNotice("Clock in first to start a break or clock out.")
       return
     }
@@ -724,6 +736,7 @@ export default function InternTimePage() {
     if (!selfieAction) {
       return
     }
+    if (isSubmittingSelfie) return
     if (settings?.verification_gps !== false && locationStatus !== "success") {
       return
     }
@@ -736,6 +749,7 @@ export default function InternTimePage() {
     }
 
     const action = selfieAction
+    setIsSubmittingSelfie(true)
     const coords = locationCapture[action]?.coords
     const geofenceId = insideMatch?.geofence.id ? parseInt(insideMatch.geofence.id) : undefined
 
@@ -834,38 +848,149 @@ export default function InternTimePage() {
           }).catch(() => {})
           getTodayAttendance().catch(() => {})
         }
-      } else if (action === "break") {
-        // Break functionality can be added later if needed
-        const timestamp = new Date().toLocaleTimeString("en-US", {
-          hour: "numeric",
-          minute: "2-digit",
+      } else if (action === "break-start") {
+        const response = await breakStart({
+          ...(coords && { location_lat: coords.lat, location_lng: coords.lng }),
+          photo: selfieImage,
+          ...(geofenceId && { geofence_location_id: geofenceId }),
         })
-        setSelfieCapturedAt((prev) => ({
-          ...prev,
-          [action]: timestamp,
-        }))
-        setClockNotice("Break recorded")
+        if (response.success) {
+          const timestamp = new Date().toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+          })
+          setSelfieCapturedAt((prev) => ({ ...prev, break: timestamp }))
+          setTodayBreakStart(new Date().toISOString())
+          setClockNotice(response.data?.message || "Break started")
+          getInternTimeClock().then((data) => {
+            if (data?.header) setHeader(data.header)
+            if (data?.snapshot) setSnapshot(data.snapshot)
+            if (data?.summary?.length) setSummary(data.summary)
+            if (data?.week?.length) setWeek(data.week)
+            if (data?.recentActivity?.length) setLogs(data.recentActivity)
+          }).catch(() => {})
+          getTodayAttendance().then((res) => {
+            if (res?.data?.break_start) setTodayBreakStart(res.data.break_start)
+            if (res?.data?.break_end) setTodayBreakEnd(res.data.break_end)
+          }).catch(() => {})
+        }
+      } else if (action === "break-end") {
+        const response = await breakEnd({
+          ...(coords && { location_lat: coords.lat, location_lng: coords.lng }),
+          photo: selfieImage,
+          ...(geofenceId && { geofence_location_id: geofenceId }),
+        })
+        if (response.success) {
+          const timestamp = new Date().toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+          })
+          setSelfieCapturedAt((prev) => ({ ...prev, break: timestamp }))
+          setTodayBreakEnd(new Date().toISOString())
+          setClockNotice(response.data?.message || "Break ended")
+          getInternTimeClock().then((data) => {
+            if (data?.header) setHeader(data.header)
+            if (data?.snapshot) setSnapshot(data.snapshot)
+            if (data?.summary?.length) setSummary(data.summary)
+            if (data?.week?.length) setWeek(data.week)
+            if (data?.recentActivity?.length) setLogs(data.recentActivity)
+          }).catch(() => {})
+          getTodayAttendance().then((res) => {
+            if (res?.data?.break_start) setTodayBreakStart(res.data.break_start)
+            if (res?.data?.break_end) setTodayBreakEnd(res.data.break_end)
+          }).catch(() => {})
+        }
       }
       
       setSelfieAction(null)
       setSelfieImage(null)
       setSelfieOverlayTimestamp(null)
     } catch (error) {
-      console.error("Failed to submit:", error)
-      setClockNotice(
-        error instanceof Error 
-          ? error.message 
-          : "Failed to submit. Please try again."
-      )
+      const message = error instanceof Error ? error.message : "Failed to submit. Please try again."
+      
+      // "Already clocked in" is a soft validation: close overlay and sync state
+      if (message.toLowerCase().includes("already clocked in")) {
+        console.info("Clock-in prevented: Already clocked in today")
+        setClockNotice("You have already clocked in today. Your attendance is being tracked.")
+        setSelfieAction(null)
+        setSelfieImage(null)
+        setSelfieOverlayTimestamp(null)
+        setIsClockedIn(true)
+        
+        // Refresh data from server to show current state
+        getInternTimeClock().then((data) => {
+          if (data?.header) setHeader(data.header)
+          if (data?.snapshot) setSnapshot(data.snapshot)
+          if (data?.summary?.length) setSummary(data.summary)
+          if (data?.week?.length) setWeek(data.week)
+          if (data?.recentActivity?.length) setLogs(data.recentActivity)
+        }).catch(() => {})
+        getTodayAttendance().then((res) => {
+          if (res?.data) {
+            const att = res.data
+            setIsClockedIn(Boolean(att.clock_in_time) && !Boolean(att.clock_out_time))
+            setTodayBreakStart(att.break_start ?? null)
+            setTodayBreakEnd(att.break_end ?? null)
+          }
+        }).catch(() => {})
+      } else if (message.toLowerCase().includes("already clocked out")) {
+        console.info("Clock-out prevented: Already clocked out today")
+        setClockNotice("You have already clocked out today.")
+        setSelfieAction(null)
+        setSelfieImage(null)
+        setSelfieOverlayTimestamp(null)
+        setIsClockedIn(false)
+        
+        // Refresh data from server
+        getInternTimeClock().then((data) => {
+          if (data?.header) setHeader(data.header)
+          if (data?.snapshot) setSnapshot(data.snapshot)
+          if (data?.summary?.length) setSummary(data.summary)
+          if (data?.week?.length) setWeek(data.week)
+          if (data?.recentActivity?.length) setLogs(data.recentActivity)
+        }).catch(() => {})
+      } else if (message.toLowerCase().includes("must clock in first")) {
+        console.info("Action prevented: Must clock in first")
+        setClockNotice("Please clock in first before performing this action.")
+        setSelfieAction(null)
+        setSelfieImage(null)
+        setSelfieOverlayTimestamp(null)
+        setIsClockedIn(false)
+        
+        // Refresh data from server
+        getInternTimeClock().then((data) => {
+          if (data?.header) setHeader(data.header)
+          if (data?.snapshot) setSnapshot(data.snapshot)
+          if (data?.summary?.length) setSummary(data.summary)
+          if (data?.week?.length) setWeek(data.week)
+          if (data?.recentActivity?.length) setLogs(data.recentActivity)
+        }).catch(() => {})
+        getTodayAttendance().then((res) => {
+          if (res?.data) {
+            const att = res.data
+            setIsClockedIn(Boolean(att.clock_in_time) && !Boolean(att.clock_out_time))
+            setTodayBreakStart(att.break_start ?? null)
+            setTodayBreakEnd(att.break_end ?? null)
+          }
+        }).catch(() => {})
+      } else {
+        // Actual error - log it
+        console.error("Failed to submit:", error)
+        setClockNotice(message)
+      }
+    } finally {
+      setIsSubmittingSelfie(false)
     }
   }
 
   const actionLabel = selfieAction
-    ? selfieAction === "break"
-      ? "break"
-      : selfieAction === "clock-out"
-        ? "clock-out"
-        : "clock-in"
+    ? selfieAction === "break-start"
+      ? "Start break"
+      : selfieAction === "break-end"
+        ? "End break"
+        : selfieAction === "clock-out"
+          ? "clock-out"
+          : "clock-in"
     : ""
   const isLocationVerified =
     settings?.verification_gps === false || locationStatus === "success"
@@ -966,13 +1091,27 @@ export default function InternTimePage() {
               >
                 Clock In
               </Button>
-              <Button
-                className="h-12 w-full bg-yellow-300 text-yellow-900 hover:bg-yellow-400"
-                onClick={() => openVerification("break")}
-                disabled={!isClockedIn}
-              >
-                Start Break
-              </Button>
+              {!todayBreakStart ? (
+                <Button
+                  className="h-12 w-full bg-yellow-300 text-yellow-900 hover:bg-yellow-400"
+                  onClick={() => openVerification("break-start")}
+                  disabled={!isClockedIn}
+                >
+                  Start Break
+                </Button>
+              ) : todayBreakStart && !todayBreakEnd ? (
+                <Button
+                  className="h-12 w-full bg-amber-400 text-amber-900 hover:bg-amber-500"
+                  onClick={() => openVerification("break-end")}
+                  disabled={!isClockedIn}
+                >
+                  End Break
+                </Button>
+              ) : (
+                <div className="flex h-12 w-full items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-3 text-center text-xs font-medium text-slate-500">
+                  Break recorded
+                </div>
+              )}
               <Button
                 className="h-12 w-full bg-red-600 text-white hover:bg-red-700"
                 onClick={() => openVerification("clock-out")}
@@ -1236,7 +1375,7 @@ export default function InternTimePage() {
                         setSelfieImage(null)
                         setSelfieOverlayTimestamp(null)
                       }}
-                      disabled={!isLocationVerified}
+                      disabled={!isLocationVerified || isSubmittingSelfie}
                     >
                       Retake
                     </Button>
@@ -1244,9 +1383,9 @@ export default function InternTimePage() {
                       type="button"
                       className="h-10 bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
                       onClick={handleConfirmSelfie}
-                      disabled={!isLocationVerified}
+                      disabled={!isLocationVerified || isSubmittingSelfie}
                     >
-                      Use selfie
+                      {isSubmittingSelfie ? "Submitting…" : "Use selfie"}
                     </Button>
                   </>
                 ) : (
