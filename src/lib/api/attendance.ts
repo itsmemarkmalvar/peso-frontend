@@ -39,15 +39,15 @@ export interface AttendanceListResponse {
 }
 
 export interface ClockInRequest {
-  location_lat: number;
-  location_lng: number;
+  location_lat?: number;
+  location_lng?: number;
   photo: string; // base64 encoded image
   geofence_location_id?: number;
 }
 
 export interface ClockOutRequest {
-  location_lat: number;
-  location_lng: number;
+  location_lat?: number;
+  location_lng?: number;
   photo: string; // base64 encoded image
   geofence_location_id?: number;
 }

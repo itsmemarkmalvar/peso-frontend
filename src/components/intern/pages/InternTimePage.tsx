@@ -12,7 +12,9 @@ import {
   type InternTimeClockWeekItem,
 } from "@/lib/api/intern"
 import { getGeofenceLocations } from "@/lib/api/geofenceLocations"
-import { clockIn, clockOut } from "@/lib/api/attendance"
+import { getSettings } from "@/lib/api/settings"
+import type { SystemSettings } from "@/types"
+import { clockIn, clockOut, getTodayAttendance } from "@/lib/api/attendance"
 import { Button } from "@/components/ui/button"
 
 type VerificationAction = "clock-in" | "break" | "clock-out"
@@ -176,6 +178,13 @@ function formatOverlayTimestamp(value: Date) {
   return `${year}/${month}/${day} ${hours}:${minutes}`
 }
 
+/** Format API clock time (ISO string) for display e.g. "8:10 AM" */
+function formatClockTime(isoTime: string | null): string {
+  if (!isoTime) return "—"
+  const d = new Date(isoTime)
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })
+}
+
 const fallbackSummary: InternDashboardStat[] = [
   { label: "Today", value: "2h 10m", sub: "In progress" },
   { label: "This week", value: "18h 40m", sub: "40h target" },
@@ -262,10 +271,32 @@ export default function InternTimePage() {
     lat: number
     lng: number
   } | null>(null)
+  const [settings, setSettings] = useState<SystemSettings | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const selfieOpen = selfieAction !== null
+
+  // Live current time so intern sees real-time clock
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date()
+      const hours = now.getHours()
+      const mins = now.getMinutes()
+      const ampm = hours >= 12 ? "PM" : "AM"
+      const hour12 = hours % 12 || 12
+      const timeStr = `${hour12}:${String(mins).padStart(2, "0")}`
+      setHeader((prev) => ({
+        ...prev,
+        currentTime: timeStr,
+        meridiem: ampm,
+        dateLabel: now.toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", year: "numeric" }),
+      }))
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -298,6 +329,47 @@ export default function InternTimePage() {
     }
   }, [])
 
+  // Load today's attendance so clock-in state reflects server (real-time on load)
+  useEffect(() => {
+    let active = true
+
+    getTodayAttendance()
+      .then((res) => {
+        if (!active || !res?.data) return
+        const att = res.data
+        const hasClockIn = Boolean(att.clock_in_time)
+        const hasClockOut = Boolean(att.clock_out_time)
+        setIsClockedIn(hasClockIn && !hasClockOut)
+        // Update snapshot and header from real attendance
+        if (hasClockOut) {
+          setSnapshot((prev) => ({
+            ...prev,
+            lastClock: `Out at ${formatClockTime(att.clock_out_time)}`,
+          }))
+          setHeader((prev) => ({
+            ...prev,
+            statusLabel: "Off shift",
+            statusTone: "inactive",
+          }))
+        } else if (hasClockIn) {
+          setSnapshot((prev) => ({
+            ...prev,
+            lastClock: formatClockTime(att.clock_in_time),
+          }))
+          setHeader((prev) => ({
+            ...prev,
+            statusLabel: "On shift",
+            statusTone: "active",
+          }))
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   useEffect(() => {
     if (typeof window === "undefined") {
       return
@@ -313,6 +385,21 @@ export default function InternTimePage() {
       }
     } catch {
       window.localStorage.removeItem(consentStorageKey)
+    }
+  }, [])
+
+  // Load system settings (determines if location verification is required)
+  useEffect(() => {
+    let active = true
+    getSettings()
+      .then((data) => {
+        if (active) setSettings(data)
+      })
+      .catch(() => {
+        if (active) setSettings({ grace_period_minutes: 10, verification_gps: true, verification_selfie: true })
+      })
+    return () => {
+      active = false
     }
   }, [])
 
@@ -459,7 +546,19 @@ export default function InternTimePage() {
   }, [selfieAction, selfieImage])
 
   useEffect(() => {
-    if (!selfieAction || !consent?.location) {
+    if (!selfieAction) {
+      setLocationStatus("idle")
+      setLocationError(null)
+      setLocationCheck(null)
+      return
+    }
+    if (settings?.verification_gps === false) {
+      setLocationStatus("success")
+      setLocationError(null)
+      setLocationCheck(null)
+      return
+    }
+    if (!consent?.location) {
       setLocationStatus("idle")
       setLocationError(null)
       setLocationCheck(null)
@@ -523,14 +622,17 @@ export default function InternTimePage() {
         maximumAge: 0,
       }
     )
-  }, [selfieAction, consent, geofences])
+  }, [selfieAction, consent, geofences, settings?.verification_gps])
 
   const statusClassName =
     header.statusTone === "active"
       ? "bg-blue-100 text-blue-700"
       : "bg-red-100 text-red-700"
 
-  const hasConsent = Boolean(consent?.camera && consent?.location)
+  const requiresLocation = settings == null ? true : settings.verification_gps === true
+  const hasConsent = Boolean(
+    consent?.camera && (requiresLocation ? consent?.location : true)
+  )
 
   const openVerification = (action: VerificationAction) => {
     setConsentNotice(null)
@@ -550,15 +652,18 @@ export default function InternTimePage() {
   }
 
   const handleConsentConfirm = () => {
-    if (!consentForm.camera || !consentForm.location) {
+    const needLocation = settings?.verification_gps === true
+    if (!consentForm.camera || (needLocation && !consentForm.location)) {
       setConsentError(
-        "You must consent to selfie and location verification to continue."
+        needLocation
+          ? "You must consent to selfie and location verification to continue."
+          : "You must consent to selfie verification to continue."
       )
       return
     }
     const payload: ConsentState = {
       camera: true,
-      location: true,
+      location: needLocation ? consentForm.location : true,
       acceptedAt: new Date().toISOString(),
       retentionDays: 7,
     }
@@ -619,18 +724,19 @@ export default function InternTimePage() {
     if (!selfieAction) {
       return
     }
-    if (locationStatus !== "success") {
+    if (settings?.verification_gps !== false && locationStatus !== "success") {
       return
     }
     if (!selfieImage) {
       return
     }
-    if (!locationCapture[selfieAction]?.coords) {
+    const needLocation = settings?.verification_gps === true
+    if (needLocation && !locationCapture[selfieAction]?.coords) {
       return
     }
 
     const action = selfieAction
-    const coords = locationCapture[action]!.coords
+    const coords = locationCapture[action]?.coords
     const geofenceId = insideMatch?.geofence.id ? parseInt(insideMatch.geofence.id) : undefined
 
     try {
@@ -638,10 +744,9 @@ export default function InternTimePage() {
       
       if (action === "clock-in") {
         const response = await clockIn({
-          location_lat: coords.lat,
-          location_lng: coords.lng,
+          ...(coords && { location_lat: coords.lat, location_lng: coords.lng }),
           photo: selfieImage,
-          geofence_location_id: geofenceId,
+          ...(geofenceId && { geofence_location_id: geofenceId }),
         })
         
         if (response.success) {
@@ -655,13 +760,37 @@ export default function InternTimePage() {
             [action]: timestamp,
           }))
           setClockNotice(response.data?.message || "Clocked in successfully")
+          // Real-time: update UI from server response immediately
+          const att = response.data?.attendance
+          if (att?.clock_in_time) {
+            setSnapshot((prev) => ({
+              ...prev,
+              lastClock: formatClockTime(att.clock_in_time),
+              locationLabel: att.location_address || prev.locationLabel,
+            }))
+            setHeader((prev) => ({
+              ...prev,
+              statusLabel: "On shift",
+              statusTone: "active",
+            }))
+            setLogs((prev) => [
+              { time: formatClockTime(att.clock_in_time), title: "Clocked in", detail: att.location_address || "Office" },
+              ...prev.slice(0, 9),
+            ])
+          }
+          // Refetch so summary/week and any server state stay in sync
+          getInternTimeClock().then((data) => {
+            if (data?.summary?.length) setSummary(data.summary)
+            if (data?.week?.length) setWeek(data.week)
+            if (data?.recentActivity?.length) setLogs(data.recentActivity)
+          }).catch(() => {})
+          getTodayAttendance().catch(() => {})
         }
       } else if (action === "clock-out") {
         const response = await clockOut({
-          location_lat: coords.lat,
-          location_lng: coords.lng,
+          ...(coords && { location_lat: coords.lat, location_lng: coords.lng }),
           photo: selfieImage,
-          geofence_location_id: geofenceId,
+          ...(geofenceId && { geofence_location_id: geofenceId }),
         })
         
         if (response.success) {
@@ -676,8 +805,34 @@ export default function InternTimePage() {
           }))
           setClockNotice(
             response.data?.message || 
-            `Clocked out successfully. Total hours: ${response.data?.total_hours || 0}h`
+            `Clocked out successfully. Total hours: ${response.data?.total_hours ?? 0}h`
           )
+          // Real-time: update UI from server response immediately
+          const att = response.data?.attendance
+          if (att?.clock_out_time) {
+            setSnapshot((prev) => ({
+              ...prev,
+              lastClock: `Out at ${formatClockTime(att.clock_out_time)}`,
+            }))
+            setHeader((prev) => ({
+              ...prev,
+              statusLabel: "Off shift",
+              statusTone: "inactive",
+            }))
+            setLogs((prev) => [
+              { time: formatClockTime(att.clock_out_time), title: "Clocked out", detail: `Total: ${response.data?.total_hours ?? 0}h` },
+              ...prev.slice(0, 9),
+            ])
+          }
+          // Refetch so summary/week and server state stay in sync
+          getInternTimeClock().then((data) => {
+            if (data?.header) setHeader(data.header)
+            if (data?.snapshot) setSnapshot(data.snapshot)
+            if (data?.summary?.length) setSummary(data.summary)
+            if (data?.week?.length) setWeek(data.week)
+            if (data?.recentActivity?.length) setLogs(data.recentActivity)
+          }).catch(() => {})
+          getTodayAttendance().catch(() => {})
         }
       } else if (action === "break") {
         // Break functionality can be added later if needed
@@ -712,7 +867,8 @@ export default function InternTimePage() {
         ? "clock-out"
         : "clock-in"
     : ""
-  const isLocationVerified = locationStatus === "success"
+  const isLocationVerified =
+    settings?.verification_gps === false || locationStatus === "success"
   const overlayTimestamp = selfieImage
     ? selfieOverlayTimestamp
     : cameraOverlayTimestamp
@@ -826,7 +982,11 @@ export default function InternTimePage() {
               </Button>
             </div>
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[color:var(--dash-muted)]">
-              <span>Selfie and location verification are required for clock-in, breaks, and clock-out.</span>
+              <span>
+                {requiresLocation
+                  ? "Selfie and location verification are required for clock-in, breaks, and clock-out."
+                  : "Selfie verification is required for clock-in, breaks, and clock-out."}
+              </span>
               <div className="flex flex-wrap gap-2">
                 {selfieCapturedAt["clock-in"] ? (
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-[11px] font-semibold text-blue-700">
@@ -981,7 +1141,7 @@ export default function InternTimePage() {
                 </div>
               )}
 
-              {!isLocationVerified ? (
+              {requiresLocation && !isLocationVerified ? (
                 <div
                   className={[
                     "rounded-lg border px-3 py-2 text-xs",
@@ -997,6 +1157,7 @@ export default function InternTimePage() {
 
               <canvas ref={canvasRef} className="hidden" />
 
+              {requiresLocation ? (
               <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold text-slate-700">Location verification</span>
@@ -1054,6 +1215,7 @@ export default function InternTimePage() {
                   </p>
                 ) : null}
               </div>
+              ) : null}
 
               <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                 <Button
@@ -1112,11 +1274,14 @@ export default function InternTimePage() {
                   Consent required
                 </p>
                 <h2 className="mt-1 text-lg font-semibold text-slate-900">
-                  Permission for selfie and location verification
+                  {requiresLocation
+                    ? "Permission for selfie and location verification"
+                    : "Permission for selfie verification"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-500">
-                  We need your consent to use camera and location for attendance
-                  verification. Selfies are stored for 7 days.
+                  {requiresLocation
+                    ? "We need your consent to use camera and location for attendance verification. Selfies are stored for 7 days."
+                    : "We need your consent to use camera for attendance verification. Selfies are stored for 7 days."}
                 </p>
               </div>
               <Button
@@ -1147,6 +1312,7 @@ export default function InternTimePage() {
                   I consent to capture my selfie for attendance verification.
                 </span>
               </label>
+              {requiresLocation ? (
               <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
                 <input
                   type="checkbox"
@@ -1164,6 +1330,7 @@ export default function InternTimePage() {
                   breaks, and clock-out.
                 </span>
               </label>
+              ) : null}
               <p className="text-[11px] text-slate-500">
                 You can withdraw consent in your account settings. If you do not
                 consent, clock-in, breaks, and clock-out are blocked.

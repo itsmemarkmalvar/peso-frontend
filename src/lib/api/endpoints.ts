@@ -123,6 +123,12 @@ export const API_ENDPOINTS = {
     delete: (id: number) => `/geofence-locations/${id}`,
   },
 
+  // Settings (GET: any auth; PUT: admin only)
+  settings: {
+    get: '/settings',
+    update: '/settings',
+  },
+
   // Supervisors
   supervisors: {
     me: '/supervisors/me',
