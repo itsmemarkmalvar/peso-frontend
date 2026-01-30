@@ -107,6 +107,13 @@ export const API_ENDPOINTS = {
     list: '/departments',
   },
 
+  // Notifications
+  notifications: {
+    list: '/notifications',
+    read: (id: number) => `/notifications/${id}/read`,
+    respond: (id: number) => `/notifications/${id}/respond`,
+  },
+
   // Geofence Locations
   geofenceLocations: {
     list: '/geofence-locations',

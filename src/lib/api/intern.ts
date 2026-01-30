@@ -82,6 +82,13 @@ export type AdminIntern = {
   role: string
 }
 
+export type InternAvailabilityOption = "available" | "not_available"
+
+export type InternWeeklyAvailability = Record<
+  "monday" | "tuesday" | "wednesday" | "thursday" | "friday",
+  InternAvailabilityOption
+>
+
 export type InternProfile = {
   id: number
   user_id: number
@@ -95,6 +102,7 @@ export type InternProfile = {
   start_date: string | null
   end_date: string | null
   onboarded_at: string | null
+  weekly_availability: InternWeeklyAvailability | null
 }
 
 export type InternOnboardingPayload = {
@@ -105,6 +113,7 @@ export type InternOnboardingPayload = {
   emergency_contact_name: string
   emergency_contact_phone: string
   required_hours: number
+  weekly_availability: InternWeeklyAvailability
 }
 
 export function getInternDashboard(): Promise<InternDashboardData> {

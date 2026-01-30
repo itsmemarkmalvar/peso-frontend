@@ -13,6 +13,19 @@ import { Button } from "@/components/ui/button"
 import { internTheme } from "@/components/intern/internTheme"
 import pesoLogo from "@/assets/images/image-Photoroom.png"
 
+const WEEKDAYS = [
+  { id: "monday", label: "Monday" },
+  { id: "tuesday", label: "Tuesday" },
+  { id: "wednesday", label: "Wednesday" },
+  { id: "thursday", label: "Thursday" },
+  { id: "friday", label: "Friday" },
+]
+
+const AVAILABILITY_OPTIONS = [
+  { value: "available", label: "Available" },
+  { value: "not_available", label: "Not available" },
+]
+
 export default function InternOnboardingPreviewPage() {
   return (
     <div
@@ -107,6 +120,55 @@ export default function InternOnboardingPreviewPage() {
                   step="1"
                   inputMode="numeric"
                 />
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    Weekly availability (Mon - Fri)
+                  </Label>
+                  <p className="text-xs text-[color:var(--dash-muted)]">
+                    Let us know which weekdays you can report for OJT.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  {WEEKDAYS.map((day) => (
+                    <div
+                      key={day.id}
+                      className="rounded-xl border border-[color:var(--dash-border)] bg-white p-4 shadow-sm"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-[color:var(--dash-ink)]">
+                            {day.label}
+                          </p>
+                          <p className="text-xs text-[color:var(--dash-muted)]">
+                            Select if you can attend OJT on this day.
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {AVAILABILITY_OPTIONS.map((option) => {
+                            const isActive = option.value === "available"
+                            return (
+                              <button
+                                key={option.value}
+                                type="button"
+                                disabled
+                                className={`rounded-full border px-3 py-1 text-xs font-semibold transition ${
+                                  isActive
+                                    ? "border-[color:var(--dash-accent)] bg-[color:var(--dash-accent)] text-white"
+                                    : "border-[color:var(--dash-border)] bg-white text-[color:var(--dash-muted)]"
+                                }`}
+                              >
+                                {option.label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">

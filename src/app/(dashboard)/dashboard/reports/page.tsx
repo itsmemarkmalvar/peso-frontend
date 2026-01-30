@@ -110,17 +110,19 @@ export default function ReportsPage() {
         
         // Handle paginated response (data.data) or direct array (data)
         let attendanceData: any[] = [];
-        if (Array.isArray(response.data)) {
+        const rawData: unknown = response.data as unknown;
+        if (Array.isArray(rawData)) {
           // Direct array response
-          attendanceData = response.data;
-        } else if (response.data && typeof response.data === 'object') {
+          attendanceData = rawData;
+        } else if (rawData && typeof rawData === "object") {
           // Check if it's a paginated response (Laravel pagination)
-          if (Array.isArray(response.data.data)) {
+          const objectData = rawData as { data?: unknown; records?: unknown };
+          if (Array.isArray(objectData.data)) {
             // Paginated response - extract the data array
-            attendanceData = response.data.data;
-          } else if (response.data.records && Array.isArray(response.data.records)) {
+            attendanceData = objectData.data;
+          } else if (Array.isArray(objectData.records)) {
             // Alternative pagination structure
-            attendanceData = response.data.records;
+            attendanceData = objectData.records;
           } else {
             // Not an array, set empty array
             attendanceData = [];
@@ -403,15 +405,19 @@ export default function ReportsPage() {
                   <td className="px-3 py-2 text-slate-600">{record.clock_in || "N/A"}</td>
                   <td className="px-3 py-2 text-slate-600">{record.clock_out || "N/A"}</td>
                   <td className="px-3 py-2">
-                    <Badge 
+                    <Badge
                       variant={
-                        record.status === "present" || record.status === "approved" 
-                          ? "default" 
-                          : record.status === "absent" 
-                          ? "destructive" 
+                        record.status === "present" || record.status === "approved"
+                          ? "default"
+                          : record.status === "absent"
+                          ? "outline"
                           : "secondary"
-                      } 
-                      className="text-xs"
+                      }
+                      className={
+                        record.status === "absent"
+                          ? "border-red-200 bg-red-50 text-red-700"
+                          : "text-xs"
+                      }
                     >
                       {record.status ? record.status.charAt(0).toUpperCase() + record.status.slice(1) : "N/A"}
                     </Badge>

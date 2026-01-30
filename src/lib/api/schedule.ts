@@ -46,10 +46,11 @@ export interface DefaultSchedulePayload {
   days: {
     day_of_week: number;
     start_time: string;
-  end_time: string;
+    end_time: string;
   }[];
   lunch_break_start: string;
   lunch_break_end: string;
+  admin_notes?: string;
 }
 
 export interface ExcusedIntern {
@@ -126,8 +127,26 @@ export async function deleteSchedule(id: number): Promise<void> {
  */
 export async function updateDefaultSchedule(
   payload: DefaultSchedulePayload
-): Promise<{ success: boolean; message: string }> {
-  const response = await apiClient.post<{ success: boolean; message: string }>(
+): Promise<{
+  success: boolean;
+  message: string;
+  data?: {
+    schedules_created: number;
+    schedules_updated: number;
+    interns_affected: number;
+    notifications_created?: number;
+  };
+}> {
+  const response = await apiClient.post<{
+    success: boolean;
+    message: string;
+    data?: {
+      schedules_created: number;
+      schedules_updated: number;
+      interns_affected: number;
+      notifications_created?: number;
+    };
+  }>(
     API_ENDPOINTS.schedules.assign,
     payload
   );
