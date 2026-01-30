@@ -5,12 +5,20 @@ import { motion, useReducedMotion } from "framer-motion"
 import { Bell } from "lucide-react"
 import { useEffect, useState } from "react"
 
+import { useAuth } from "@/hooks/useAuth"
+import { getInternOrGipRoleLabel } from "@/lib/constants"
 import {
   getInternDashboard,
   type InternActivityItem,
   type InternDashboardStat,
 } from "@/lib/api/intern"
+import {
+  getNotifications,
+  respondToScheduleAvailability,
+  type NotificationRecord,
+} from "@/lib/api/notifications"
 import { createLeave } from "@/lib/api/leaves"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
