@@ -29,6 +29,7 @@ export function useAuth() {
   const isAuthenticated = authUtils.isAuthenticated();
   const hasRole = (role: User['role']) => authUtils.hasRole(role);
   const hasAnyRole = (roles: User['role'][]) => authUtils.hasAnyRole(roles);
+  const isInternOrGip = () => authUtils.isInternOrGip();
 
   return {
     user,
@@ -38,5 +39,6 @@ export function useAuth() {
     logout,
     hasRole,
     hasAnyRole,
+    isInternOrGip,
   };
 }

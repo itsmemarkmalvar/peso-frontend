@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { getInternOrGipRoleLabel } from "@/lib/constants"
 import { internTheme } from "@/components/intern/internTheme"
 import pesoLogo from "@/assets/images/image-Photoroom.png"
 import { useAuth } from "@/hooks/useAuth"
@@ -78,7 +79,7 @@ type InternShellProps = {
 
 export function InternShell({ children }: InternShellProps) {
   const router = useRouter()
-  const { user, isLoading, logout } = useAuth()
+  const { user, isLoading, logout, isInternOrGip } = useAuth()
   const pathname = usePathname() ?? ""
   const normalizedPath =
     pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname
@@ -125,10 +126,10 @@ export function InternShell({ children }: InternShellProps) {
       router.replace("/login")
       return
     }
-    if (user.role !== "intern" && user.role !== "gip") {
+    if (!isInternOrGip()) {
       router.replace("/dashboard/admin")
     }
-  }, [isLoading, user, router, bypassActive, bypassChecked, isOnboardingRoute])
+  }, [isLoading, user, router, isInternOrGip, bypassActive, bypassChecked, isOnboardingRoute])
 
   useEffect(() => {
     if (bypassActive) {
@@ -136,7 +137,7 @@ export function InternShell({ children }: InternShellProps) {
       setNeedsOnboarding(false)
       return
     }
-    if (isLoading || !user || (user.role !== "intern" && user.role !== "gip")) {
+    if (isLoading || !user || !isInternOrGip()) {
       return
     }
 
@@ -219,7 +220,7 @@ export function InternShell({ children }: InternShellProps) {
               </div>
               <div className={cn(collapsed ? "lg:hidden" : "opacity-100")}>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
-                  Intern Portal
+                  {getInternOrGipRoleLabel(user?.role)} Portal
                 </p>
                 <p className="text-sm font-semibold">PESO Attendance</p>
               </div>
@@ -304,7 +305,7 @@ export function InternShell({ children }: InternShellProps) {
               </button>
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
-                  Intern Dashboard
+                  {getInternOrGipRoleLabel(user?.role)} Dashboard
                 </p>
                 <p className="text-sm font-semibold">
                   PESO OJT Attendance System
@@ -313,7 +314,7 @@ export function InternShell({ children }: InternShellProps) {
             </div>
             <div className="hidden items-center gap-2 sm:flex">
               <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
-                Intern
+                {getInternOrGipRoleLabel(user?.role)}
               </span>
               <button
                 type="button"

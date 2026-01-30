@@ -19,7 +19,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { apiClient } from "@/lib/api/client"
 import { API_ENDPOINTS } from "@/lib/api/endpoints"
+import { getInternOrGipRoleLabel } from "@/lib/constants"
 import { useAuth } from "@/hooks/useAuth"
+import { authUtils } from "@/lib/auth/auth"
 import pesoLogo from "@/assets/images/image-Photoroom.png"
 
 interface InvitationData {
@@ -116,7 +118,8 @@ export function InvitationAcceptClient() {
       setSuccess(true)
 
       setTimeout(() => {
-        if (user.role === "intern" || user.role === "gip") {
+        // GIP users inherit Intern flow: same dashboard and onboarding
+        if (authUtils.isInternOrGip()) {
           router.push("/dashboard/intern")
         } else {
           router.push("/dashboard/admin")
@@ -226,8 +229,10 @@ export function InvitationAcceptClient() {
             <span className="font-medium">{invitationData?.email}</span>
             <br />
             Role:{" "}
-            <span className="font-medium capitalize">
-              {invitationData?.role}
+            <span className="font-medium">
+              {invitationData?.role === "gip" || invitationData?.role === "intern"
+                ? getInternOrGipRoleLabel(invitationData?.role)
+                : (invitationData?.role ?? "").charAt(0).toUpperCase() + (invitationData?.role ?? "").slice(1)}
             </span>
           </CardDescription>
         </CardHeader>

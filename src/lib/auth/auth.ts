@@ -92,4 +92,12 @@ export const authUtils = {
     const user = this.getUser();
     return user ? roles.includes(user.role) : false;
   },
+
+  /**
+   * Check if user is Intern or GIP (same flow and restrictions).
+   * Use for routing and UI that applies to both roles.
+   */
+  isInternOrGip(): boolean {
+    return this.hasAnyRole(['intern', 'gip']);
+  },
 };

@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 import pesoLogo from "@/assets/images/image-Photoroom.png";
 import { useAuth } from "@/hooks/useAuth";
+import { authUtils } from "@/lib/auth/auth";
 import { apiClient } from "@/lib/api/client";
 import { API_ENDPOINTS } from "@/lib/api/endpoints";
 
@@ -111,8 +112,8 @@ export default function LoginPage() {
         token
       );
 
-      // Role-based redirect
-      if (user.role === "intern" || user.role === "gip") {
+      // Role-based redirect (GIP uses same dashboard as Intern)
+      if (authUtils.isInternOrGip()) {
         router.push("/dashboard/intern");
       } else {
         // Admin and Supervisor go to admin dashboard

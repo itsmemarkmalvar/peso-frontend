@@ -4,6 +4,8 @@ import Image from "next/image"
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react"
 import { useRouter } from "next/navigation"
 
+import { useAuth } from "@/hooks/useAuth"
+import { getInternOrGipRoleLabel } from "@/lib/constants"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -38,6 +40,7 @@ const EMPTY_FORM: InternOnboardingForm = {
 
 export function InternOnboarding() {
   const router = useRouter()
+  const { user } = useAuth()
   const [form, setForm] = useState<InternOnboardingForm>(EMPTY_FORM)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -135,7 +138,7 @@ export function InternOnboarding() {
         </div>
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl text-[color:var(--dash-ink)]">
-            Intern onboarding
+            {getInternOrGipRoleLabel(user?.role)} onboarding
           </CardTitle>
           <CardDescription className="text-[color:var(--dash-muted)]">
             Confirm your details so PESO can activate your attendance profile.

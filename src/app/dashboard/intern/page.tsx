@@ -10,6 +10,8 @@ import {
   type InternDashboardStat,
 } from "@/lib/api/intern"
 import { createLeave } from "@/lib/api/leaves"
+import { getInternOrGipRoleLabel } from "@/lib/constants"
+import { useAuth } from "@/hooks/useAuth"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -102,6 +104,7 @@ const item = {
 }
 
 export default function InternDashboardPage() {
+  const { user } = useAuth()
   const reduceMotion = useReducedMotion()
   const [stats, setStats] = useState<InternDashboardStat[]>(fallbackStats)
   const [timeline, setTimeline] =
@@ -200,7 +203,7 @@ export default function InternDashboardPage() {
             Tuesday, Jan 20
           </p>
           <h1 className="mt-2 text-2xl font-semibold">
-            Welcome back, Intern
+            Welcome back, {getInternOrGipRoleLabel(user?.role)}
           </h1>
           <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
             Keep your time logs accurate for approvals and reports.

@@ -15,6 +15,14 @@ export const ROLES = {
   SUPERVISOR: 'supervisor',
 } as const;
 
+/**
+ * Display label for the intern/GIP role in UI text only.
+ * GIP users see "GIP"; Intern users see "Intern". Layout and behavior unchanged.
+ */
+export function getInternOrGipRoleLabel(role: string | undefined): 'Intern' | 'GIP' {
+  return role === 'gip' ? 'GIP' : 'Intern';
+}
+
 export const ATTENDANCE_STATUS = {
   PENDING: 'pending',
   APPROVED: 'approved',
