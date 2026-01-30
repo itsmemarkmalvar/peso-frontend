@@ -92,3 +92,9 @@ export interface DashboardStats {
   pending_approvals: number;
   attendance_rate: number;
 }
+
+export interface SystemSettings {
+  grace_period_minutes: number;
+  verification_gps: boolean;
+  verification_selfie: boolean;
+}

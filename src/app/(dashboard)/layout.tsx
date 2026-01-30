@@ -228,7 +228,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </div>
 
           <nav className="mt-6 flex-1 space-y-1 overflow-y-auto">
-            {NAV_ITEMS.map((item) => {
+            {NAV_ITEMS.filter(
+              (item) =>
+                item.href !== "/dashboard/settings" || user?.role === "admin"
+            ).map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href;
 
