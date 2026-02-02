@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/dialog"
 import {
   getNotifications,
+  markNotificationRead,
   respondToScheduleAvailability,
   type NotificationRecord,
 } from "@/lib/api/notifications"
@@ -227,6 +228,24 @@ export default function InternDashboardPage() {
     | undefined
   const responseStatus = responseData?.status
 
+  const handleOpenNotification = async (item: NotificationRecord) => {
+    setSelectedNotification(item)
+    if (item.is_read) {
+      return
+    }
+    try {
+      const updated = await markNotificationRead(item.id)
+      setNotifications((prev) =>
+        prev.map((entry) => (entry.id === updated.id ? updated : entry))
+      )
+      setSelectedNotification((current) =>
+        current && current.id === updated.id ? updated : current
+      )
+    } catch {
+      // Non-blocking: keep UI responsive even if read status fails
+    }
+  }
+
   const handleRespond = async (status: "available" | "not_available") => {
     if (!selectedNotification) return
     setIsResponding(true)
@@ -305,7 +324,7 @@ export default function InternDashboardPage() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setSelectedNotification(item)}
+                onClick={() => handleOpenNotification(item)}
                 className={`w-full rounded-lg border px-3 py-2 text-left text-xs transition ${
                   item.is_read
                     ? "border-slate-100 bg-white hover:border-slate-200"

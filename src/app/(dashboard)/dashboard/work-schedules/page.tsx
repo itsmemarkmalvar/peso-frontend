@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Clock, Edit2, Save, X, Info, Users, Loader2 } from "lucide-react";
+import { Edit2, Save, X, Info, Loader2 } from "lucide-react";
 
 import {
   Card,
@@ -22,7 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
+import { useAuth } from "@/hooks/useAuth";
 import { updateDefaultSchedule, getExcusedInterns, type ExcusedIntern as ExcusedInternType } from "@/lib/api/schedule";
 
 const DAYS_OF_WEEK = [
@@ -57,6 +57,7 @@ const WEEKDAYS = [
 ];
 
 export default function WorkSchedulesPage() {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [scheduleName] = useState("On the Job Training 2026");
   const [selectedDays, setSelectedDays] = useState<string[]>([
@@ -82,6 +83,7 @@ export default function WorkSchedulesPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
+  const canViewExcused = user?.role === "admin" || user?.role === "supervisor";
 
   // Calculate break duration automatically
   const calculateBreakDuration = (start: string, end: string): number => {
@@ -144,6 +146,14 @@ export default function WorkSchedulesPage() {
   // Load excused interns data from API
   useEffect(() => {
     let active = true;
+    if (!canViewExcused) {
+      setExcusedInterns({});
+      setIsLoadingExcused(false);
+      return () => {
+        active = false;
+      };
+    }
+
     setIsLoadingExcused(true);
 
     const loadExcusedInterns = async () => {
@@ -186,7 +196,7 @@ export default function WorkSchedulesPage() {
     return () => {
       active = false;
     };
-  }, [selectedDays]);
+  }, [selectedDays, canViewExcused]);
 
   const handleDayClick = (dayId: string) => {
     setSelectedDay(dayId);
@@ -548,7 +558,7 @@ export default function WorkSchedulesPage() {
       </Card>
 
       {/* Day Excused Modal */}
-      <Dialog open={selectedDay !== null} onOpenChange={(open) => !open && setSelectedDay(null)}>
+      <Dialog open={canViewExcused && selectedDay !== null} onOpenChange={(open) => !open && setSelectedDay(null)}>
         <DialogContent onClose={() => setSelectedDay(null)} className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
