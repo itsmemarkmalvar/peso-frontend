@@ -18,6 +18,7 @@ import { clockIn, clockOut, breakStart, breakEnd, getTodayAttendance } from "@/l
 import { Button } from "@/components/ui/button"
 
 type VerificationAction = "clock-in" | "break-start" | "break-end" | "clock-out"
+type SelfieCaptureKey = VerificationAction | "break"
 
 type ConsentState = {
   camera: boolean
@@ -262,7 +263,7 @@ export default function InternTimePage() {
     string | null
   >(null)
   const [selfieCapturedAt, setSelfieCapturedAt] = useState<
-    Partial<Record<VerificationAction, string>>
+    Partial<Record<SelfieCaptureKey, string>>
   >({})
   const [isSubmittingSelfie, setIsSubmittingSelfie] = useState(false)
   const [locationStatus, setLocationStatus] = useState<

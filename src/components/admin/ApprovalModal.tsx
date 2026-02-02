@@ -13,6 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { getDepartments } from "@/lib/api/departments";
+import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Department {
   id: number;
@@ -37,6 +39,8 @@ export function ApprovalModal({
   registrationRequest,
   onApprove,
 }: ApprovalModalProps) {
+  const { user } = useAuth();
+  const isSupervisor = user?.role === "supervisor";
   const [role, setRole] = useState<string>("intern");
   const [departmentId, setDepartmentId] = useState<string>("");
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -47,10 +51,10 @@ export function ApprovalModal({
     if (open) {
       loadDepartments();
       // Reset form when modal opens
-      setRole("intern");
+      setRole(isSupervisor ? "intern" : "intern");
       setDepartmentId("");
     }
-  }, [open]);
+  }, [open, isSupervisor]);
 
   const loadDepartments = async () => {
     setIsLoadingDepartments(true);
@@ -76,7 +80,7 @@ export function ApprovalModal({
 
     setIsSubmitting(true);
     try {
-      await onApprove(role, departmentId ? parseInt(departmentId) : null);
+      await onApprove(isSupervisor ? "intern" : role, departmentId ? parseInt(departmentId) : null);
       onOpenChange(false);
     } catch (err) {
       console.error("Approval failed:", err);
@@ -102,21 +106,30 @@ export function ApprovalModal({
             <Label htmlFor="role" className="text-sm font-semibold text-slate-700">
               Role <span className="text-red-600">*</span>
             </Label>
-            <Select
-              id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              disabled={isSubmitting}
-              className="w-full"
-            >
-              <option value="admin">Administrator</option>
-              <option value="supervisor">Supervisor</option>
-              <option value="gip">GIP</option>
-              <option value="intern">Intern</option>
-            </Select>
-            <p className="text-xs text-slate-500 mt-1.5">
-              Select the role for this user account
-            </p>
+            {isSupervisor ? (
+              <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
+                <span className="text-slate-600">Role is fixed for supervisors</span>
+                <Badge variant="secondary">Intern</Badge>
+              </div>
+            ) : (
+              <>
+                <Select
+                  id="role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full"
+                >
+                  <option value="admin">Administrator</option>
+                  <option value="supervisor">Supervisor</option>
+                  <option value="gip">GIP</option>
+                  <option value="intern">Intern</option>
+                </Select>
+                <p className="text-xs text-slate-500 mt-1.5">
+                  Select the role for this user account
+                </p>
+              </>
+            )}
           </div>
 
           <div className="space-y-2.5">

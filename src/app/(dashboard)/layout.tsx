@@ -55,6 +55,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [onboardingBypass, setOnboardingBypass] = useState(false);
   const [bypassChecked, setBypassChecked] = useState(false);
+  const isDevSupervisorBypass =
+    process.env.NODE_ENV === "development" &&
+    pathname?.startsWith("/dashboard/supervisor") === true;
   const isStaff =
     user?.role === "admin" ||
     user?.role === "coordinator" ||
@@ -89,6 +92,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       return;
     }
     if (onboardingBypass) return;
+    if (isDevSupervisorBypass) return;
     if (!user || !isStaff) {
       router.replace("/login");
       return;
@@ -101,6 +105,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     onboardingBypass,
     bypassChecked,
     isSupervisorOnboardingRoute,
+    isDevSupervisorBypass,
   ]);
 
   useEffect(() => {
@@ -149,7 +154,8 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     isSupervisorOnboardingRoute,
   ]);
 
-  const isAuthorized = onboardingBypass || (!!user && isStaff);
+  const isAuthorized =
+    onboardingBypass || isDevSupervisorBypass || (!!user && isStaff);
   const roleLabel = user?.role
     ? `${user.role.charAt(0).toUpperCase()}${user.role.slice(1)}`
     : "Admin";
