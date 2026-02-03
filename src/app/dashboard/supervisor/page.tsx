@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -13,6 +14,8 @@ import {
   AlertTriangle,
 } from "lucide-react"
 
+import { getAdminInterns, type AdminIntern } from "@/lib/api/intern"
+import { getTodayAttendanceAll, type Attendance } from "@/lib/api/attendance"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -32,7 +35,7 @@ type StatCard = {
   trend: StatTrend
 }
 
-const stats: StatCard[] = [
+const defaultStats: StatCard[] = [
   {
     label: "Assigned interns",
     value: "0",
@@ -59,12 +62,12 @@ const stats: StatCard[] = [
   },
 ]
 
-const interns: {
+type SupervisorInternRow = {
   name: string
   course: string
   status: string
   hours: string
-}[] = []
+}
 
 const approvals: {
   id: string
@@ -102,7 +105,91 @@ function statusTone(status: string) {
   return "bg-slate-50 text-slate-600 border-slate-200"
 }
 
+function formatHours(value: number | null) {
+  if (!value) return "—"
+  return `${value}h`
+}
+
+function buildSupervisorInternRows(
+  interns: AdminIntern[],
+  todayRecords: Attendance[]
+): SupervisorInternRow[] {
+  const byInternId = new Map<number, Attendance>()
+  todayRecords.forEach((record) => byInternId.set(record.intern_id, record))
+
+  return interns.map((intern) => {
+    const record = byInternId.get(intern.id)
+    if (!record) {
+      return {
+        name: intern.name,
+        course: intern.course,
+        status: "Not clocked in",
+        hours: "—",
+      }
+    }
+    const hasClockIn = Boolean(record.clock_in_time)
+    const hasClockOut = Boolean(record.clock_out_time)
+    const onBreak = hasClockIn && !hasClockOut && Boolean(record.break_start) && !record.break_end
+    let status = "Clocked in"
+    if (!hasClockIn) {
+      status = "Not clocked in"
+    } else if (onBreak) {
+      status = "On break"
+    } else if (record.is_late) {
+      status = "Late"
+    } else if (hasClockOut) {
+      status = "Off shift"
+    }
+
+    return {
+      name: intern.name,
+      course: intern.course,
+      status,
+      hours: formatHours(record.total_hours),
+    }
+  })
+}
+
 export default function SupervisorPage() {
+  const [stats, setStats] = useState<StatCard[]>(defaultStats)
+  const [interns, setInterns] = useState<SupervisorInternRow[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    let active = true
+    setIsLoading(true)
+
+    Promise.all([getAdminInterns(), getTodayAttendanceAll()])
+      .then(([assignedInterns, todayResponse]) => {
+        if (!active) return
+        const todayRecords = todayResponse.data ?? []
+        const assignedIds = new Set(assignedInterns.map((intern) => intern.id))
+        const rows = buildSupervisorInternRows(assignedInterns, todayRecords)
+        setInterns(rows)
+
+        const assignedCount = assignedInterns.length
+        const clockedInCount = todayRecords.filter(
+          (record) => assignedIds.has(record.intern_id) && record.clock_in_time
+        ).length
+
+        setStats((prev) => [
+          { ...prev[0], value: assignedCount.toString(), sub: `${assignedCount} total` },
+          prev[1],
+          { ...prev[2], value: clockedInCount.toString(), sub: `${clockedInCount} clocked in` },
+          prev[3],
+        ])
+        setIsLoading(false)
+      })
+      .catch(() => {
+        if (!active) return
+        setIsLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-3 rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm md:flex-row md:items-center md:justify-between">
@@ -178,7 +265,10 @@ export default function SupervisorPage() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            {interns.length === 0 && (
+            {isLoading && (
+              <p className="text-xs text-slate-500">Loading assigned interns...</p>
+            )}
+            {!isLoading && interns.length === 0 && (
               <p className="text-xs text-slate-500">
                 No assigned interns yet. Once interns are linked to you, they will appear here.
               </p>
