@@ -191,6 +191,52 @@ function formatClockTime(isoTime: string | null): string {
   })
 }
 
+/** Format elapsed seconds as HH:MM:SS */
+function formatTimer(seconds: number): string {
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = seconds % 60
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${pad(h)}:${pad(m)}:${pad(s)}`
+}
+
+/** Compute elapsed seconds from an ISO timestamp to now */
+function elapsedSecondsSince(iso: string | null): number {
+  if (!iso) return 0
+  return Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+}
+
+/** Sync timer state from attendance data (used on load and after refresh) */
+function syncTimerFromAttendance(
+  att: { clock_in_time: string | null; clock_out_time: string | null; break_start: string | null; break_end: string | null },
+  setters: { setTimerMode: (m: "idle" | "work" | "break") => void; setWorkTimerSeconds: (n: number) => void; setBreakTimerSeconds: (n: number) => void }
+) {
+  const hasClockIn = Boolean(att.clock_in_time)
+  const hasClockOut = Boolean(att.clock_out_time)
+  if (hasClockOut) {
+    setters.setTimerMode("idle")
+    setters.setWorkTimerSeconds(0)
+    setters.setBreakTimerSeconds(0)
+    return
+  }
+  if (!hasClockIn) return
+  const breakStart = att.break_start ?? null
+  const breakEnd = att.break_end ?? null
+  if (breakStart && !breakEnd) {
+    setters.setTimerMode("break")
+    setters.setWorkTimerSeconds(0)
+    setters.setBreakTimerSeconds(elapsedSecondsSince(breakStart))
+  } else if (breakStart && breakEnd) {
+    setters.setTimerMode("work")
+    setters.setWorkTimerSeconds(elapsedSecondsSince(breakEnd))
+    setters.setBreakTimerSeconds(0)
+  } else {
+    setters.setTimerMode("work")
+    setters.setWorkTimerSeconds(elapsedSecondsSince(att.clock_in_time))
+    setters.setBreakTimerSeconds(0)
+  }
+}
+
 const fallbackSummary: InternDashboardStat[] = [
   { label: "Today", value: "2h 10m", sub: "In progress" },
   { label: "This week", value: "18h 40m", sub: "40h target" },
@@ -340,6 +386,11 @@ export default function InternTimePage() {
   const [todayBreakStart, setTodayBreakStart] = useState<string | null>(null)
   const [todayBreakEnd, setTodayBreakEnd] = useState<string | null>(null)
 
+  // Live running timer: 'idle' | 'work' | 'break'
+  const [timerMode, setTimerMode] = useState<"idle" | "work" | "break">("idle")
+  const [workTimerSeconds, setWorkTimerSeconds] = useState(0)
+  const [breakTimerSeconds, setBreakTimerSeconds] = useState(0)
+
   // Load today's attendance so clock-in state reflects server (real-time on load)
   useEffect(() => {
     let active = true
@@ -353,6 +404,14 @@ export default function InternTimePage() {
         setIsClockedIn(hasClockIn && !hasClockOut)
         setTodayBreakStart(att.break_start ?? null)
         setTodayBreakEnd(att.break_end ?? null)
+
+        // Initialize live timer from server state (persists across refresh)
+        syncTimerFromAttendance(att, {
+          setTimerMode,
+          setWorkTimerSeconds,
+          setBreakTimerSeconds,
+        })
+
         // Update snapshot and header from real attendance
         if (hasClockOut) {
           setSnapshot((prev) => ({
@@ -382,6 +441,19 @@ export default function InternTimePage() {
       active = false
     }
   }, [])
+
+  // Live running timer interval: tick work or break timer every second
+  useEffect(() => {
+    if (timerMode !== "work" && timerMode !== "break") return
+    const interval = setInterval(() => {
+      if (timerMode === "work") {
+        setWorkTimerSeconds((prev) => prev + 1)
+      } else {
+        setBreakTimerSeconds((prev) => prev + 1)
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [timerMode])
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -766,6 +838,9 @@ export default function InternTimePage() {
         
         if (response.success) {
           setIsClockedIn(true)
+          setTimerMode("work")
+          setWorkTimerSeconds(0)
+          setBreakTimerSeconds(0)
           const timestamp = new Date().toLocaleTimeString("en-US", {
             hour: "numeric",
             minute: "2-digit",
@@ -810,6 +885,9 @@ export default function InternTimePage() {
         
         if (response.success) {
           setIsClockedIn(false)
+          setTimerMode("idle")
+          setWorkTimerSeconds(0)
+          setBreakTimerSeconds(0)
           const timestamp = new Date().toLocaleTimeString("en-US", {
             hour: "numeric",
             minute: "2-digit",
@@ -856,6 +934,8 @@ export default function InternTimePage() {
           ...(geofenceId && { geofence_location_id: geofenceId }),
         })
         if (response.success) {
+          setTimerMode("break")
+          setBreakTimerSeconds(0)
           const timestamp = new Date().toLocaleTimeString("en-US", {
             hour: "numeric",
             minute: "2-digit",
@@ -882,6 +962,8 @@ export default function InternTimePage() {
           ...(geofenceId && { geofence_location_id: geofenceId }),
         })
         if (response.success) {
+          setTimerMode("work")
+          setWorkTimerSeconds(0)
           const timestamp = new Date().toLocaleTimeString("en-US", {
             hour: "numeric",
             minute: "2-digit",
@@ -932,6 +1014,7 @@ export default function InternTimePage() {
             setIsClockedIn(Boolean(att.clock_in_time) && !Boolean(att.clock_out_time))
             setTodayBreakStart(att.break_start ?? null)
             setTodayBreakEnd(att.break_end ?? null)
+            syncTimerFromAttendance(att, { setTimerMode, setWorkTimerSeconds, setBreakTimerSeconds })
           }
         }).catch(() => {})
       } else if (message.toLowerCase().includes("already clocked out")) {
@@ -941,6 +1024,9 @@ export default function InternTimePage() {
         setSelfieImage(null)
         setSelfieOverlayTimestamp(null)
         setIsClockedIn(false)
+        setTimerMode("idle")
+        setWorkTimerSeconds(0)
+        setBreakTimerSeconds(0)
         
         // Refresh data from server
         getInternTimeClock().then((data) => {
@@ -972,6 +1058,7 @@ export default function InternTimePage() {
             setIsClockedIn(Boolean(att.clock_in_time) && !Boolean(att.clock_out_time))
             setTodayBreakStart(att.break_start ?? null)
             setTodayBreakEnd(att.break_end ?? null)
+            syncTimerFromAttendance(att, { setTimerMode, setWorkTimerSeconds, setBreakTimerSeconds })
           }
         }).catch(() => {})
       } else {
@@ -1043,20 +1130,64 @@ export default function InternTimePage() {
           <section className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
             <div className="flex flex-col gap-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
-                  Current time
-                </p>
-                <div className="mt-3 flex items-end gap-2">
-                  <span className="text-5xl font-semibold tracking-tight">
-                    {header.currentTime}
-                  </span>
-                  <span className="pb-2 text-sm font-semibold text-[color:var(--dash-muted)]">
-                    {header.meridiem}
-                  </span>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                      Current time
+                    </p>
+                    <div className="mt-3 flex items-end gap-2">
+                      <span className="text-5xl font-semibold tracking-tight">
+                        {header.currentTime}
+                      </span>
+                      <span className="pb-2 text-sm font-semibold text-[color:var(--dash-muted)]">
+                        {header.meridiem}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-[color:var(--dash-muted)]">
+                      {header.dateLabel}
+                    </p>
+                  </div>
+                  <div
+                    className={`flex flex-col rounded-xl border px-4 py-3 ${
+                      timerMode === "work"
+                        ? "border-blue-200 bg-blue-50"
+                        : timerMode === "break"
+                          ? "border-yellow-300 bg-yellow-50"
+                          : "border-slate-200 bg-slate-50"
+                    }`}
+                  >
+                    <p
+                      className={`text-xs font-semibold uppercase tracking-wide ${
+                        timerMode === "work"
+                          ? "text-blue-600"
+                          : timerMode === "break"
+                            ? "text-yellow-700"
+                            : "text-slate-500"
+                      }`}
+                    >
+                      {timerMode === "work"
+                        ? "Running Time"
+                        : timerMode === "break"
+                          ? "Break Time"
+                          : "Timer"}
+                    </p>
+                    <p
+                      className={`mt-2 font-mono text-2xl font-semibold tabular-nums ${
+                        timerMode === "work"
+                          ? "text-blue-700"
+                          : timerMode === "break"
+                            ? "text-yellow-800"
+                            : "text-slate-500"
+                      }`}
+                    >
+                      {timerMode === "work"
+                        ? formatTimer(workTimerSeconds)
+                        : timerMode === "break"
+                          ? formatTimer(breakTimerSeconds)
+                          : "00:00:00"}
+                    </p>
+                  </div>
                 </div>
-                <p className="mt-2 text-sm text-[color:var(--dash-muted)]">
-                  {header.dateLabel}
-                </p>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <span
                     className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClassName}`}
