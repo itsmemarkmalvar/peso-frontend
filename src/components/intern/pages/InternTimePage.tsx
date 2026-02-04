@@ -181,7 +181,7 @@ function formatOverlayTimestamp(value: Date) {
 
 /** Format API clock time (ISO string) for display in Philippine time e.g. "8:10 AM" */
 function formatClockTime(isoTime: string | null): string {
-  if (!isoTime) return "—"
+  if (!isoTime) return "-"
   const d = new Date(isoTime)
   return d.toLocaleTimeString("en-US", {
     hour: "numeric",
@@ -237,50 +237,44 @@ function syncTimerFromAttendance(
   }
 }
 
-const fallbackSummary: InternDashboardStat[] = [
-  { label: "Today", value: "2h 10m", sub: "In progress" },
-  { label: "This week", value: "18h 40m", sub: "40h target" },
-  { label: "Overtime", value: "0h 00m", sub: "No overtime" },
-] as const
+const placeholderSummary: InternDashboardStat[] = [
+  { label: "Today", value: "-", sub: "" },
+  { label: "This week", value: "-", sub: "" },
+  { label: "Overtime", value: "-", sub: "" },
+]
 
-const fallbackLogs: InternActivityItem[] = [
-  { time: "08:10 AM", title: "Clocked in", detail: "Main office" },
-  { time: "12:05 PM", title: "Break start", detail: "Lunch" },
-  { time: "12:45 PM", title: "Break end", detail: "Back to work" },
-] as const
+const placeholderWeek: InternTimeClockWeekItem[] = [
+  { day: "Mon", hours: "-" },
+  { day: "Tue", hours: "-" },
+  { day: "Wed", hours: "-" },
+  { day: "Thu", hours: "-" },
+  { day: "Fri", hours: "-" },
+]
 
-const fallbackWeek: InternTimeClockWeekItem[] = [
-  { day: "Mon", hours: "7h 50m" },
-  { day: "Tue", hours: "6h 15m" },
-  { day: "Wed", hours: "4h 35m" },
-  { day: "Thu", hours: "0h 00m" },
-  { day: "Fri", hours: "0h 00m" },
-] as const
-
-const fallbackHeader: InternTimeClockHeader = {
-  currentTime: "08:10",
+const placeholderHeader: InternTimeClockHeader = {
+  currentTime: "",
   meridiem: "AM",
-  dateLabel: "Tuesday, Jan 20",
-  statusLabel: "On shift",
-  statusTone: "active",
-  shiftLabel: "Shift 8:00 AM - 5:00 PM",
+  dateLabel: "",
+  statusLabel: "Not clocked in",
+  statusTone: "inactive",
+  shiftLabel: "Shift -",
 }
 
-const fallbackSnapshot: InternTimeClockSnapshot = {
-  lastClock: "08:10 AM",
-  breakLabel: "1h lunch",
-  locationLabel: "Main office",
+const placeholderSnapshot: InternTimeClockSnapshot = {
+  lastClock: "-",
+  breakLabel: "-",
+  locationLabel: "-",
 }
 
 export default function InternTimePage() {
-  const [header, setHeader] = useState<InternTimeClockHeader>(fallbackHeader)
+  const [header, setHeader] = useState<InternTimeClockHeader>(placeholderHeader)
   const [snapshot, setSnapshot] =
-    useState<InternTimeClockSnapshot>(fallbackSnapshot)
+    useState<InternTimeClockSnapshot>(placeholderSnapshot)
   const [summary, setSummary] =
-    useState<InternDashboardStat[]>(fallbackSummary)
+    useState<InternDashboardStat[]>(placeholderSummary)
   const [week, setWeek] =
-    useState<InternTimeClockWeekItem[]>(fallbackWeek)
-  const [logs, setLogs] = useState<InternActivityItem[]>(fallbackLogs)
+    useState<InternTimeClockWeekItem[]>(placeholderWeek)
+  const [logs, setLogs] = useState<InternActivityItem[]>([])
   const [geofences, setGeofences] = useState<GeofenceArea[]>(
     defaultStoredGeofences
       .map((item, index) => toGeofenceArea(item, index))
@@ -1317,22 +1311,28 @@ export default function InternTimePage() {
             Recent activity
           </p>
           <div className="mt-4 space-y-4">
-            {logs.map((entry) => (
-              <div key={entry.time} className="flex items-start gap-3">
-                <div className="mt-1 h-2 w-2 rounded-full bg-[color:var(--dash-accent)]" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between text-sm font-medium">
-                    <span>{entry.title}</span>
-                    <span className="text-xs text-[color:var(--dash-muted)]">
-                      {entry.time}
-                    </span>
+            {logs.length > 0 ? (
+              logs.map((entry) => (
+                <div key={entry.time} className="flex items-start gap-3">
+                  <div className="mt-1 h-2 w-2 rounded-full bg-[color:var(--dash-accent)]" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm font-medium">
+                      <span>{entry.title}</span>
+                      <span className="text-xs text-[color:var(--dash-muted)]">
+                        {entry.time}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[color:var(--dash-muted)]">
+                      {entry.detail}
+                    </p>
                   </div>
-                  <p className="text-xs text-[color:var(--dash-muted)]">
-                    {entry.detail}
-                  </p>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-xs text-[color:var(--dash-muted)]">
+                No activity logged yet.
+              </p>
+            )}
           </div>
         </div>
 
