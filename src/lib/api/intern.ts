@@ -1,5 +1,6 @@
 import { apiClient } from "@/lib/api/client"
 import { API_ENDPOINTS } from "@/lib/api/endpoints"
+import type { Attendance } from "@/lib/api/attendance"
 
 export type InternDashboardStat = {
   label: string
@@ -44,6 +45,7 @@ export type InternTimeClockData = {
   summary: InternDashboardStat[]
   week: InternTimeClockWeekItem[]
   recentActivity: InternActivityItem[]
+  todayAttendance?: Attendance | null
 }
 
 export type InternTimesheetEntry = {
@@ -66,6 +68,12 @@ export type InternApprovalItem = {
 
 export type InternApprovalsData = {
   items: InternApprovalItem[]
+}
+
+type ApiResponse<T> = {
+  success: boolean
+  message: string
+  data?: T
 }
 
 export type AdminIntern = {
@@ -117,19 +125,27 @@ export type InternOnboardingPayload = {
 }
 
 export function getInternDashboard(): Promise<InternDashboardData> {
-  return apiClient.get<InternDashboardData>(API_ENDPOINTS.intern.dashboard)
+  return apiClient
+    .get<ApiResponse<InternDashboardData>>(API_ENDPOINTS.intern.dashboard)
+    .then((res) => res.data ?? { stats: [], recentActivity: [] })
 }
 
 export function getInternTimeClock(): Promise<InternTimeClockData> {
-  return apiClient.get<InternTimeClockData>(API_ENDPOINTS.intern.timeClock)
+  return apiClient
+    .get<ApiResponse<InternTimeClockData>>(API_ENDPOINTS.intern.timeClock)
+    .then((res) => res.data ?? ({} as InternTimeClockData))
 }
 
 export function getInternTimesheets(): Promise<InternTimesheetData> {
-  return apiClient.get<InternTimesheetData>(API_ENDPOINTS.intern.timesheets)
+  return apiClient
+    .get<ApiResponse<InternTimesheetData>>(API_ENDPOINTS.intern.timesheets)
+    .then((res) => res.data ?? { weekLabel: "", totalLabel: "", entries: [] })
 }
 
 export function getInternApprovals(): Promise<InternApprovalsData> {
-  return apiClient.get<InternApprovalsData>(API_ENDPOINTS.intern.approvals)
+  return apiClient
+    .get<ApiResponse<InternApprovalsData>>(API_ENDPOINTS.intern.approvals)
+    .then((res) => res.data ?? { items: [] })
 }
 
 export function getAdminInterns(search?: string): Promise<AdminIntern[]> {

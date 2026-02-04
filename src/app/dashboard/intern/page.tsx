@@ -11,7 +11,10 @@ import {
   getInternDashboard,
   type InternActivityItem,
   type InternDashboardStat,
+  getInternTimeClock,
+  type InternTimeClockData,
 } from "@/lib/api/intern"
+import type { Attendance } from "@/lib/api/attendance"
 import {
   getNotifications,
   markNotificationRead,
@@ -68,6 +71,102 @@ function sortActivityDescending(items: InternActivityItem[]): InternActivityItem
   )
 }
 
+function formatDurationMinutes(totalMinutes: number): string {
+  if (!Number.isFinite(totalMinutes) || totalMinutes <= 0) {
+    return "0h 00m"
+  }
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = Math.round(totalMinutes % 60)
+  return `${hours}h ${String(minutes).padStart(2, "0")}m`
+}
+
+function parseMeridiemMinutes(value: string): number | null {
+  const match = value.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i)
+  if (!match) return null
+  let hours = Number(match[1])
+  const minutes = Number(match[2])
+  const period = match[3].toUpperCase()
+
+  if (period === "PM" && hours !== 12) {
+    hours += 12
+  }
+  if (period === "AM" && hours === 12) {
+    hours = 0
+  }
+
+  return hours * 60 + minutes
+}
+
+function parseShiftMinutes(label: string): number | null {
+  const match = label.match(
+    /(\d{1,2}:\d{2}\s*[AP]M)\s*-\s*(\d{1,2}:\d{2}\s*[AP]M)/i
+  )
+  if (!match) return null
+  const start = parseMeridiemMinutes(match[1])
+  const end = parseMeridiemMinutes(match[2])
+  if (start === null || end === null) return null
+  let diff = end - start
+  if (diff < 0) diff += 24 * 60
+  return diff
+}
+
+function computeWorkedMinutes(
+  attendance: Attendance | null,
+  nowMs: number
+): {
+  workedMinutes: number
+  isClockedIn: boolean
+  isOnBreak: boolean
+  hasClockedOut: boolean
+} {
+  if (!attendance?.clock_in_time) {
+    return {
+      workedMinutes: 0,
+      isClockedIn: false,
+      isOnBreak: false,
+      hasClockedOut: false,
+    }
+  }
+
+  const clockIn = new Date(attendance.clock_in_time)
+  if (Number.isNaN(clockIn.getTime())) {
+    return {
+      workedMinutes: 0,
+      isClockedIn: false,
+      isOnBreak: false,
+      hasClockedOut: false,
+    }
+  }
+
+  const clockOut = attendance.clock_out_time
+    ? new Date(attendance.clock_out_time)
+    : null
+  const end =
+    clockOut && !Number.isNaN(clockOut.getTime()) ? clockOut : new Date(nowMs)
+
+  let totalMinutes = Math.max(0, (end.getTime() - clockIn.getTime()) / 60000)
+  let breakMinutes = 0
+
+  if (attendance.break_start) {
+    const breakStart = new Date(attendance.break_start)
+    if (!Number.isNaN(breakStart.getTime())) {
+      const breakEnd = attendance.break_end
+        ? new Date(attendance.break_end)
+        : end
+      if (!Number.isNaN(breakEnd.getTime()) && breakEnd > breakStart) {
+        breakMinutes = (breakEnd.getTime() - breakStart.getTime()) / 60000
+      }
+    }
+  }
+
+  const workedMinutes = Math.max(0, totalMinutes - breakMinutes)
+  const isClockedIn = Boolean(attendance.clock_in_time && !attendance.clock_out_time)
+  const isOnBreak = Boolean(attendance.break_start && !attendance.break_end && isClockedIn)
+  const hasClockedOut = Boolean(attendance.clock_out_time)
+
+  return { workedMinutes, isClockedIn, isOnBreak, hasClockedOut }
+}
+
 const quickLinks = [
   {
     label: "Home",
@@ -117,6 +216,9 @@ export default function InternDashboardPage() {
   const [stats, setStats] = useState<InternDashboardStat[]>(fallbackStats)
   const [timeline, setTimeline] =
     useState<InternActivityItem[]>(sortActivityDescending(fallbackTimeline))
+  const [timeClock, setTimeClock] = useState<InternTimeClockData | null>(null)
+  const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null)
+  const [nowMs, setNowMs] = useState(() => Date.now())
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
   const [leaveReason, setLeaveReason] = useState("")
   const [leaveStartDate, setLeaveStartDate] = useState(
@@ -155,6 +257,33 @@ export default function InternDashboardPage() {
     return () => {
       active = false
     }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+
+    getInternTimeClock()
+      .then((data) => {
+        if (!active || !data) {
+          return
+        }
+        setTimeClock(data)
+        if (data.todayAttendance !== undefined) {
+          setTodayAttendance(data.todayAttendance ?? null)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setNowMs(Date.now())
+    }, 1000)
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
@@ -198,6 +327,45 @@ export default function InternDashboardPage() {
     | { status?: string }
     | undefined
   const responseStatus = responseData?.status
+
+  const { workedMinutes, isClockedIn, isOnBreak, hasClockedOut } =
+    computeWorkedMinutes(todayAttendance, nowMs)
+  const rawShiftLabel = timeClock?.header?.shiftLabel
+  const shiftLabel = rawShiftLabel
+    ? rawShiftLabel.toLowerCase().startsWith("shift") ||
+      rawShiftLabel.toLowerCase().startsWith("no")
+      ? rawShiftLabel
+      : `Shift ${rawShiftLabel}`
+    : "Shift 8:00 AM - 5:00 PM"
+  const scheduledMinutes = rawShiftLabel
+    ? parseShiftMinutes(rawShiftLabel)
+    : parseShiftMinutes(shiftLabel)
+  const progressLabel = scheduledMinutes
+    ? `${formatDurationMinutes(workedMinutes)} of ${formatDurationMinutes(
+        scheduledMinutes
+      )}`
+    : `${formatDurationMinutes(workedMinutes)} logged`
+  const progressPct =
+    scheduledMinutes && scheduledMinutes > 0
+      ? Math.min(100, Math.round((workedMinutes / scheduledMinutes) * 100))
+      : 0
+  let statusLabel = "Not clocked in"
+  if (hasClockedOut) {
+    statusLabel = "Clocked out"
+  } else if (isOnBreak) {
+    statusLabel = "On break"
+  } else if (isClockedIn) {
+    statusLabel = "Clocked in"
+  }
+  const statusClassName = isOnBreak
+    ? "bg-yellow-100 text-yellow-700"
+    : isClockedIn
+      ? "bg-emerald-100 text-emerald-700"
+      : hasClockedOut
+        ? "bg-slate-100 text-slate-700"
+        : "bg-red-100 text-red-700"
+  const primaryClockLabel =
+    isClockedIn || hasClockedOut ? "Open Time Clock" : "Clock In"
 
   const handleOpenNotification = async (item: NotificationRecord) => {
     setSelectedNotification(item)
@@ -327,7 +495,7 @@ export default function InternDashboardPage() {
             asChild
             className="w-full justify-center bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)] sm:w-auto"
           >
-            <Link href="/dashboard/intern/time">Clock In</Link>
+            <Link href="/dashboard/intern/time">{primaryClockLabel}</Link>
           </Button>
           <Button
             asChild
@@ -377,20 +545,23 @@ export default function InternDashboardPage() {
                 Workday Status
               </p>
               <p className="mt-2 text-lg font-semibold">
-                Shift 8:00 AM - 5:00 PM
+                {shiftLabel}
               </p>
             </div>
-            <span className="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
-              Not clocked in
+            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${statusClassName}`}>
+              {statusLabel}
             </span>
           </div>
           <div className="mt-4">
             <div className="flex items-center justify-between text-xs text-[color:var(--dash-muted)]">
               <span>Progress</span>
-              <span>2h 10m of 8h</span>
+              <span>{progressLabel}</span>
             </div>
             <div className="mt-2 h-2 w-full rounded-full bg-slate-100">
-              <div className="h-2 w-[28%] rounded-full bg-[color:var(--dash-accent)]" />
+              <div
+                className="h-2 rounded-full bg-[color:var(--dash-accent)]"
+                style={{ width: `${progressPct}%` }}
+              />
             </div>
           </div>
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -399,7 +570,7 @@ export default function InternDashboardPage() {
               size="sm"
               className="w-full justify-center bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)] sm:w-auto"
             >
-              <Link href="/dashboard/intern/time">Clock In</Link>
+              <Link href="/dashboard/intern/time">{primaryClockLabel}</Link>
             </Button>
             <Button
               asChild
