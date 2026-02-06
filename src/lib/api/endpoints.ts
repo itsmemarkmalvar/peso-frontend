@@ -44,6 +44,7 @@ export const API_ENDPOINTS = {
   // Schedules
   schedules: {
     list: '/schedules',
+    default: '/schedules/default',
     create: '/schedules',
     excused: '/schedules/excused',
     show: (id: number) => `/schedules/${id}`,

@@ -23,7 +23,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { updateDefaultSchedule, getExcusedInterns, type ExcusedIntern as ExcusedInternType } from "@/lib/api/schedule";
+import { updateDefaultSchedule, getDefaultSchedule, getExcusedInterns, type ExcusedIntern as ExcusedInternType } from "@/lib/api/schedule";
 
 const DAYS_OF_WEEK = [
   { id: "monday", label: "Monday", short: "M" },
@@ -83,6 +83,7 @@ export default function WorkSchedulesPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
+  const [isLoadingSchedule, setIsLoadingSchedule] = useState(true);
   const canViewExcused = user?.role === "admin" || user?.role === "supervisor";
 
   // Calculate break duration automatically
@@ -142,6 +143,52 @@ export default function WorkSchedulesPage() {
     };
     return dayMap[dayId] ?? 1;
   };
+
+  const dayOfWeekToId: Record<number, string> = {
+    0: "sunday",
+    1: "monday",
+    2: "tuesday",
+    3: "wednesday",
+    4: "thursday",
+    5: "friday",
+    6: "saturday",
+  };
+
+  // Load saved default schedule (required clock-in times)
+  useEffect(() => {
+    let active = true;
+    setIsLoadingSchedule(true);
+    getDefaultSchedule()
+      .then((data) => {
+        if (!active || !data) return;
+        if (data.days?.length) {
+          const days = data.days;
+          const selectedRaw = days.map((d) => dayOfWeekToId[d.day_of_week]).filter(Boolean);
+          const selected = Array.from(new Set(selectedRaw));
+          const schedules: Record<string, DaySchedule> = {};
+          days.forEach((d) => {
+            const id = dayOfWeekToId[d.day_of_week];
+            if (id) {
+              schedules[id] = {
+                startTime: d.start_time.length === 5 ? d.start_time : d.start_time.slice(0, 5),
+                endTime: d.end_time.length === 5 ? d.end_time : d.end_time.slice(0, 5),
+              };
+            }
+          });
+          setSelectedDays(selected.length ? selected : ["monday", "tuesday", "wednesday", "thursday", "friday"]);
+          setDaySchedules((prev) => ({ ...prev, ...schedules }));
+        }
+        if (data.lunch_break_start) setLunchBreakStart(data.lunch_break_start.length === 5 ? data.lunch_break_start : data.lunch_break_start.slice(0, 5));
+        if (data.lunch_break_end) setLunchBreakEnd(data.lunch_break_end.length === 5 ? data.lunch_break_end : data.lunch_break_end.slice(0, 5));
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setIsLoadingSchedule(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Load excused interns data from API
   useEffect(() => {
@@ -264,7 +311,7 @@ export default function WorkSchedulesPage() {
                   Default
                 </Badge>
               </div>
-              <p className="text-xs text-slate-500">Standard OJT work schedule</p>
+              <p className="text-xs text-slate-500">Standard OJT work schedule — required clock-in times for all interns</p>
             </div>
             <Button
               type="button"
@@ -277,6 +324,10 @@ export default function WorkSchedulesPage() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-6">
+            {isLoadingSchedule ? (
+              <p className="text-sm text-slate-500 py-4">Loading schedule…</p>
+            ) : (
+            <>
             {/* Daily Schedule */}
             <div className="space-y-2">
               {DAYS_OF_WEEK.map((day) => {
@@ -329,6 +380,8 @@ export default function WorkSchedulesPage() {
                 </div>
               </div>
             </div>
+            </>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -375,13 +428,13 @@ export default function WorkSchedulesPage() {
 
             {/* Daily Time Schedules */}
             <div className="space-y-3">
-              {selectedDays.map((dayId) => {
+              {selectedDays.map((dayId, index) => {
                 const day = DAYS_OF_WEEK.find((d) => d.id === dayId);
                 const schedule = daySchedules[dayId];
                 if (!day || !schedule) return null;
 
                 return (
-                  <div key={dayId} className="flex items-center gap-3">
+                  <div key={`work-${dayId}-${index}`} className="flex items-center gap-3">
                     <Label className="w-24 text-sm text-slate-700">{day.label}</Label>
                     <div className="flex flex-1 items-center gap-2">
                       <Input

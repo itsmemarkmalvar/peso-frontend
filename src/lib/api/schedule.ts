@@ -66,6 +66,26 @@ export interface ExcusedInternsResponse {
   message?: string;
 }
 
+export interface DefaultScheduleResponse {
+  success: boolean;
+  data?: {
+    days: { day_of_week: number; start_time: string; end_time: string }[];
+    lunch_break_start: string;
+    lunch_break_end: string;
+  };
+  message?: string;
+}
+
+/**
+ * Get the default work schedule (required clock-in times and lunch break).
+ */
+export async function getDefaultSchedule(): Promise<DefaultScheduleResponse["data"]> {
+  const response = await apiClient.get<DefaultScheduleResponse>(
+    API_ENDPOINTS.schedules.default
+  );
+  return (response as DefaultScheduleResponse).data ?? undefined;
+}
+
 /**
  * Get all schedules
  */
