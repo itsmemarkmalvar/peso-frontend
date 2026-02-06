@@ -413,9 +413,9 @@ export default function InternDashboardPage() {
               <span className="text-right">Status</span>
             </div>
             <div className="space-y-2">
-              {activityRows.map((row) => (
+              {activityRows.map((row, index) => (
                 <div
-                  key={`${row.time}-${row.title}`}
+                  key={`${row.time}-${row.title}-${index}`}
                   className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-700"
                 >
                   <div className="space-y-0.5">

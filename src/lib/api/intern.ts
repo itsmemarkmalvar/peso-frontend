@@ -51,11 +51,13 @@ export type InternTimeClockData = {
 export type InternTimesheetEntry = {
   day: string
   hours: string
-  status: "Approved" | "Pending" | "Rejected"
+  status: "Recorded" | "No record"
 }
 
 export type InternTimesheetData = {
   weekLabel: string
+  weekStart?: string
+  weekEnd?: string
   totalLabel: string
   entries: InternTimesheetEntry[]
 }
