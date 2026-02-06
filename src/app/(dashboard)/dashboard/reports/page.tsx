@@ -676,7 +676,7 @@ export default function ReportsPage() {
 
       {/* Report Configuration Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent onClose={() => setIsDialogOpen(false)} className="max-w-lg">
+        <DialogContent onClose={() => setIsDialogOpen(false)} className="max-w-5xl w-[90vw] max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{isPreview ? "Preview" : "Export"} {getReportTitle()}</DialogTitle>
             <DialogDescription>
@@ -752,7 +752,7 @@ export default function ReportsPage() {
             {isPreview && previewData && (
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">Preview Data</Label>
-                <div className="max-h-96 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+                <div className="min-h-[400px] max-h-[60vh] overflow-y-auto rounded-lg border border-slate-200 bg-white">
                   {renderPreviewTable(selectedReport, previewData)}
                 </div>
               </div>
