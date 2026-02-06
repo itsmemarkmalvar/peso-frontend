@@ -25,43 +25,7 @@ import {
   approveLeave,
   rejectLeave,
   type LeaveRequest,
-  type LeaveType,
-  type LeaveStatus,
 } from "@/lib/api/leaves";
-import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
-
-// Fallback function to build mock data if API is not ready
-function buildLeaveRows(interns: AdminIntern[]): LeaveRequest[] {
-  if (!interns.length) return [];
-
-  const types: LeaveType[] = ["Leave", "Holiday"];
-  const statuses: LeaveStatus[] = ["Pending", "Pending", "Approved", "Rejected"];
-
-  return interns.slice(0, 30).map((intern, index) => {
-    const type = types[index % types.length];
-    const status = statuses[index % statuses.length];
-    const baseDate = new Date();
-    baseDate.setDate(baseDate.getDate() + index);
-
-    return {
-      id: index + 1,
-      intern_id: intern.id,
-      intern_name: intern.name,
-      intern_student_id: intern.student_id,
-      type,
-      reason_title: "Sample leave request",
-      status,
-      start_date: baseDate.toISOString().split("T")[0],
-      end_date: null,
-      notes: "Sample notes for leave request",
-      rejection_reason: status === "Rejected" ? "Sample rejection reason" : null,
-      approved_by: status !== "Pending" ? 1 : null,
-      approved_at: status !== "Pending" ? baseDate.toISOString() : null,
-      created_at: baseDate.toISOString(),
-      updated_at: baseDate.toISOString(),
-    };
-  });
-}
 
 export default function LeavePage() {
   const [rows, setRows] = useState<LeaveRequest[]>([]);
@@ -75,41 +39,22 @@ export default function LeavePage() {
 
   useEffect(() => {
     let active = true;
+    setError(null);
 
-    // Try to fetch from API first, fallback to mock data
     getLeaves()
       .then((response) => {
         if (!active) return;
-        if (response.data && response.data.length > 0) {
-          setRows(response.data);
-        } else {
-          // Fallback to mock data
-          getAdminInterns()
-            .then((interns) => {
-              if (!active) return;
-              setRows(buildLeaveRows(interns));
-            })
-            .catch(() => {
-              if (!active) return;
-              setRows([]);
-            });
-        }
+        // API may return { data: [...] } or { data: { data: [...] } }
+        const raw = (response as { data?: { data?: LeaveRequest[] } | LeaveRequest[] }).data;
+        const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.data) ? raw.data : []);
+        setRows(list);
         setIsLoading(false);
       })
-      .catch(() => {
-        // If API fails, use mock data
+      .catch((err) => {
         if (!active) return;
-        getAdminInterns()
-          .then((interns) => {
-            if (!active) return;
-            setRows(buildLeaveRows(interns));
-            setIsLoading(false);
-          })
-          .catch((err) => {
-            if (!active) return;
-            setError(err instanceof Error ? err.message : "Failed to load leaves.");
-            setIsLoading(false);
-          });
+        setRows([]);
+        setError(err instanceof Error ? err.message : "Failed to load leave requests.");
+        setIsLoading(false);
       });
 
     return () => {

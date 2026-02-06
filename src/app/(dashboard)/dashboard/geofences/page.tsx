@@ -41,7 +41,6 @@ export default function GeofencesPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
-    address: "",
     radius_meters: 100,
   });
 
@@ -81,7 +80,6 @@ export default function GeofencesPage() {
     try {
       const newLocation = await createGeofenceLocation({
         name: location.name,
-        address: location.address,
         latitude: location.latitude,
         longitude: location.longitude,
         radius_meters: location.radius_meters,
@@ -89,7 +87,7 @@ export default function GeofencesPage() {
       setLocations((prev) => [...prev, newLocation]);
       setSelectedLocation(newLocation);
       setMode("view");
-      setFormData({ name: "", address: "", radius_meters: 100 });
+      setFormData({ name: "", radius_meters: 100 });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create geofence location");
     } finally {
@@ -102,7 +100,6 @@ export default function GeofencesPage() {
     if (location) {
       setFormData({
         name: location.name,
-        address: location.address,
         radius_meters: location.radius_meters,
       });
     }
@@ -123,7 +120,6 @@ export default function GeofencesPage() {
     try {
       const updated = await updateGeofenceLocation(editingLocation.id, {
         name: formData.name,
-        address: formData.address,
         radius_meters: formData.radius_meters,
       });
       setLocations((prev) =>
@@ -162,7 +158,7 @@ export default function GeofencesPage() {
   const handleCreateMode = () => {
     setMode("create");
     setSelectedLocation(null);
-    setFormData({ name: "", address: "", radius_meters: 100 });
+    setFormData({ name: "", radius_meters: 100 });
   };
 
   return (
@@ -312,19 +308,6 @@ export default function GeofencesPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="address" className="text-xs">Address</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value })
-                    }
-                    disabled={mode === "view"}
-                    placeholder="Full address"
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
                   <Label className="text-xs">Coordinates</Label>
                   <div className="text-xs text-slate-600 space-y-0.5 mt-1">
                     <p>Lat: {selectedLocation.latitude.toFixed(6)}</p>
@@ -381,9 +364,6 @@ export default function GeofencesPage() {
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-semibold text-slate-900 truncate">
                           {location.name}
-                        </p>
-                        <p className="text-[11px] text-slate-600 truncate mt-0.5">
-                          {location.address}
                         </p>
                         <p className="text-[11px] text-slate-500 mt-1">
                           Radius: {location.radius_meters}m

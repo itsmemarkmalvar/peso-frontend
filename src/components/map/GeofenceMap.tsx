@@ -20,8 +20,8 @@ export type GeofenceLocation = ApiGeofenceLocation;
 
 type GeofenceCreateInput = Omit<
   GeofenceLocation,
-  "id" | "is_active" | "created_at" | "updated_at"
->;
+  "id" | "is_active" | "created_at" | "updated_at" | "address"
+> & { address?: string };
 
 interface GeofenceMapProps {
   locations?: GeofenceLocation[];
@@ -69,7 +69,6 @@ export function GeofenceMap({
     lng: number;
     radius: number;
     name: string;
-    address: string;
   } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
@@ -97,15 +96,14 @@ export function GeofenceMap({
 
   const handleMapClick = (lat: number, lng: number) => {
     if (mode === "create") {
-      setNewLocation({ lat, lng, radius: 100, name: "", address: "" }); // Default 100m radius
+      setNewLocation({ lat, lng, radius: 100, name: "" });
     }
   };
 
   const handleCreateLocation = () => {
-    if (newLocation && onLocationCreate && newLocation.name?.trim() && newLocation.address?.trim()) {
+    if (newLocation && onLocationCreate && newLocation.name?.trim()) {
       onLocationCreate({
         name: newLocation.name.trim(),
-        address: newLocation.address.trim(),
         latitude: newLocation.lat,
         longitude: newLocation.lng,
         radius_meters: newLocation.radius,
@@ -227,25 +225,6 @@ export function GeofenceMap({
             </div>
             <div>
               <label className="text-xs font-medium text-slate-700 block mb-1">
-                Address *
-              </label>
-              <input
-                type="text"
-                id="create-address"
-                placeholder="Full address"
-                value={newLocation.address || ""}
-                onChange={(e) =>
-                  setNewLocation({
-                    ...newLocation,
-                    address: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-700 block mb-1">
                 Coordinates
               </label>
               <p className="text-xs text-slate-600">
@@ -274,7 +253,7 @@ export function GeofenceMap({
             <div className="flex gap-2 pt-2">
               <button
                 onClick={handleCreateLocation}
-                disabled={!newLocation.name?.trim() || !newLocation.address?.trim()}
+                disabled={!newLocation.name?.trim()}
                 className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-blue-700 rounded-md hover:bg-blue-800 disabled:bg-slate-300 disabled:cursor-not-allowed"
               >
                 Create

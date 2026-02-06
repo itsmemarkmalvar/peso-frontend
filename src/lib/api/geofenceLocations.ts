@@ -32,7 +32,7 @@ export interface GeofenceLocationResponse {
 
 export interface CreateGeofenceLocationPayload {
   name: string;
-  address: string;
+  address?: string;
   latitude: number;
   longitude: number;
   radius_meters: number;
