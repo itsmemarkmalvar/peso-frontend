@@ -39,6 +39,11 @@ export type InternTimeClockWeekItem = {
   hours: string
 }
 
+export type ClockInCutoff = {
+  time: string
+  label: string
+}
+
 export type InternTimeClockData = {
   header: InternTimeClockHeader
   snapshot: InternTimeClockSnapshot
@@ -46,6 +51,7 @@ export type InternTimeClockData = {
   week: InternTimeClockWeekItem[]
   recentActivity: InternActivityItem[]
   todayAttendance?: Attendance | null
+  clock_in_cutoff?: ClockInCutoff | null
 }
 
 export type InternTimesheetEntry = {

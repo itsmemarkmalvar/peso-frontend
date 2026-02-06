@@ -78,10 +78,22 @@ export function getTimesheets(params?: {
     : "";
 
   return apiClient
-    .get<{ success: boolean; message: string; data: TimesheetData }>(
+    .get<{ success: boolean; message: string; data?: TimesheetData } & Partial<TimesheetData>>(
       API_ENDPOINTS.timesheets.list + query
     )
-    .then((res) => res.data ?? { week_start: "", week_end: "", week_dates: [], rows: [] });
+    .then((res) => {
+      const payload = (res as { data?: TimesheetData }).data ?? (res as Partial<TimesheetData>);
+      return (
+        payload?.rows != null
+          ? {
+              week_start: payload.week_start ?? "",
+              week_end: payload.week_end ?? "",
+              week_dates: payload.week_dates ?? [],
+              rows: payload.rows,
+            }
+          : { week_start: "", week_end: "", week_dates: [], rows: [] }
+      );
+    });
 }
 
 /**

@@ -10,6 +10,7 @@ import {
   type InternTimeClockHeader,
   type InternTimeClockSnapshot,
   type InternTimeClockWeekItem,
+  type ClockInCutoff,
 } from "@/lib/api/intern"
 import { getGeofenceLocations } from "@/lib/api/geofenceLocations"
 import { getSettings } from "@/lib/api/settings"
@@ -206,6 +207,21 @@ function elapsedSecondsSince(iso: string | null): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
 }
 
+/** True if current time in Asia/Manila is after the given cutoff time (e.g. "08:30:00") */
+function isPastCutoffInManila(cutoffTime: string): boolean {
+  const [h = 0, m = 0] = cutoffTime.split(":").map(Number)
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Manila",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  })
+  const parts = formatter.formatToParts(new Date())
+  const hour = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10)
+  const minute = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10)
+  return hour > h || (hour === h && minute > m)
+}
+
 /** Sync timer state from attendance data (used on load and after refresh) */
 function syncTimerFromAttendance(
   att: { clock_in_time: string | null; clock_out_time: string | null; break_start: string | null; break_end: string | null },
@@ -288,6 +304,9 @@ export default function InternTimePage() {
   )
   const [isClockedIn, setIsClockedIn] = useState(false)
   const [clockNotice, setClockNotice] = useState<string | null>(null)
+  const [alertModalOpen, setAlertModalOpen] = useState(false)
+  const [alertModalMessage, setAlertModalMessage] = useState("")
+  const [clockInCutoff, setClockInCutoff] = useState<ClockInCutoff | null>(null)
   const [consent, setConsent] = useState<ConsentState | null>(null)
   const [consentOpen, setConsentOpen] = useState(false)
   const [consentForm, setConsentForm] = useState({
@@ -374,6 +393,7 @@ export default function InternTimePage() {
         if (data?.recentActivity?.length) {
           setLogs(data.recentActivity)
         }
+        setClockInCutoff(data?.clock_in_cutoff ?? null)
       })
       .catch(() => {})
 
@@ -722,6 +742,18 @@ export default function InternTimePage() {
   const openVerification = (action: VerificationAction) => {
     setConsentNotice(null)
     setClockNotice(null)
+    if (
+      action === "clock-in" &&
+      !isClockedIn &&
+      clockInCutoff &&
+      isPastCutoffInManila(clockInCutoff.time)
+    ) {
+      const msg = `Clock-in is only allowed until ${clockInCutoff.label}. You can no longer clock in for today.`
+      setClockNotice(msg)
+      setAlertModalMessage(msg)
+      setAlertModalOpen(true)
+      return
+    }
     if ((action === "break-start" || action === "break-end" || action === "clock-out") && !isClockedIn) {
       setClockNotice("Clock in first to start a break or clock out.")
       return
@@ -873,6 +905,7 @@ export default function InternTimePage() {
             if (data?.summary?.length) setSummary(data.summary)
             if (data?.week?.length) setWeek(data.week)
             if (data?.recentActivity?.length) setLogs(data.recentActivity)
+            setClockInCutoff(data?.clock_in_cutoff ?? null)
           }).catch(() => {})
           getTodayAttendance().catch(() => {})
         }
@@ -924,6 +957,7 @@ export default function InternTimePage() {
             if (data?.summary?.length) setSummary(data.summary)
             if (data?.week?.length) setWeek(data.week)
             if (data?.recentActivity?.length) setLogs(data.recentActivity)
+            setClockInCutoff(data?.clock_in_cutoff ?? null)
           }).catch(() => {})
           getTodayAttendance().catch(() => {})
         }
@@ -949,6 +983,7 @@ export default function InternTimePage() {
             if (data?.summary?.length) setSummary(data.summary)
             if (data?.week?.length) setWeek(data.week)
             if (data?.recentActivity?.length) setLogs(data.recentActivity)
+            setClockInCutoff(data?.clock_in_cutoff ?? null)
           }).catch(() => {})
           getTodayAttendance().then((res) => {
             if (res?.data?.break_start) setTodayBreakStart(res.data.break_start)
@@ -977,6 +1012,7 @@ export default function InternTimePage() {
             if (data?.summary?.length) setSummary(data.summary)
             if (data?.week?.length) setWeek(data.week)
             if (data?.recentActivity?.length) setLogs(data.recentActivity)
+            setClockInCutoff(data?.clock_in_cutoff ?? null)
           }).catch(() => {})
           getTodayAttendance().then((res) => {
             if (res?.data?.break_start) setTodayBreakStart(res.data.break_start)
@@ -1007,6 +1043,7 @@ export default function InternTimePage() {
           if (data?.summary?.length) setSummary(data.summary)
           if (data?.week?.length) setWeek(data.week)
           if (data?.recentActivity?.length) setLogs(data.recentActivity)
+          setClockInCutoff(data?.clock_in_cutoff ?? null)
         }).catch(() => {})
         getTodayAttendance().then((res) => {
           if (res?.data) {
@@ -1051,6 +1088,7 @@ export default function InternTimePage() {
           if (data?.summary?.length) setSummary(data.summary)
           if (data?.week?.length) setWeek(data.week)
           if (data?.recentActivity?.length) setLogs(data.recentActivity)
+          setClockInCutoff(data?.clock_in_cutoff ?? null)
         }).catch(() => {})
         getTodayAttendance().then((res) => {
           if (res?.data) {
@@ -1100,6 +1138,11 @@ export default function InternTimePage() {
       ? [geofences[0].lat, geofences[0].lng]
       : [14.2486, 121.1258]
   const mapZoom = userLocation ? 16 : geofences.length ? 15 : 13
+
+  const clockInWindowClosed =
+    !isClockedIn &&
+    !!clockInCutoff &&
+    isPastCutoffInManila(clockInCutoff.time)
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -1218,8 +1261,10 @@ export default function InternTimePage() {
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <Button
-                className="h-12 w-full bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+                className="h-12 w-full bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)] disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => openVerification("clock-in")}
+                disabled={clockInWindowClosed}
+                title={clockInWindowClosed && clockInCutoff ? `Clock-in closed. Allowed until ${clockInCutoff.label} only.` : undefined}
               >
                 Clock In
               </Button>
@@ -1281,7 +1326,11 @@ export default function InternTimePage() {
                 {consentNotice}
               </p>
             ) : null}
-            {clockNotice ? (
+            {clockInWindowClosed && clockInCutoff ? (
+              <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
+                Clock-in is only allowed until {clockInCutoff.label}. You can no longer clock in for today.
+              </p>
+            ) : clockNotice ? (
               <p className="mt-2 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
                 {clockNotice}
               </p>
