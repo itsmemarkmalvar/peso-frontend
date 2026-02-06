@@ -164,22 +164,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     return null;
   }
 
-  // Show loading state to prevent layout from disappearing
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-50">
-        <div className="text-center">
-          <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto" />
-          <p className="text-sm text-slate-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render layout if not authorized (will redirect)
-  if (!isAuthorized) {
-    return null;
-  }
+  // Keep header/shell visible during load and redirect to avoid "disappearing" flash.
+  // Only the main content area shows loading or redirecting state.
+  const showContent = isAuthorized && !isLoading;
+  const showRedirecting = !isLoading && !isAuthorized;
 
   const currentNavItem =
     NAV_ITEMS.find((item) => pathname?.startsWith(item.href)) ?? NAV_ITEMS[0];
@@ -320,17 +308,21 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </div>
           </header>
 
-          {/* Access control + content */}
+          {/* Access control + content — shell always visible to prevent header disappearing */}
           <main className="flex-1 overflow-y-auto bg-[color:var(--dash-bg)]">
-            {!isAuthorized ? (
-              <div className="flex h-full items-center justify-center px-4 py-10">
-                <div className="max-w-md rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-900 shadow-sm">
-                  <p className="font-semibold">
-                    Admin/Coordinator/Supervisor access only
-                  </p>
+            {isLoading ? (
+              <div className="flex h-full min-h-[40vh] items-center justify-center px-4 py-10">
+                <div className="text-center">
+                  <div className="mb-4 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent mx-auto" />
+                  <p className="text-sm text-slate-600">Loading session...</p>
+                </div>
+              </div>
+            ) : showRedirecting ? (
+              <div className="flex h-full min-h-[40vh] items-center justify-center px-4 py-10">
+                <div className="max-w-md rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-900 shadow-sm">
+                  <p className="font-semibold">Redirecting to login…</p>
                   <p className="mt-1 text-xs leading-relaxed">
-                    You must be signed in as an administrator, coordinator, or supervisor to view this
-                    dashboard. Redirecting to the login page…
+                    You must be signed in to view this dashboard.
                   </p>
                 </div>
               </div>
