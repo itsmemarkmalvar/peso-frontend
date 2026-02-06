@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Calendar, Clock, MapPin, Play, Square } from "lucide-react";
 import Image from "next/image";
 
@@ -19,7 +19,10 @@ import { getInternTimesheetDetail, type InternTimesheetDetail, type AttendanceRe
 export default function TimesheetDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const internId = parseInt(params.internId as string, 10);
+  const startDate = searchParams.get("start_date") ?? undefined;
+  const endDate = searchParams.get("end_date") ?? undefined;
 
   const [data, setData] = useState<InternTimesheetDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +39,9 @@ export default function TimesheetDetailPage() {
     setIsLoading(true);
     setError(null);
 
-    getInternTimesheetDetail(internId)
+    const dateParams = [startDate, endDate].every(Boolean) ? { start_date: startDate!, end_date: endDate! } : undefined;
+
+    getInternTimesheetDetail(internId, dateParams)
       .then((timesheetData) => {
         if (!active) return;
         setData(timesheetData);
@@ -51,7 +56,7 @@ export default function TimesheetDetailPage() {
     return () => {
       active = false;
     };
-  }, [internId]);
+  }, [internId, startDate, endDate]);
 
   if (isLoading) {
     return (
