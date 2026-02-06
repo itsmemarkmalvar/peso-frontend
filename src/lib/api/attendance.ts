@@ -24,6 +24,7 @@ export interface Attendance {
   approved_at: string | null;
   notes: string | null;
   total_hours: number | null;
+  total_hours_label?: string;
   is_late: boolean;
   is_undertime: boolean;
   is_overtime: boolean;

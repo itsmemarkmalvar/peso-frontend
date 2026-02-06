@@ -9,42 +9,49 @@ import {
 } from "@/lib/api/intern"
 import { Button } from "@/components/ui/button"
 
-const fallbackEntries: InternTimesheetEntry[] = [
-  { day: "Mon", hours: "7h 50m", status: "Approved" },
-  { day: "Tue", hours: "6h 15m", status: "Approved" },
-  { day: "Wed", hours: "4h 35m", status: "Pending" },
-  { day: "Thu", hours: "0h 00m", status: "Pending" },
-  { day: "Fri", hours: "0h 00m", status: "Pending" },
-] as const
-
-const fallbackTimesheet: InternTimesheetData = {
-  weekLabel: "Week of Jan 15 - Jan 19",
-  totalLabel: "Total: 18h 40m",
-  entries: fallbackEntries,
-}
-
 export default function InternTimesheetsPage() {
-  const [timesheet, setTimesheet] =
-    useState<InternTimesheetData>(fallbackTimesheet)
+  const [timesheet, setTimesheet] = useState<InternTimesheetData | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
+    setIsLoading(true)
+    setError(null)
 
     getInternTimesheets()
       .then((data) => {
         if (!active) {
           return
         }
-        if (data?.entries?.length) {
-          setTimesheet(data)
-        }
+        setTimesheet(data)
       })
-      .catch(() => {})
+      .catch((err) => {
+        if (!active) {
+          return
+        }
+        setError(
+          err instanceof Error ? err.message : "Failed to load timesheets."
+        )
+        setTimesheet(null)
+      })
+      .finally(() => {
+        if (!active) {
+          return
+        }
+        setIsLoading(false)
+      })
 
     return () => {
       active = false
     }
   }, [])
+
+  const weekLabel = timesheet?.weekLabel?.trim() ? timesheet.weekLabel : "-"
+  const totalLabel = timesheet?.totalLabel?.trim()
+    ? timesheet.totalLabel
+    : "Total: -"
+  const entries: InternTimesheetEntry[] = timesheet?.entries ?? []
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -62,9 +69,9 @@ export default function InternTimesheetsPage() {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
-              {timesheet.weekLabel}
+              {weekLabel}
             </p>
-            <p className="mt-2 text-lg font-semibold">{timesheet.totalLabel}</p>
+            <p className="mt-2 text-lg font-semibold">{totalLabel}</p>
           </div>
           <Button className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]">
             Submit Timesheet
@@ -72,31 +79,45 @@ export default function InternTimesheetsPage() {
         </div>
 
         <div className="mt-5 space-y-3 text-sm">
-          {timesheet.entries.map((entry) => (
-            <div
-              key={entry.day}
-              className="flex items-center justify-between rounded-xl border border-[color:var(--dash-border)] bg-white px-4 py-3"
-            >
-              <div>
-                <p className="font-semibold">{entry.day}</p>
-                <p className="text-xs text-[color:var(--dash-muted)]">
-                  {entry.hours}
-                </p>
-              </div>
-              <span
-                className={[
-                  "rounded-full px-3 py-1 text-xs font-semibold",
-                  entry.status === "Approved"
-                    ? "bg-blue-100 text-blue-700"
-                    : entry.status === "Rejected"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-yellow-100 text-yellow-700",
-                ].join(" ")}
-              >
-                {entry.status}
-              </span>
+          {isLoading ? (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
+              Loading timesheets...
             </div>
-          ))}
+          ) : error ? (
+            <div className="rounded-xl border border-dashed border-red-200 bg-red-50 px-4 py-6 text-center text-xs text-red-600">
+              {error}
+            </div>
+          ) : entries.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-500">
+              No timesheet entries yet.
+            </div>
+          ) : (
+            entries.map((entry) => (
+              <div
+                key={entry.day}
+                className="flex items-center justify-between rounded-xl border border-[color:var(--dash-border)] bg-white px-4 py-3"
+              >
+                <div>
+                  <p className="font-semibold">{entry.day}</p>
+                  <p className="text-xs text-[color:var(--dash-muted)]">
+                    {entry.hours}
+                  </p>
+                </div>
+                <span
+                  className={[
+                    "rounded-full px-3 py-1 text-xs font-semibold",
+                    entry.status === "Approved"
+                      ? "bg-blue-100 text-blue-700"
+                      : entry.status === "Rejected"
+                        ? "bg-red-100 text-red-700"
+                        : "bg-yellow-100 text-yellow-700",
+                  ].join(" ")}
+                >
+                  {entry.status}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

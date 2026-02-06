@@ -36,16 +36,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 const fallbackStats: InternDashboardStat[] = [
-  { label: "Hours logged", value: "18h 40m", sub: "This week" },
-  { label: "Last clock", value: "08:10 AM", sub: "Today" },
-  { label: "Approvals", value: "1 pending", sub: "Awaiting review" },
-] as const
-
-const fallbackTimeline: InternActivityItem[] = [
-  { time: "08:10 AM", title: "Clocked in", detail: "Main office" },
-  { time: "12:05 PM", title: "Break start", detail: "Lunch" },
-  { time: "12:45 PM", title: "Break end", detail: "Back to work" },
-] as const
+  { label: "Hours logged", value: "-", sub: "This week" },
+  { label: "Last clock", value: "-", sub: "Today" },
+  { label: "Approvals", value: "-", sub: "Awaiting review" },
+]
 
 function parseTimeToMinutes(value: string): number {
   // Expect formats like "08:10 AM", fall back to 0 when unknown
@@ -214,8 +208,7 @@ export default function InternDashboardPage() {
   const { user } = useAuth()
   const reduceMotion = useReducedMotion()
   const [stats, setStats] = useState<InternDashboardStat[]>(fallbackStats)
-  const [timeline, setTimeline] =
-    useState<InternActivityItem[]>(sortActivityDescending(fallbackTimeline))
+  const [timeline, setTimeline] = useState<InternActivityItem[]>([])
   const [timeClock, setTimeClock] = useState<InternTimeClockData | null>(null)
   const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null)
   const [nowMs, setNowMs] = useState(() => Date.now())
@@ -245,12 +238,12 @@ export default function InternDashboardPage() {
         if (!active) {
           return
         }
-        if (data?.stats?.length) {
-          setStats(data.stats)
-        }
-        if (data?.recentActivity?.length) {
-          setTimeline(sortActivityDescending(data.recentActivity))
-        }
+        setStats(data?.stats?.length ? data.stats : fallbackStats)
+        setTimeline(
+          data?.recentActivity?.length
+            ? sortActivityDescending(data.recentActivity)
+            : []
+        )
       })
       .catch(() => {})
 
@@ -336,7 +329,7 @@ export default function InternDashboardPage() {
       rawShiftLabel.toLowerCase().startsWith("no")
       ? rawShiftLabel
       : `Shift ${rawShiftLabel}`
-    : "Shift 8:00 AM - 5:00 PM"
+    : "Shift -"
   const scheduledMinutes = rawShiftLabel
     ? parseShiftMinutes(rawShiftLabel)
     : parseShiftMinutes(shiftLabel)
@@ -366,6 +359,13 @@ export default function InternDashboardPage() {
         : "bg-red-100 text-red-700"
   const primaryClockLabel =
     isClockedIn || hasClockedOut ? "Open Time Clock" : "Clock In"
+
+  const headerDateLabel = new Date(nowMs).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })
 
   const handleOpenNotification = async (item: NotificationRecord) => {
     setSelectedNotification(item)
@@ -464,7 +464,7 @@ export default function InternDashboardPage() {
       >
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
-            Tuesday, Jan 20
+            {headerDateLabel}
           </p>
           <h1 className="mt-2 text-2xl font-semibold">
             Welcome back, {getInternOrGipRoleLabel(user?.role)}
@@ -588,25 +588,31 @@ export default function InternDashboardPage() {
             Recent Activity
           </p>
           <div className="mt-4 space-y-4">
-            {timeline.map((entry) => (
-              <div
-                key={`${entry.time}-${entry.title}`}
-                className="flex items-start gap-3"
-              >
-                <div className="mt-1 h-2 w-2 rounded-full bg-[color:var(--dash-accent)]" />
-                <div className="flex-1">
-                  <div className="flex items-center justify-between text-sm font-medium">
-                    <span>{entry.title}</span>
-                    <span className="text-xs text-[color:var(--dash-muted)]">
-                      {entry.time}
-                    </span>
+            {timeline.length > 0 ? (
+              timeline.map((entry) => (
+                <div
+                  key={`${entry.time}-${entry.title}`}
+                  className="flex items-start gap-3"
+                >
+                  <div className="mt-1 h-2 w-2 rounded-full bg-[color:var(--dash-accent)]" />
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between text-sm font-medium">
+                      <span>{entry.title}</span>
+                      <span className="text-xs text-[color:var(--dash-muted)]">
+                        {entry.time}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[color:var(--dash-muted)]">
+                      {entry.detail}
+                    </p>
                   </div>
-                  <p className="text-xs text-[color:var(--dash-muted)]">
-                    {entry.detail}
-                  </p>
                 </div>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-xs text-[color:var(--dash-muted)]">
+                No activity logged yet.
+              </p>
+            )}
           </div>
           <Button
             asChild
