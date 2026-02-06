@@ -225,97 +225,28 @@ export default function AdminDashboardPage() {
         setIsLoading(false);
       });
 
-    // Load pending approvals
+    // Load pending approvals (attendance needing approval - real API only, no mock)
     getPendingApprovals()
       .then((response) => {
         if (!active) return;
-        if (response.data && response.data.length > 0) {
-          const pending = response.data.filter((a) => a.status === "Pending");
-          setPendingApprovals(pending.slice(0, 10));
-          setStats((prev) => [
-            prev[0],
-            prev[1],
-            { ...prev[2], value: pending.length.toString() },
-            prev[3],
-          ]);
-        } else {
-          // Fallback to mock data
-          getAdminInterns()
-            .then((interns) => {
-              if (!active) return;
-              const mockApprovals: ApprovalRequest[] = interns.slice(0, 10).map((intern, index) => ({
-                id: index + 1,
-                attendance_id: index + 1,
-                intern_id: intern.id,
-                intern_name: intern.name,
-                intern_student_id: intern.student_id,
-                type: ["Overtime", "Correction", "Undertime"][index % 3] as "Overtime" | "Correction" | "Undertime",
-                reason_title: "Sample approval request",
-                status: "Pending" as const,
-                date: new Date().toISOString().split("T")[0],
-                clock_in_time: null,
-                clock_out_time: null,
-                notes: null,
-                rejection_reason: null,
-                approved_by: null,
-                approved_at: null,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-              }));
-              setPendingApprovals(mockApprovals);
-              setStats((prev) => [
-                prev[0],
-                prev[1],
-                { ...prev[2], value: mockApprovals.length.toString() },
-                prev[3],
-              ]);
-            })
-            .catch(() => {
-              if (!active) return;
-              setPendingApprovals([]);
-            });
-        }
+        // API returns { data: { data: [...], pagination } } or { data: [...] }
+        const raw = (response as { data?: { data?: ApprovalRequest[] } | ApprovalRequest[] }).data;
+        const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.data) ? raw.data : []);
+        const pending = list.filter((a) => a.status === "Pending");
+        setPendingApprovals(pending.slice(0, 10));
+        setStats((prev) => [
+          prev[0],
+          prev[1],
+          { ...prev[2], value: pending.length.toString() },
+          prev[3],
+        ]);
         setIsLoadingApprovals(false);
       })
-      .catch(() => {
+      .catch((err) => {
         if (!active) return;
-        // Fallback to mock data on error
-        getAdminInterns()
-          .then((interns) => {
-            if (!active) return;
-            const mockApprovals: ApprovalRequest[] = interns.slice(0, 10).map((intern, index) => ({
-              id: index + 1,
-              attendance_id: index + 1,
-              intern_id: intern.id,
-              intern_name: intern.name,
-              intern_student_id: intern.student_id,
-              type: ["Overtime", "Correction", "Undertime"][index % 3] as "Overtime" | "Correction" | "Undertime",
-              reason_title: "Sample approval request",
-              status: "Pending" as const,
-              date: new Date().toISOString().split("T")[0],
-              clock_in_time: null,
-              clock_out_time: null,
-              notes: null,
-              rejection_reason: null,
-              approved_by: null,
-              approved_at: null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            }));
-            setPendingApprovals(mockApprovals);
-            setStats((prev) => [
-              prev[0],
-              prev[1],
-              { ...prev[2], value: mockApprovals.length.toString() },
-              prev[3],
-            ]);
-            setIsLoadingApprovals(false);
-          })
-          .catch((err) => {
-            if (!active) return;
-            setApprovalsError(err instanceof Error ? err.message : "Failed to load approvals.");
-            setIsLoadingApprovals(false);
-          });
+        setPendingApprovals([]);
+        setApprovalsError(err instanceof Error ? err.message : "Failed to load approvals.");
+        setIsLoadingApprovals(false);
       });
 
     // Load today's excused interns with school classes
