@@ -416,7 +416,7 @@ export default function InternDashboardPage() {
     setLeaveError(null)
     const trimmedReason = leaveReason.trim()
     if (!trimmedReason) {
-      setLeaveError("Please provide a reason for your leave.")
+      setLeaveError("Please provide a reason for your absence.")
       return
     }
     if (!leaveStartDate) {
@@ -441,10 +441,10 @@ export default function InternDashboardPage() {
       setLeaveStartDate(new Date().toISOString().split("T")[0])
       setLeaveEndDate("")
       setLeaveError(null)
-      alert("Leave request submitted for review.")
+      alert("Absence request submitted for review.")
     } catch (err) {
       setLeaveError(
-        err instanceof Error ? err.message : "Failed to submit leave request"
+        err instanceof Error ? err.message : "Failed to submit absence request"
       )
     } finally {
       setIsSubmittingLeave(false)
@@ -509,7 +509,7 @@ export default function InternDashboardPage() {
             onClick={openLeaveDialog}
             className="w-full justify-center border-[color:var(--dash-border)] text-[color:var(--dash-ink)] sm:w-auto"
           >
-            File A Leave
+            File An Absence
           </Button>
         </div>
       </motion.header>
@@ -811,9 +811,9 @@ export default function InternDashboardPage() {
       <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
         <DialogContent onClose={() => setIsLeaveDialogOpen(false)} className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>File A Leave</DialogTitle>
+            <DialogTitle>File An Absence</DialogTitle>
             <DialogDescription>
-              Submit a leave request for admin review.
+              Submit an absence request for admin review.
             </DialogDescription>
           </DialogHeader>
           {leaveError && (
@@ -824,20 +824,20 @@ export default function InternDashboardPage() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="leave-reason" className="text-xs font-semibold text-slate-700">
-                Reason for leave
+                Reason for absence
               </Label>
               <textarea
                 id="leave-reason"
                 value={leaveReason}
                 onChange={(e) => setLeaveReason(e.target.value)}
-                placeholder="Share the reason for your leave..."
+                placeholder="Share the reason for your absence..."
                 className="w-full min-h-[96px] px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 disabled={isSubmittingLeave}
               />
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">
-                Duration of leave
+                Duration of absence
               </Label>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-2">
@@ -868,7 +868,7 @@ export default function InternDashboardPage() {
                 </div>
               </div>
               <p className="text-[11px] text-slate-500">
-                Leave end date blank if the leave is for one day only.
+                Leave end date blank if the absence is for one day only.
               </p>
             </div>
           </div>
@@ -885,7 +885,7 @@ export default function InternDashboardPage() {
               disabled={isSubmittingLeave}
               className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
             >
-              {isSubmittingLeave ? "Submitting..." : "Submit Leave"}
+              {isSubmittingLeave ? "Submitting..." : "Submit"}
             </Button>
           </DialogFooter>
         </DialogContent>
