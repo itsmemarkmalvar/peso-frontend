@@ -70,8 +70,10 @@ export interface DefaultScheduleResponse {
   success: boolean;
   data?: {
     days: { day_of_week: number; start_time: string; end_time: string }[];
+    name: string | null;
     lunch_break_start: string;
     lunch_break_end: string;
+    admin_notes: string | null;
   };
   message?: string;
 }

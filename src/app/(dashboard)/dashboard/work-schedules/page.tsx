@@ -59,7 +59,7 @@ const WEEKDAYS = [
 export default function WorkSchedulesPage() {
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [scheduleName] = useState("On the Job Training 2026");
+  const [scheduleName, setScheduleName] = useState("On the Job Training 2026");
   const [selectedDays, setSelectedDays] = useState<string[]>([
     "monday",
     "tuesday",
@@ -161,6 +161,8 @@ export default function WorkSchedulesPage() {
     getDefaultSchedule()
       .then((data) => {
         if (!active || !data) return;
+        if (data.name != null && data.name !== "") setScheduleName(data.name);
+        if (data.admin_notes != null) setAdminNotes(data.admin_notes ?? "");
         if (data.days?.length) {
           const days = data.days;
           const selectedRaw = days.map((d) => dayOfWeekToId[d.day_of_week]).filter(Boolean);
@@ -405,6 +407,21 @@ export default function WorkSchedulesPage() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Schedule name (saved to database) */}
+            <div className="space-y-2">
+              <Label htmlFor="schedule-name" className="text-xs font-semibold text-slate-700">
+                Schedule name
+              </Label>
+              <Input
+                id="schedule-name"
+                type="text"
+                value={scheduleName}
+                onChange={(e) => setScheduleName(e.target.value)}
+                placeholder="e.g. On the Job Training 2026"
+                className="text-sm"
+              />
+            </div>
+
             {/* Days of the Week */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">Days of the week</Label>
