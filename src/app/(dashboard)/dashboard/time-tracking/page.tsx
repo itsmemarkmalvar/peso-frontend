@@ -211,42 +211,25 @@ export default function TimeTrackingPage() {
 
         const interns = internsResponse;
         setAllInterns(interns);
-        const attendanceData = (attendanceResponse.data || []).map((a) => ({
+        // API may return { data: [...] } or { data: { data: [...], ... } } (paginated)
+        const raw = (attendanceResponse as { data?: { data?: Attendance[] } | Attendance[] }).data;
+        const list = Array.isArray(raw) ? raw : (Array.isArray(raw?.data) ? raw.data : []);
+        const attendanceData = list.map((a) => ({
           intern_id: a.intern_id,
           total_hours: a.total_hours,
           status: a.status,
         }));
 
-        // Build hours rows with calculated data
-        // Note: required_hours should come from backend API, using default 200 for now
         const rows = buildHoursRows(interns, attendanceData);
         setHoursRows(rows);
         setIsLoading(false);
       })
       .catch((err) => {
         if (!active) return;
-        // Fallback to mock data
-        getAdminInterns()
-          .then((interns) => {
-            if (!active) return;
-            // Generate mock attendance data
-            const mockAttendanceData = interns.flatMap((intern) =>
-              Array.from({ length: 20 }, (_, i) => ({
-                intern_id: intern.id,
-                total_hours: Math.random() * 8 + 4, // 4-12 hours per day
-                status: i % 3 === 0 ? "pending" : "approved",
-              }))
-            );
-            setAllInterns(interns);
-            const rows = buildHoursRows(interns, mockAttendanceData);
-            setHoursRows(rows);
-            setIsLoading(false);
-          })
-          .catch((err2) => {
-            if (!active) return;
-            setError(err2 instanceof Error ? err2.message : "Failed to load hours data.");
-            setIsLoading(false);
-          });
+        setHoursRows([]);
+        setAllInterns([]);
+        setError(err instanceof Error ? err.message : "Failed to load hours data.");
+        setIsLoading(false);
       });
 
     return () => {
