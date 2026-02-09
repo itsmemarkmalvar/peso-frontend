@@ -22,7 +22,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { APP_CONFIG } from "@/lib/constants";
-import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
+import { getAdminInterns, getAdminFilterOptions, type AdminIntern, type AdminFilterOptions } from "@/lib/api/intern";
 import { getAttendanceList } from "@/lib/api/attendance";
 
 type HoursRow = {
@@ -40,16 +40,6 @@ function formatHours(hours: number): string {
   const h = Math.floor(hours);
   const m = Math.round((hours - h) * 60);
   return `${h}h ${m}m`;
-}
-
-function formatRole(role: string): string {
-  const roleMap: Record<string, string> = {
-    admin: "Administrator",
-    supervisor: "Supervisor",
-    gip: "GIP",
-    intern: "Intern",
-  };
-  return roleMap[role.toLowerCase()] || role.charAt(0).toUpperCase() + role.slice(1);
 }
 
 function calculateHoursRendered(
@@ -234,6 +224,7 @@ async function exportCertificateAsPdf(data: CertificateData): Promise<void> {
 export default function TimeTrackingPage() {
   const [hoursRows, setHoursRows] = useState<HoursRow[]>([]);
   const [allInterns, setAllInterns] = useState<AdminIntern[]>([]);
+  const [filterOptions, setFilterOptions] = useState<AdminFilterOptions>({ roles: [], groups: [] });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -245,12 +236,13 @@ export default function TimeTrackingPage() {
   useEffect(() => {
     let active = true;
 
-    Promise.all([getAdminInterns(), getAttendanceList()])
-      .then(([internsResponse, attendanceResponse]) => {
+    Promise.all([getAdminInterns(), getAttendanceList(), getAdminFilterOptions()])
+      .then(([internsResponse, attendanceResponse, options]) => {
         if (!active) return;
 
         const interns = internsResponse;
         setAllInterns(interns);
+        setFilterOptions(options ?? { roles: [], groups: [] });
         const attendanceData = (attendanceResponse.data || []).map((a) => ({
           intern_id: a.intern_id,
           total_hours: a.total_hours,
@@ -266,9 +258,10 @@ export default function TimeTrackingPage() {
       .catch((err) => {
         if (!active) return;
         // Fallback to mock data
-        getAdminInterns()
-          .then((interns) => {
+        Promise.all([getAdminInterns(), getAdminFilterOptions()])
+          .then(([interns, options]) => {
             if (!active) return;
+            setFilterOptions(options ?? { roles: [], groups: [] });
             // Generate mock attendance data
             const mockAttendanceData = interns.flatMap((intern) =>
               Array.from({ length: 20 }, (_, i) => ({
@@ -306,17 +299,9 @@ export default function TimeTrackingPage() {
     }
   };
 
-  // Get unique filter values
-  const uniqueRoles = useMemo(() => {
-    const roles = Array.from(new Set(allInterns.map((i) => i.role).filter(Boolean)));
-    return roles.sort();
-  }, [allInterns]);
-
-  const uniqueGroups = useMemo(() => {
-    // Using company_name as groups/departments
-    const groups = Array.from(new Set(allInterns.map((i) => i.company_name).filter(Boolean)));
-    return groups.sort();
-  }, [allInterns]);
+  // Roles and groups from backend (controllers: UserRole enum + distinct company_name)
+  const uniqueRoles = filterOptions.roles;
+  const uniqueGroups = filterOptions.groups;
 
   // Create a map of intern_id to AdminIntern for filtering
   const internMap = useMemo(() => {
@@ -352,8 +337,8 @@ export default function TimeTrackingPage() {
         return false;
       }
 
-      // Group filter (using company_name as groups)
-      if (filterGroup && intern.company_name !== filterGroup) {
+      // Department filter (groups = departments from backend)
+      if (filterGroup && intern.department_name !== filterGroup) {
         return false;
       }
 
@@ -386,7 +371,7 @@ export default function TimeTrackingPage() {
                 type="search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by name, student ID, email, course, group, or supervisor"
+                placeholder="Search by name, student ID, email, course, department, or supervisor"
                 className="h-9 pl-9 text-sm"
               />
             </div>
@@ -410,22 +395,22 @@ export default function TimeTrackingPage() {
               >
                 <option value="">All Roles</option>
                 {uniqueRoles.map((role) => (
-                  <option key={role} value={role}>
-                    {formatRole(role)}
+                  <option key={role.value} value={role.value}>
+                    {role.label}
                   </option>
                 ))}
               </Select>
             </div>
             <div className="space-y-1.5">
               <label className="text-[11px] font-semibold uppercase text-slate-600">
-                Group
+                Department
               </label>
               <Select
                 value={filterGroup}
                 onChange={(e) => setFilterGroup(e.target.value)}
-                placeholder="All Groups"
+                placeholder="All Departments"
               >
-                <option value="">All Groups</option>
+                <option value="">All Departments</option>
                 {uniqueGroups.map((group) => (
                   <option key={group} value={group}>
                     {group}

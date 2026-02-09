@@ -12,6 +12,7 @@ export type TimesheetRow = {
   intern_id: number;
   intern: string;
   company: string;
+  department_name?: string | null;
   id: string;
   days: TimesheetDay[];
   total: string;

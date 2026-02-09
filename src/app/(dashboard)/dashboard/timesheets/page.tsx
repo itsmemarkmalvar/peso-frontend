@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { CalendarDays, ChevronLeft, ChevronRight, FileDown, Filter, FileSpreadsheet } from "lucide-react";
 
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { getTimesheets, type TimesheetRow, type TimesheetDay } from "@/lib/api/timesheets";
+import { getAdminFilterOptions } from "@/lib/api/intern";
 
 function getStartOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -87,22 +88,36 @@ export default function TimesheetsPage() {
     const d = getStartOfWeek(new Date());
     return toLocalDateString(d);
   });
-  const [filterCompanies, setFilterCompanies] = useState<string[]>([]);
+  const [filterDepartments, setFilterDepartments] = useState<string[]>([]);
+  const [departmentOptions, setDepartmentOptions] = useState<string[]>([]);
 
   const datesForRange = weekDates.length > 0 ? weekDates : getWeekDates(startOfWeek);
   const weekRangeLabel = formatWeekRange(datesForRange);
   const weekStartStr = toLocalDateString(startOfWeek);
   const weekEndStr = datesForRange.length ? toLocalDateString(datesForRange[datesForRange.length - 1]) : weekStartStr;
 
-  const companies = Array.from(new Set(rows.map((r) => r.company))).sort();
+  // Load departments from backend (groups = departments)
+  useEffect(() => {
+    getAdminFilterOptions().then((opts) => setDepartmentOptions(opts.groups ?? []));
+  }, []);
+
+  const departments = useMemo(() => {
+    const fromRows = rows.map((r) => r.department_name).filter((d): d is string => Boolean(d));
+    const merged = Array.from(new Set([...departmentOptions, ...fromRows]));
+    return merged.sort();
+  }, [rows, departmentOptions]);
 
   const filteredRows = rows.filter((row) => {
-    if (filterCompanies.length > 0 && !filterCompanies.includes(row.company)) return false;
+    if (filterDepartments.length > 0) {
+      const rowDept = row.department_name ?? "";
+      if (!rowDept || !filterDepartments.includes(rowDept)) return false;
+    }
     if (!searchTerm.trim()) return true;
     const query = searchTerm.toLowerCase();
     return (
       row.intern.toLowerCase().includes(query) ||
-      row.company.toLowerCase().includes(query) ||
+      (row.company && row.company.toLowerCase().includes(query)) ||
+      (row.department_name && row.department_name.toLowerCase().includes(query)) ||
       row.id.toLowerCase().includes(query)
     );
   });
@@ -243,29 +258,29 @@ export default function TimesheetsPage() {
             <DialogTitle>Filters</DialogTitle>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <p className="text-xs text-slate-600">Filter by company</p>
-            {companies.length === 0 ? (
-              <p className="text-xs text-slate-500">No companies in current data.</p>
+            <p className="text-xs text-slate-600">Filter by department</p>
+            {departments.length === 0 ? (
+              <p className="text-xs text-slate-500">No departments in current data.</p>
             ) : (
               <div className="max-h-48 space-y-2 overflow-y-auto">
-                {companies.map((company) => (
-                  <label key={company} className="flex cursor-pointer items-center gap-2 text-sm">
+                {departments.map((dept) => (
+                  <label key={dept} className="flex cursor-pointer items-center gap-2 text-sm">
                     <Checkbox
-                      checked={filterCompanies.includes(company)}
+                      checked={filterDepartments.includes(dept)}
                       onCheckedChange={(checked) => {
-                        setFilterCompanies((prev) =>
-                          checked ? [...prev, company] : prev.filter((c) => c !== company)
+                        setFilterDepartments((prev) =>
+                          checked ? [...prev, dept] : prev.filter((d) => d !== dept)
                         );
                       }}
                     />
-                    <span>{company}</span>
+                    <span>{dept}</span>
                   </label>
                 ))}
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setFilterCompanies([])}>
+            <Button variant="outline" size="sm" onClick={() => setFilterDepartments([])}>
               Clear
             </Button>
             <Button size="sm" onClick={() => setFiltersOpen(false)}>

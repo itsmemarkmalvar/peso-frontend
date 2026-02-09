@@ -91,6 +91,8 @@ export type AdminIntern = {
   course: string
   year_level: string | null
   company_name: string
+  department_id: number | null
+  department_name: string | null
   supervisor_name: string
   is_active: boolean
   role: string
@@ -157,6 +159,19 @@ export function getInternApprovals(): Promise<InternApprovalsData> {
   return apiClient
     .get<ApiResponse<InternApprovalsData>>(API_ENDPOINTS.intern.approvals)
     .then((res) => res.data ?? { items: [] })
+}
+
+export type AdminFilterOptions = {
+  roles: { value: string; label: string }[]
+  groups: string[]
+}
+
+export function getAdminFilterOptions(): Promise<AdminFilterOptions> {
+  return apiClient
+    .get<{ success: boolean; message: string; data: AdminFilterOptions }>(
+      API_ENDPOINTS.admin.filterOptions
+    )
+    .then((res) => res.data ?? { roles: [], groups: [] })
 }
 
 export function getAdminInterns(search?: string): Promise<AdminIntern[]> {

@@ -17,6 +17,11 @@ export const API_ENDPOINTS = {
     invitationAccept: '/invitation/accept',
   },
 
+  // Admin filter options (roles from UserRole, groups from company_name)
+  admin: {
+    filterOptions: '/admin/filter-options',
+  },
+
   // Interns
   interns: {
     list: '/interns',

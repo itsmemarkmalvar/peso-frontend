@@ -22,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { updateDefaultSchedule, getDefaultSchedule, getExcusedInterns, type ExcusedIntern as ExcusedInternType } from "@/lib/api/schedule";
 
@@ -183,6 +184,7 @@ export default function WorkSchedulesPage() {
         }
         if (data.lunch_break_start) setLunchBreakStart(data.lunch_break_start.length === 5 ? data.lunch_break_start : data.lunch_break_start.slice(0, 5));
         if (data.lunch_break_end) setLunchBreakEnd(data.lunch_break_end.length === 5 ? data.lunch_break_end : data.lunch_break_end.slice(0, 5));
+        if (data.grace_period_minutes != null) setGracePeriodMinutes(data.grace_period_minutes);
       })
       .catch(() => {})
       .finally(() => {
@@ -315,6 +317,7 @@ export default function WorkSchedulesPage() {
                 </Badge>
               </div>
               <p className="text-xs text-slate-500">Standard OJT work schedule — required clock-in times for all interns</p>
+              <p className="text-xs text-slate-500">Clock-in grace period: {gracePeriodMinutes} min — interns can clock in until start time + {gracePeriodMinutes} min without being marked late</p>
             </div>
             <Button
               type="button"
@@ -478,6 +481,13 @@ export default function WorkSchedulesPage() {
                   <span className="text-sm text-slate-400">Rest day</span>
                 </div>
               ))}
+            </div>
+
+            {/* Grace period (configured in Settings, enforced for clock-in cutoff) */}
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs text-slate-600">
+                Clock-in grace period: <span className="font-semibold text-slate-900">{gracePeriodMinutes} min</span>. Interns must clock in by start time + {gracePeriodMinutes} min. Change in <Link href="/dashboard/settings" className="text-blue-600 hover:underline">Settings</Link>.
+              </p>
             </div>
 
             {/* Lunch Break */}
