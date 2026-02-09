@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 import {
   getInternTimesheets,
@@ -9,17 +10,38 @@ import {
 } from "@/lib/api/intern"
 import { Button } from "@/components/ui/button"
 
+function getStartOfWeek(date: Date): Date {
+  const d = new Date(date)
+  const day = d.getDay()
+  const diff = (day === 0 ? -6 : 1) - day
+  d.setDate(d.getDate() + diff)
+  d.setHours(0, 0, 0, 0)
+  return d
+}
+
+function toLocalDateString(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+
 export default function InternTimesheetsPage() {
+  const [startOfWeek, setStartOfWeek] = useState<Date>(() =>
+    getStartOfWeek(new Date())
+  )
   const [timesheet, setTimesheet] = useState<InternTimesheetData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const weekStartStr = toLocalDateString(startOfWeek)
 
   useEffect(() => {
     let active = true
     setIsLoading(true)
     setError(null)
 
-    getInternTimesheets()
+    getInternTimesheets({ week_start: weekStartStr })
       .then((data) => {
         if (!active) {
           return
@@ -45,7 +67,7 @@ export default function InternTimesheetsPage() {
     return () => {
       active = false
     }
-  }, [])
+  }, [weekStartStr])
 
   const weekLabel = timesheet?.weekLabel?.trim() ? timesheet.weekLabel : "-"
   const totalLabel = timesheet?.totalLabel?.trim()
@@ -73,9 +95,43 @@ export default function InternTimesheetsPage() {
             </p>
             <p className="mt-2 text-lg font-semibold">{totalLabel}</p>
           </div>
-          <Button className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]">
-            Submit Timesheet
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0 rounded-full border-[color:var(--dash-border)]"
+              onClick={() =>
+                setStartOfWeek((prev) => {
+                  const d = new Date(prev)
+                  d.setDate(prev.getDate() - 7)
+                  return getStartOfWeek(d)
+                })
+              }
+              aria-label="Previous week"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-8 w-8 shrink-0 rounded-full border-[color:var(--dash-border)]"
+              onClick={() =>
+                setStartOfWeek((prev) => {
+                  const d = new Date(prev)
+                  d.setDate(prev.getDate() + 7)
+                  return getStartOfWeek(d)
+                })
+              }
+              aria-label="Next week"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]">
+              Submit Timesheet
+            </Button>
+          </div>
         </div>
 
         <div className="mt-5 space-y-3 text-sm">

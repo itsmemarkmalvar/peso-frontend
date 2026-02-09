@@ -74,6 +74,7 @@ export interface DefaultScheduleResponse {
     lunch_break_start: string;
     lunch_break_end: string;
     admin_notes: string | null;
+    grace_period_minutes?: number;
   };
   message?: string;
 }

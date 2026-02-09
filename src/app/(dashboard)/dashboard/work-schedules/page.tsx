@@ -83,6 +83,7 @@ export default function WorkSchedulesPage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
+  const [gracePeriodMinutes, setGracePeriodMinutes] = useState(10);
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(true);
   const canViewExcused = user?.role === "admin" || user?.role === "supervisor";
 

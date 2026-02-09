@@ -142,9 +142,14 @@ export function getInternTimeClock(): Promise<InternTimeClockData> {
     .then((res) => res.data ?? ({} as InternTimeClockData))
 }
 
-export function getInternTimesheets(): Promise<InternTimesheetData> {
+export function getInternTimesheets(params?: {
+  week_start?: string
+}): Promise<InternTimesheetData> {
+  const query = params?.week_start
+    ? `?week_start=${encodeURIComponent(params.week_start)}`
+    : ""
   return apiClient
-    .get<ApiResponse<InternTimesheetData>>(API_ENDPOINTS.intern.timesheets)
+    .get<ApiResponse<InternTimesheetData>>(API_ENDPOINTS.intern.timesheets + query)
     .then((res) => res.data ?? { weekLabel: "", totalLabel: "", entries: [] })
 }
 
