@@ -240,7 +240,11 @@ export default function ReportsPage() {
       setIsDialogOpen(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Failed to export report";
-      
+      // Console diagnostic (use warn so Next.js doesn't show error overlay; cause already logged by exportReport)
+      if (typeof console !== "undefined") {
+        const log = console.warn ?? console.error;
+        log(`[PESO Reports Export] UI caught: ${reportType} ${format} — ${errorMessage}`);
+      }
       // Show user-friendly error message
       const isBackendNotImplemented = errorMessage.includes("not be fully implemented") || 
                                       errorMessage.includes("returned an error response");
@@ -676,7 +680,10 @@ export default function ReportsPage() {
 
       {/* Report Configuration Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent onClose={() => setIsDialogOpen(false)} className="max-w-lg">
+        <DialogContent
+          onClose={() => setIsDialogOpen(false)}
+          className="max-w-5xl w-[95vw] max-h-[90vh] flex flex-col overflow-hidden"
+        >
           <DialogHeader>
             <DialogTitle>{isPreview ? "Preview" : "Export"} {getReportTitle()}</DialogTitle>
             <DialogDescription>
@@ -685,7 +692,7 @@ export default function ReportsPage() {
                 : "Configure the report parameters and choose export format."}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 overflow-y-auto flex-1 min-h-0">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="start-date" className="text-xs font-semibold text-slate-700">
@@ -750,9 +757,9 @@ export default function ReportsPage() {
             
             {/* Preview Data Display */}
             {isPreview && previewData && (
-              <div className="space-y-2">
+              <div className="space-y-2 flex-1 min-h-0 flex flex-col">
                 <Label className="text-xs font-semibold text-slate-700">Preview Data</Label>
-                <div className="max-h-96 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+                <div className="min-h-[400px] max-h-[60vh] overflow-y-auto overflow-x-auto rounded-lg border border-slate-200 bg-white">
                   {renderPreviewTable(selectedReport, previewData)}
                 </div>
               </div>
