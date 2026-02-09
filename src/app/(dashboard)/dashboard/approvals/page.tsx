@@ -25,44 +25,16 @@ import {
   approveRequest,
   rejectRequest,
   type ApprovalRequest,
-  type ApprovalType,
-  type ApprovalStatus,
 } from "@/lib/api/approvals";
-import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
 
-// Fallback function to build mock data if API is not ready
-function buildApprovalRows(interns: AdminIntern[]): ApprovalRequest[] {
-  if (!interns.length) return [];
-
-  const types: ApprovalType[] = ["Overtime", "Correction", "Undertime"];
-  const statuses: ApprovalStatus[] = ["Pending", "Pending", "Approved", "Rejected"];
-
-  return interns.slice(0, 30).map((intern, index) => {
-    const type = types[index % types.length];
-    const status = statuses[index % statuses.length];
-    const baseDate = new Date();
-    baseDate.setDate(baseDate.getDate() - index);
-
-    return {
-      id: index + 1,
-      attendance_id: index + 1,
-      intern_id: intern.id,
-      intern_name: intern.name,
-      intern_student_id: intern.student_id,
-      type,
-      reason_title: "Sample approval request",
-      status,
-      date: baseDate.toISOString().split("T")[0],
-      clock_in_time: null,
-      clock_out_time: null,
-      notes: "Sample notes for approval request",
-      rejection_reason: status === "Rejected" ? "Sample rejection reason" : null,
-      approved_by: status !== "Pending" ? 1 : null,
-      approved_at: status !== "Pending" ? baseDate.toISOString() : null,
-      created_at: baseDate.toISOString(),
-      updated_at: baseDate.toISOString(),
-    };
-  });
+// Normalize API response: backend may return { data: [...], pagination } or { data: [...] }
+function normalizeApprovalsList(response: { data?: ApprovalRequest[] | { data?: ApprovalRequest[] }; pagination?: unknown }): ApprovalRequest[] {
+  const d = response.data;
+  if (Array.isArray(d)) return d;
+  if (d && typeof d === "object" && Array.isArray((d as { data?: ApprovalRequest[] }).data)) {
+    return (d as { data: ApprovalRequest[] }).data;
+  }
+  return [];
 }
 
 export default function ApprovalsPage() {
@@ -76,41 +48,20 @@ export default function ApprovalsPage() {
 
   useEffect(() => {
     let active = true;
+    setError(null);
 
-    // Try to fetch from API first, fallback to mock data
     getApprovals()
       .then((response) => {
         if (!active) return;
-        if (response.data && response.data.length > 0) {
-          setRows(response.data);
-        } else {
-          // Fallback to mock data
-          getAdminInterns()
-            .then((interns) => {
-              if (!active) return;
-              setRows(buildApprovalRows(interns));
-            })
-            .catch(() => {
-              if (!active) return;
-              setRows([]);
-            });
-        }
+        const list = normalizeApprovalsList(response as { data?: ApprovalRequest[] | { data?: ApprovalRequest[] }; pagination?: unknown });
+        setRows(list);
         setIsLoading(false);
       })
-      .catch(() => {
-        // If API fails, use mock data
+      .catch((err) => {
         if (!active) return;
-        getAdminInterns()
-          .then((interns) => {
-            if (!active) return;
-            setRows(buildApprovalRows(interns));
-            setIsLoading(false);
-          })
-          .catch((err) => {
-            if (!active) return;
-            setError(err instanceof Error ? err.message : "Failed to load approvals.");
-            setIsLoading(false);
-          });
+        setError(err instanceof Error ? err.message : "Failed to load approvals.");
+        setRows([]);
+        setIsLoading(false);
       });
 
     return () => {
