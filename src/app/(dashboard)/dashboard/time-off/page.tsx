@@ -25,6 +25,8 @@ import {
   approveLeave,
   rejectLeave,
   type LeaveRequest,
+  type LeaveStatus,
+  type LeaveType,
 } from "@/lib/api/leaves";
 
 export default function LeavePage() {

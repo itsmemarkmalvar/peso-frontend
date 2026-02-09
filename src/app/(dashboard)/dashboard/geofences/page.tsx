@@ -14,6 +14,7 @@ import {
   createGeofenceLocation,
   updateGeofenceLocation,
   deleteGeofenceLocation,
+  type CreateGeofenceLocationPayload,
   type GeofenceLocation,
 } from "@/lib/api/geofenceLocations";
 
@@ -74,7 +75,7 @@ export default function GeofencesPage() {
     };
   }, []);
 
-  const handleLocationCreate = async (location: Omit<GeofenceLocation, "id" | "is_active" | "created_at" | "updated_at">) => {
+  const handleLocationCreate = async (location: CreateGeofenceLocationPayload) => {
     setIsSaving(true);
     setError(null);
     try {
