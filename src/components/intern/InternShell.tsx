@@ -274,22 +274,6 @@ export function InternShell({ children }: InternShellProps) {
             })}
           </nav>
 
-          <div
-            className={cn(
-              "mt-auto rounded-xl border border-[color:var(--dash-border)] bg-[color:var(--dash-accent-soft)] p-4 text-sm",
-              collapsed ? "lg:hidden" : ""
-            )}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-accent-strong)]">
-              Testing Mode
-            </p>
-            <p className="mt-2 text-sm font-semibold">
-              Login is disabled for now.
-            </p>
-            <p className="text-xs text-[color:var(--dash-muted)]">
-              Use the dashboard to preview flows.
-            </p>
-          </div>
         </aside>
 
         <div className="flex min-h-screen flex-1 flex-col">
