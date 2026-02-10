@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import { Suspense, type ReactNode } from "react"
 
 import { InternShell } from "@/components/intern/InternShell"
 
@@ -9,5 +9,9 @@ type InternAliasLayoutProps = {
 export default function InternAliasLayout({
   children,
 }: InternAliasLayoutProps) {
-  return <InternShell>{children}</InternShell>
+  return (
+    <Suspense fallback={null}>
+      <InternShell>{children}</InternShell>
+    </Suspense>
+  )
 }

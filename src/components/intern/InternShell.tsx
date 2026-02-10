@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState, type ReactNode } from "react"
 import {
   CheckCircle2,
@@ -81,11 +81,14 @@ export function InternShell({ children }: InternShellProps) {
   const router = useRouter()
   const { user, isLoading, logout, isInternOrGip } = useAuth()
   const pathname = usePathname() ?? ""
+  const searchParams = useSearchParams()
   const normalizedPath =
     pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname
   const isOnboardingRoute =
     normalizedPath.startsWith("/dashboard/intern/onboarding") ||
     normalizedPath.startsWith("/intern/dashboard/onboarding")
+  const allowOnboardingEdit =
+    searchParams?.get("profile") === "1" || searchParams?.get("edit") === "1"
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileChecked, setProfileChecked] = useState(false)
@@ -153,7 +156,7 @@ export function InternShell({ children }: InternShellProps) {
         if (!hasOnboarded && !isOnboardingRoute) {
           router.replace("/dashboard/intern/onboarding")
         }
-        if (hasOnboarded && isOnboardingRoute) {
+        if (hasOnboarded && isOnboardingRoute && !allowOnboardingEdit) {
           router.replace("/dashboard/intern")
         }
       })

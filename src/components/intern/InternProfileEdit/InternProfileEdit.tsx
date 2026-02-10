@@ -83,14 +83,6 @@ const normalizeAvailability = (
   friday: coerceAvailability(availability?.friday),
 })
 
-const normalizeField = (value?: string | null) => {
-  if (!value) return ""
-  const trimmed = value.trim()
-  if (!trimmed) return ""
-  if (trimmed.toLowerCase() === "pending") return ""
-  return trimmed
-}
-
 const EMPTY_FORM: InternOnboardingForm = {
   full_name: "",
   school: "",
@@ -102,7 +94,7 @@ const EMPTY_FORM: InternOnboardingForm = {
   weekly_availability: DEFAULT_WEEKLY_AVAILABILITY,
 }
 
-export function InternOnboarding() {
+export function InternProfileEdit() {
   const router = useRouter()
   const { user } = useAuth()
   const [form, setForm] = useState<InternOnboardingForm>(EMPTY_FORM)
@@ -123,18 +115,16 @@ export function InternOnboarding() {
       .then((profile) => {
         if (!active || !profile) return
         setForm({
-          full_name: normalizeField(profile.full_name),
-          school: normalizeField(profile.school),
-          program: normalizeField(profile.program),
-          phone: normalizeField(profile.phone),
-          emergency_contact_name: normalizeField(
-            profile.emergency_contact_name
-          ),
-          emergency_contact_phone: normalizeField(
-            profile.emergency_contact_phone
-          ),
+          full_name: profile.full_name ?? "",
+          school: profile.school ?? "",
+          program: profile.program ?? "",
+          phone: profile.phone ?? "",
+          emergency_contact_name: profile.emergency_contact_name ?? "",
+          emergency_contact_phone: profile.emergency_contact_phone ?? "",
           required_hours:
-            profile.required_hours === null ? "" : String(profile.required_hours),
+            profile.required_hours === null
+              ? ""
+              : String(profile.required_hours),
           weekly_availability: normalizeAvailability(
             profile.weekly_availability
           ),
@@ -249,10 +239,10 @@ export function InternOnboarding() {
         required_hours: requiredHours,
       }
       await saveInternOnboarding(payload)
-      router.replace("/dashboard/intern")
+      router.replace("/dashboard/intern/menu")
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to save onboarding details."
+        err instanceof Error ? err.message : "Failed to save profile details."
       )
     } finally {
       setIsSubmitting(false)
@@ -276,11 +266,10 @@ export function InternOnboarding() {
         </div>
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl text-[color:var(--dash-ink)]">
-            {getInternOrGipRoleLabel(user?.role)} profile
+            Update your profile
           </CardTitle>
           <CardDescription className="text-[color:var(--dash-muted)]">
-            Keep your details and optional profile photo up to date for
-            attendance and approvals.
+            Keep your information current and up to date.
           </CardDescription>
         </CardHeader>
       </Card>
@@ -341,7 +330,7 @@ export function InternOnboarding() {
             {/* Profile Summary */}
             <div className="flex-1 space-y-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
-                Profile summary
+                Your account details
               </p>
               <div className="grid gap-4 grid-cols-2">
                 <div className="rounded-xl border border-[color:var(--dash-border)] bg-white p-4 shadow-sm">
@@ -386,247 +375,223 @@ export function InternOnboarding() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {error ? (
           <Alert variant="destructive">
-            <AlertTitle>Submission failed</AlertTitle>
+            <AlertTitle>Update failed</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         ) : null}
 
-        {/* Details Section */}
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Basic Details */}
-          <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
-            <CardHeader>
-              <div>
-                <CardTitle className="text-lg">Basic details</CardTitle>
-                <CardDescription className="text-[color:var(--dash-muted)]">
-                  These details appear on your attendance records.
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        {/* Basic Details Section */}
+        <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+          <CardHeader>
+            <div>
+              <CardTitle className="text-lg">Basic details</CardTitle>
+              <CardDescription className="text-[color:var(--dash-muted)]">
+                Information used in your attendance records and communications.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="full_name" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Full name
+              </Label>
+              <Input
+                id="full_name"
+                name="full_name"
+                value={form.full_name}
+                onChange={updateField("full_name")}
+                placeholder="Juan Dela Cruz"
+                autoComplete="name"
+                required
+              />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label
-                  htmlFor="full_name"
-                  className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                >
-                  Full name
+                <Label htmlFor="school" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  School
                 </Label>
                 <Input
-                  id="full_name"
-                  name="full_name"
-                  value={form.full_name}
-                  onChange={updateField("full_name")}
-                  placeholder="Juan Dela Cruz"
-                  autoComplete="name"
+                  id="school"
+                  name="school"
+                  value={form.school}
+                  onChange={updateField("school")}
+                  placeholder="City College"
                   required
                 />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="school"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                  >
-                    School
-                  </Label>
-                  <Input
-                    id="school"
-                    name="school"
-                    value={form.school}
-                    onChange={updateField("school")}
-                    placeholder="City College"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="program"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                  >
-                    Program
-                  </Label>
-                  <Input
-                    id="program"
-                    name="program"
-                    value={form.program}
-                    onChange={updateField("program")}
-                    placeholder="BS Information Technology"
-                    required
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Contact Details */}
-          <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
-            <CardHeader>
-              <div>
-                <CardTitle className="text-lg">Contact details</CardTitle>
-                <CardDescription className="text-[color:var(--dash-muted)]">
-                  We only use this for official updates.
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label
-                  htmlFor="phone"
-                  className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                >
-                  Phone number
+                <Label htmlFor="program" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Program
                 </Label>
                 <Input
-                  id="phone"
-                  name="phone"
-                  value={form.phone}
-                  onChange={updateField("phone")}
+                  id="program"
+                  name="program"
+                  value={form.program}
+                  onChange={updateField("program")}
+                  placeholder="BS Information Technology"
+                  required
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Contact Details */}
+        <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+          <CardHeader>
+            <div>
+              <CardTitle className="text-lg">Contact information</CardTitle>
+              <CardDescription className="text-[color:var(--dash-muted)]">
+                Used for official communications and emergency contact.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Phone number
+              </Label>
+              <Input
+                id="phone"
+                name="phone"
+                value={form.phone}
+                onChange={updateField("phone")}
+                placeholder="09xx xxx xxxx"
+                type="tel"
+                autoComplete="tel"
+                required
+              />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_name" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Emergency contact name
+                </Label>
+                <Input
+                  id="emergency_contact_name"
+                  name="emergency_contact_name"
+                  value={form.emergency_contact_name}
+                  onChange={updateField("emergency_contact_name")}
+                  placeholder="Maria Dela Cruz"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emergency_contact_phone" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                  Emergency phone
+                </Label>
+                <Input
+                  id="emergency_contact_phone"
+                  name="emergency_contact_phone"
+                  value={form.emergency_contact_phone}
+                  onChange={updateField("emergency_contact_phone")}
                   placeholder="09xx xxx xxxx"
                   type="tel"
-                  autoComplete="tel"
                   required
                 />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="emergency_contact_name"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                  >
-                    Emergency contact name
-                  </Label>
-                  <Input
-                    id="emergency_contact_name"
-                    name="emergency_contact_name"
-                    value={form.emergency_contact_name}
-                    onChange={updateField("emergency_contact_name")}
-                    placeholder="Maria Dela Cruz"
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="emergency_contact_phone"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                  >
-                    Emergency contact phone
-                  </Label>
-                  <Input
-                    id="emergency_contact_phone"
-                    name="emergency_contact_phone"
-                    value={form.emergency_contact_phone}
-                    onChange={updateField("emergency_contact_phone")}
-                    placeholder="09xx xxx xxxx"
-                    type="tel"
-                    required
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {/* Internship Details + Weekly Availability */}
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-          {/* Internship Details */}
-          <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
-            <CardHeader>
-              <div>
-                <CardTitle className="text-lg">Internship details</CardTitle>
-                <CardDescription className="text-[color:var(--dash-muted)]">
-                  Help us track your completion.
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label
-                  htmlFor="required_hours"
-                  className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                >
-                  Internship duration (hours)
-                </Label>
-                <Input
-                  id="required_hours"
-                  name="required_hours"
-                  value={form.required_hours}
-                  onChange={updateField("required_hours")}
-                  placeholder="500"
-                  type="number"
-                  min="1"
-                  step="1"
-                  inputMode="numeric"
-                  required
-                />
-              </div>
-              <div className="flex-1" />
-              <p className="text-xs text-[color:var(--dash-muted)]">
-                OJT start date is your first clock-in. End date is set once you
-                complete the required hours.
-              </p>
-            </CardContent>
-          </Card>
+        {/* Internship Details */}
+        <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+          <CardHeader>
+            <div>
+              <CardTitle className="text-lg">Internship details</CardTitle>
+              <CardDescription className="text-[color:var(--dash-muted)]">
+                Required hours and weekly schedule information.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="required_hours" className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                Required hours
+              </Label>
+              <Input
+                id="required_hours"
+                name="required_hours"
+                value={form.required_hours}
+                onChange={updateField("required_hours")}
+                placeholder="500"
+                type="number"
+                min="1"
+                step="1"
+                inputMode="numeric"
+                required
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Weekly Availability */}
-          <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
-            <CardHeader>
-              <div>
-                <CardTitle className="text-lg">Weekly availability</CardTitle>
-                <CardDescription className="text-[color:var(--dash-muted)]">
-                  Let us know which weekdays (Mon - Fri) you can report for OJT.
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-3 sm:grid-cols-2">
-                {WEEKDAYS.map((day) => {
-                  const value = form.weekly_availability[day.id]
-                  return (
-                    <div
-                      key={day.id}
-                      className="rounded-xl border border-[color:var(--dash-border)] bg-white p-4 shadow-sm"
-                    >
-                      <div className="space-y-3">
-                        <p className="text-sm font-semibold text-[color:var(--dash-ink)]">
-                          {day.label}
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {AVAILABILITY_OPTIONS.map((option) => {
-                            const isActive = value === option.value
-                            return (
-                              <button
-                                key={option.value}
-                                type="button"
-                                onClick={updateAvailability(day.id, option.value)}
-                                className={cn(
-                                  "rounded-full border px-3 py-1 text-xs font-semibold transition",
-                                  isActive
-                                    ? "border-[color:var(--dash-accent)] bg-[color:var(--dash-accent)] text-white"
-                                    : "border-[color:var(--dash-border)] bg-white text-[color:var(--dash-muted)] hover:border-slate-300"
-                                )}
-                              >
-                                {option.label}
-                              </button>
-                            )
-                          })}
-                        </div>
+        {/* Weekly Availability Section */}
+        <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+          <CardHeader>
+            <div>
+              <CardTitle className="text-lg">Weekly availability</CardTitle>
+              <CardDescription className="text-[color:var(--dash-muted)]">
+                Select the weekdays you can attend OJT (Monday to Friday).
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {WEEKDAYS.map((day) => {
+                const value = form.weekly_availability[day.id]
+                return (
+                  <div
+                    key={day.id}
+                    className="rounded-xl border border-[color:var(--dash-border)] bg-white p-4 shadow-sm"
+                  >
+                    <div className="space-y-3">
+                      <p className="text-sm font-semibold text-[color:var(--dash-ink)]">
+                        {day.label}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {AVAILABILITY_OPTIONS.map((option) => {
+                          const isActive = value === option.value
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              onClick={updateAvailability(day.id, option.value)}
+                              className={cn(
+                                "rounded-full border px-3 py-1 text-xs font-semibold transition",
+                                isActive
+                                  ? "border-[color:var(--dash-accent)] bg-[color:var(--dash-accent)] text-white"
+                                  : "border-[color:var(--dash-border)] bg-white text-[color:var(--dash-muted)] hover:border-slate-300"
+                              )}
+                            >
+                              {option.label}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Submit Button */}
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.back()}
+            disabled={isSubmitting || isLoading}
+          >
+            Cancel
+          </Button>
           <Button
             type="submit"
             className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
             disabled={!isFormValid || isSubmitting || isLoading}
           >
-            {isSubmitting ? "Saving..." : "Save and continue"}
+            {isSubmitting ? "Saving changes..." : "Save changes"}
           </Button>
         </div>
       </form>

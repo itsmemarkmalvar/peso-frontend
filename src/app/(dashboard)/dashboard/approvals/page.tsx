@@ -24,6 +24,8 @@ import {
   getApprovals,
   approveRequest,
   rejectRequest,
+  type ApprovalStatus,
+  type ApprovalType,
   type ApprovalRequest,
 } from "@/lib/api/approvals";
 
