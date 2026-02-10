@@ -38,6 +38,8 @@ export type AttendanceRecord = {
   break_start_time_label: string | null;
   break_end_time: string | null;
   break_end_time_label: string | null;
+  break_start_photo: string | null;
+  break_end_photo: string | null;
   clock_in_photo: string | null;
   clock_out_photo: string | null;
   total_hours: number | null;

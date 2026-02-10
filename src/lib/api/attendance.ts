@@ -13,7 +13,9 @@ export interface Attendance {
   clock_in_time: string | null;
   clock_out_time: string | null;
   break_start: string | null;
+  break_start_photo?: string | null;
   break_end: string | null;
+  break_end_photo?: string | null;
   location_lat: number | null;
   location_lng: number | null;
   location_address: string | null;
