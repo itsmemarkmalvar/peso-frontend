@@ -41,6 +41,17 @@ export interface AttendanceListResponse {
   data: Attendance[];
 }
 
+export type ApprovedHoursSummaryItem = {
+  intern_id: number;
+  hours_rendered: number;
+};
+
+export interface ApprovedHoursSummaryResponse {
+  success: boolean;
+  message: string;
+  data: ApprovedHoursSummaryItem[];
+}
+
 export interface ClockInRequest {
   location_lat?: number;
   location_lng?: number;
@@ -150,6 +161,15 @@ export function getAttendanceList(params?: {
       }
       return { success: res.success, message: res.message, data: [] };
     });
+}
+
+/**
+ * Get approved hours totals grouped by intern (admin/supervisor).
+ */
+export function getApprovedHoursSummary(): Promise<ApprovedHoursSummaryResponse> {
+  return apiClient.get<ApprovedHoursSummaryResponse>(
+    `${API_ENDPOINTS.attendance.list}/approved-hours-summary`
+  );
 }
 
 /**

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { APP_CONFIG } from "@/lib/constants";
 import { getAdminInterns, getAdminFilterOptions, type AdminIntern, type AdminFilterOptions } from "@/lib/api/intern";
-import { getAttendanceList } from "@/lib/api/attendance";
+import { getApprovedHoursSummary } from "@/lib/api/attendance";
 import certTemplatePng from "@/assets/images/CertOfCompletion.png";
 
 type HoursRow = {
@@ -43,69 +43,22 @@ function formatHours(hours: number): string {
   return `${h}h ${m}m`;
 }
 
-function computeAttendanceHours(attendance: {
-  total_hours: number | null;
-  clock_in_time?: string | null;
-  clock_out_time?: string | null;
-  break_start?: string | null;
-  break_end?: string | null;
-}): number {
-  if (attendance.total_hours !== null) {
-    return attendance.total_hours;
-  }
-
-  if (!attendance.clock_in_time || !attendance.clock_out_time) {
-    return 0;
-  }
-
-  const clockIn = new Date(attendance.clock_in_time);
-  const clockOut = new Date(attendance.clock_out_time);
-  if (Number.isNaN(clockIn.getTime()) || Number.isNaN(clockOut.getTime())) {
-    return 0;
-  }
-
-  let totalMinutes = (clockOut.getTime() - clockIn.getTime()) / 60000;
-  if (attendance.break_start && attendance.break_end) {
-    const breakStart = new Date(attendance.break_start);
-    const breakEnd = new Date(attendance.break_end);
-    if (!Number.isNaN(breakStart.getTime()) && !Number.isNaN(breakEnd.getTime())) {
-      const breakMinutes = (breakEnd.getTime() - breakStart.getTime()) / 60000;
-      if (breakMinutes > 0) {
-        totalMinutes -= breakMinutes;
-      }
-    }
-  }
-
-  totalMinutes = Math.max(0, totalMinutes);
-  return Math.round((totalMinutes / 60) * 100) / 100;
-}
-
 function calculateHoursRendered(
   internId: number,
-  attendanceData: {
-    intern_id: number;
-    total_hours: number | null;
-    status: string;
-    clock_in_time?: string | null;
-    clock_out_time?: string | null;
-    break_start?: string | null;
-    break_end?: string | null;
-  }[]
+  approvedHoursByIntern: Map<number, number>
 ): number {
-  return attendanceData
-    .filter((a) => a.intern_id === internId && a.status === "approved")
-    .reduce((sum, a) => sum + computeAttendanceHours(a), 0);
+  return approvedHoursByIntern.get(internId) ?? 0;
 }
 
 function buildHoursRows(
   interns: AdminIntern[],
-  attendanceData: { intern_id: number; total_hours: number | null; status: string }[],
-  internRequiredHours: Map<number, number> = new Map()
+  internRequiredHours: Map<number, number> = new Map(),
+  approvedHoursByIntern: Map<number, number> = new Map()
 ): HoursRow[] {
   if (!interns.length) return [];
 
   return interns.map((intern) => {
-    const hoursRendered = calculateHoursRendered(intern.id, attendanceData);
+    const hoursRendered = calculateHoursRendered(intern.id, approvedHoursByIntern);
     // Get required_hours from map, or use default 200 hours
     const totalHours = internRequiredHours.get(intern.id) ?? 200;
     const remainingHours = Math.max(0, totalHours - hoursRendered);
@@ -332,22 +285,13 @@ export default function TimeTrackingPage() {
       setError(null);
     }
 
-    Promise.all([getAdminInterns(), getAttendanceList(), getAdminFilterOptions()])
-      .then(([internsResponse, attendanceResponse, options]) => {
+    Promise.all([getAdminInterns(), getApprovedHoursSummary(), getAdminFilterOptions()])
+      .then(([internsResponse, approvedHoursResponse, options]) => {
         if (!active) return;
 
         const interns = internsResponse;
         setAllInterns(interns);
         setFilterOptions(options ?? { roles: [], groups: [] });
-        const attendanceData = (attendanceResponse.data || []).map((a) => ({
-          intern_id: a.intern_id,
-          total_hours: a.total_hours,
-          status: a.status,
-          clock_in_time: a.clock_in_time,
-          clock_out_time: a.clock_out_time,
-          break_start: a.break_start,
-          break_end: a.break_end,
-        }));
 
         const requiredHoursByIntern = new Map<number, number>();
         interns.forEach((intern) => {
@@ -356,8 +300,13 @@ export default function TimeTrackingPage() {
           }
         });
 
+        const approvedHoursByIntern = new Map<number, number>();
+        (approvedHoursResponse.data || []).forEach((item) => {
+          approvedHoursByIntern.set(item.intern_id, item.hours_rendered);
+        });
+
         // Build hours rows with calculated data
-        const rows = buildHoursRows(interns, attendanceData, requiredHoursByIntern);
+        const rows = buildHoursRows(interns, requiredHoursByIntern, approvedHoursByIntern);
         setHoursRows(rows);
         setIsLoading(false);
       })
