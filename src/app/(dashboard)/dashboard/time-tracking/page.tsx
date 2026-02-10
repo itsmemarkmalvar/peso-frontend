@@ -24,6 +24,7 @@ import {
 import { APP_CONFIG } from "@/lib/constants";
 import { getAdminInterns, getAdminFilterOptions, type AdminIntern, type AdminFilterOptions } from "@/lib/api/intern";
 import { getAttendanceList } from "@/lib/api/attendance";
+import certTemplatePng from "@/assets/images/CertOfCompletion.png";
 
 type HoursRow = {
   intern_id: number;
@@ -77,146 +78,192 @@ function buildHoursRows(
   });
 }
 
-/** Certificate data for display and PDF export */
+/** Certificate data for display and PDF export (PESO COC spec) */
 type CertificateData = {
   userName: string;
   programName: string;
   totalRenderedTime: string;
+  totalRenderedHours: number;
   completionDate: string;
+  startDate: string;
+  endDate: string;
   studentId: string;
 };
 
 function buildCertificateData(row: HoursRow, intern: AdminIntern | undefined): CertificateData {
+  const internWithDates = intern as (AdminIntern & { start_date?: string | null; end_date?: string | null }) | undefined;
+  const formatDate = (d: string | null | undefined) =>
+    d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "N/A";
   return {
     userName: String(row.name ?? ""),
     programName: String(intern?.course ?? "Internship"),
     totalRenderedTime: formatHours(row.hours_rendered),
+    totalRenderedHours: row.hours_rendered,
     completionDate: new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }),
+    startDate: formatDate(internWithDates?.start_date ?? null),
+    endDate: formatDate(internWithDates?.end_date ?? null),
     studentId: String(row.student_id ?? ""),
   };
 }
 
-const A4_WIDTH_MM = 210;
-const A4_HEIGHT_MM = 297;
+/** A4 landscape (PESO COC print-ready) */
+const A4_LANDSCAPE_W_MM = 297;
+const A4_LANDSCAPE_H_MM = 210;
+
+/** Try JPG from public first, then PNG from assets. Returns dataUrl, format, and dimensions for aspect-ratio fit. */
+function loadCertificateTemplate(): Promise<{
+  dataUrl: string;
+  format: "JPEG" | "PNG";
+  width: number;
+  height: number;
+} | null> {
+  const jpgUrl = typeof window !== "undefined" ? `${window.location.origin}/images/CertOfCompletion.jpg` : "";
+  const pngUrl = certTemplatePng.src;
+
+  const tryLoad = (url: string, format: "JPEG" | "PNG"): Promise<{ dataUrl: string; format: "JPEG" | "PNG"; width: number; height: number } | null> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            resolve(null);
+            return;
+          }
+          ctx.drawImage(img, 0, 0);
+          const mime = format === "JPEG" ? "image/jpeg" : "image/png";
+          resolve({
+            dataUrl: canvas.toDataURL(mime),
+            format,
+            width: img.naturalWidth,
+            height: img.naturalHeight,
+          });
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+
+  if (jpgUrl) {
+    return tryLoad(jpgUrl, "JPEG").then((r) => r ?? tryLoad(pngUrl, "PNG"));
+  }
+  return tryLoad(pngUrl, "PNG");
+}
 
 async function exportCertificateAsPdf(data: CertificateData): Promise<void> {
   const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  const pageW = A4_WIDTH_MM;
-  const pageH = A4_HEIGHT_MM;
-  const margin = 25;
-  const innerMargin = 15;
-  const boxLeft = margin;
-  const boxTop = 22;
-  const boxW = pageW - 2 * margin;
-  const boxH = pageH - 2 * margin;
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+  const pageW = A4_LANDSCAPE_W_MM;
+  const pageH = A4_LANDSCAPE_H_MM;
+  const centerX = pageW / 2;
+  // Fine-tune overlay alignment to the template (mm)
+  // Negative X moves left; positive Y moves down.
+  const textOffsetX = -25;
+  const textOffsetY = -1;
+  const textX = centerX + textOffsetX;
 
-  // Outer border (gold/amber accent)
-  doc.setDrawColor(180, 140, 50);
-  doc.setLineWidth(1.2);
-  doc.rect(margin - 2, boxTop - 2, boxW + 4, boxH + 4);
-  doc.setDrawColor(200, 170, 80);
-  doc.setLineWidth(0.4);
-  doc.rect(margin, boxTop, boxW, boxH);
+  // --- LAYOUT: Safe zones (mm). Middle content BELOW "CERTIFICATE OF COMPLETION" title; footer in lower zone. ---
+  const middleTop = 100;
+  const footerTop = 168;
+  const lineHeight = 7.5;
+  const lineHeightSmall = 6.5;
+  const nameToBodyGap = 10;
+  // Fixed Y for intern name (and all content below). Change this without affecting the intro line.
+  const nameBlockTop = middleTop + textOffsetY;
+  // Intro line position only — change these without moving the name or other text.
+  const introLineY = nameBlockTop - 18;
+  const introLineX = textX;
+  const introFontSize = 19;
 
-  let y = boxTop + innerMargin + 8;
+  const template = await loadCertificateTemplate();
+  if (template) {
+    const pxToMm = 25.4 / 96;
+    const wMm = template.width * pxToMm;
+    const hMm = template.height * pxToMm;
+    const scale = Math.min(pageW / wMm, pageH / hMm);
+    const drawW = wMm * scale;
+    const drawH = hMm * scale;
+    const x = (pageW - drawW) / 2;
+    const yImg = (pageH - drawH) / 2;
+    doc.addImage(template.dataUrl, template.format, x, yImg, drawW, drawH);
+  }
 
-  // Organization name (small caps style)
-  doc.setFontSize(10);
+  doc.setTextColor(30, 30, 30);
+
+  // Format hours for display (integer or one decimal; no long decimals)
+  const hoursDisplay =
+    data.totalRenderedHours % 1 === 0
+      ? String(Math.round(data.totalRenderedHours))
+      : data.totalRenderedHours.toFixed(1);
+
+  // --- MIDDLE CONTENT (strict order, all centered; below template title) ---
+
+  // Intro line — independent position; change introLineY / introLineX / introFontSize without moving name or rest.
+  doc.setFont("sans-serif", "normal");
+  doc.setFontSize(introFontSize);
+  doc.text("This is to certify that", introLineX, introLineY, { align: "center" });
+
+  // Name and all content below use a fixed starting Y (nameBlockTop).
+  let y = nameBlockTop;
+  // 1. Intern Name — BOLD, ALL CAPS, dominant
   doc.setFont("helvetica", "bold");
-  doc.setTextColor(140, 100, 40);
-  doc.text(APP_CONFIG.name.toUpperCase(), pageW / 2, y, { align: "center" });
-  y += 10;
+  doc.setFontSize(40);
+  doc.text(data.userName.toUpperCase(), textX, y, { align: "center" });
+  y += lineHeight + nameToBodyGap;
 
-  // Decorative line
-  doc.setDrawColor(200, 170, 80);
-  doc.setLineWidth(0.3);
-  doc.line(margin + 30, y, pageW / 2 - 25, y);
-  doc.line(pageW / 2 + 25, y, pageW - margin - 30, y);
-  doc.setFontSize(8);
-  doc.setTextColor(120, 120, 120);
-  doc.text("OJT ATTENDANCE SYSTEM", pageW / 2, y + 3, { align: "center" });
-  y += 14;
-
-  // Main title
-  doc.setFontSize(26);
-  doc.setFont("helvetica", "bold");
-  doc.setTextColor(40, 40, 40);
-  doc.text("Certificate of Completion", pageW / 2, y, { align: "center" });
-  y += 18;
-
-  // Subtitle line
-  doc.setDrawColor(200, 200, 200);
-  doc.setLineWidth(0.4);
-  doc.line(margin + 20, y, pageW - margin - 20, y);
-  y += 16;
-
-  // Certification paragraph (centered)
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(60, 60, 60);
-  const certLine1 = `This is to certify that ${data.userName} has successfully completed`;
-  const certLine2 = `the required hours for the ${data.programName} program`;
-  const certLine3 = `under the ${APP_CONFIG.name}.`;
-  doc.text(certLine1, pageW / 2, y, { align: "center" });
-  y += 7;
-  doc.text(certLine2, pageW / 2, y, { align: "center" });
-  y += 7;
-  doc.text(certLine3, pageW / 2, y, { align: "center" });
-  y += 20;
-
-  // Details box (light background simulated with border)
-  const detailsLeft = margin + 25;
-  const detailsW = pageW - 2 * detailsLeft;
-  doc.setDrawColor(230, 225, 215);
-  doc.setLineWidth(0.3);
-  doc.rect(detailsLeft, y - 4, detailsW, 52);
-
-  const labelW = 52;
-  const valueX = detailsLeft + labelW + 8;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  doc.setTextColor(80, 80, 80);
-  doc.text("Participant:", detailsLeft + 6, y + 6);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.userName, valueX, y + 6);
-  y += 10;
-  doc.setFont("helvetica", "bold");
-  doc.text("Program:", detailsLeft + 6, y + 6);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.programName, valueX, y + 6);
-  y += 10;
-  doc.setFont("helvetica", "bold");
-  doc.text("Total Rendered Time:", detailsLeft + 6, y + 6);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.totalRenderedTime, valueX, y + 6);
-  y += 10;
-  doc.setFont("helvetica", "bold");
-  doc.text("Completion Date:", detailsLeft + 6, y + 6);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.completionDate, valueX, y + 6);
-  y += 10;
-  doc.setFont("helvetica", "bold");
-  doc.text("Student / Trainee ID:", detailsLeft + 6, y + 6);
-  doc.setFont("helvetica", "normal");
-  doc.text(data.studentId, valueX, y + 6);
-  y += 22;
-
-  // Footer disclaimer
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "italic");
-  doc.setTextColor(100, 100, 100);
+  // 2. Completion statement  
+  doc.setFont("sans-serif", "normal");
+  doc.setFontSize(19);
   doc.text(
-    "This certificate was generated by the PESO OJT Attendance System and is valid for official records.",
-    pageW / 2,
+    `has complete ${hoursDisplay} hours of On-the-Job Training`,
+    textX,
     y,
-    { align: "center", maxWidth: pageW - 2 * margin }
+    { align: "center" }
   );
-  y += 14;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(10);
-  doc.setTextColor(120, 100, 60);
-  doc.text(APP_CONFIG.name, pageW / 2, y, { align: "center" });
+  y += lineHeight;
+
+  // 3. Office line
+  doc.text("at the Public Employment Service Office (PESO) Cabuyao", textX, y, { align: "center" });
+  y += lineHeight;
+
+  // 4. Date range
+  doc.text(`from ${data.startDate} to ${data.endDate}`, textX, y, { align: "center" });
+  y += lineHeight;
+
+  // 5. Issuance statement
+  doc.text(
+    `Given this ${data.completionDate} at 3rd Floor, Retail Plaza, Poblacion Dos,`,
+    textX,
+    y,
+    { align: "center" }
+  );
+  y += lineHeightSmall;
+
+  // 6. Location line
+  doc.text("City of Cabuyao Laguna.", textX, y, { align: "center" });
+  y += lineHeight;
+
+  // 7. Purpose statement
+  doc.text("This Certification is issued for whatever purpose it may serve.", textX, y, { align: "center" });
+  y = footerTop;
+
+  // --- FOOTER SECTION — Signatory (bottom center, lower safe zone) ---
+  doc.setFont("sans-serif", "bold");
+  doc.setFontSize(17);
+  doc.text("JOSE KARLOS B. HAIN, CPS, CEMP, CEC, CLC", textX, y, { align: "center" });
+  y += lineHeightSmall + 3;
+
+  doc.setFont("sans-serif", "normal");
+  doc.text("EXECUTIVE ASSISTANT V", textX, y, { align: "center" });
+  y += lineHeightSmall;
+
+  doc.text("PESO Officer-in-Charge", textX, y, { align: "center" });
 
   doc.save(`Certificate-of-Completion-${data.userName.replace(/\s+/g, "-")}.pdf`);
 }
