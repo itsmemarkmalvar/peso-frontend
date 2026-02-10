@@ -106,6 +106,7 @@ export const API_ENDPOINTS = {
   // Registration Requests (New system)
   registrationRequests: {
     list: '/registration-requests',
+    approvedUsers: '/registration-requests/approved-users',
     show: (id: number) => `/registration-requests/${id}`,
     approve: (id: number) => `/registration-requests/${id}/approve`,
     reject: (id: number) => `/registration-requests/${id}/reject`,

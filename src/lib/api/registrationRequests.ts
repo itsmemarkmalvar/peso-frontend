@@ -47,6 +47,18 @@ export interface ApproveResponse {
   message?: string;
 }
 
+/** User created via registration approval (invitation sent) */
+export interface ApprovedUser {
+  id: number;
+  name: string;
+  email: string;
+  username: string;
+  role: string;
+  status: string;
+  invitation_sent_at: string | null;
+  invitation_accepted_at: string | null;
+}
+
 /**
  * Get all registration requests
  */
@@ -56,6 +68,19 @@ export async function getRegistrationRequests(
   const query = new URLSearchParams({ status }).toString();
   const endpoint = `${API_ENDPOINTS.registrationRequests.list}?${query}`;
   const response = await apiClient.get<RegistrationRequestsResponse>(endpoint);
+  return response.data;
+}
+
+/**
+ * Get users created via registration approval (invitation sent).
+ * @param status - 'pending' (not yet accepted), 'active' (accepted), or 'all'
+ */
+export async function getApprovedUsers(
+  status: 'pending' | 'active' | 'all' = 'all'
+): Promise<ApprovedUser[]> {
+  const query = new URLSearchParams({ status }).toString();
+  const endpoint = `${API_ENDPOINTS.registrationRequests.approvedUsers}?${query}`;
+  const response = await apiClient.get<{ success: boolean; data: ApprovedUser[] }>(endpoint);
   return response.data;
 }
 
