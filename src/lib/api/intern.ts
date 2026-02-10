@@ -96,6 +96,7 @@ export type AdminIntern = {
   supervisor_name: string
   is_active: boolean
   role: string
+  required_hours: number | null
 }
 
 export type InternAvailabilityOption = "available" | "not_available"

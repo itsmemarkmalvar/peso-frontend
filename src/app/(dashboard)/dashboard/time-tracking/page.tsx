@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { CheckCircle2, Search, FileDown } from "lucide-react";
 
 import {
@@ -43,13 +43,58 @@ function formatHours(hours: number): string {
   return `${h}h ${m}m`;
 }
 
+function computeAttendanceHours(attendance: {
+  total_hours: number | null;
+  clock_in_time?: string | null;
+  clock_out_time?: string | null;
+  break_start?: string | null;
+  break_end?: string | null;
+}): number {
+  if (attendance.total_hours !== null) {
+    return attendance.total_hours;
+  }
+
+  if (!attendance.clock_in_time || !attendance.clock_out_time) {
+    return 0;
+  }
+
+  const clockIn = new Date(attendance.clock_in_time);
+  const clockOut = new Date(attendance.clock_out_time);
+  if (Number.isNaN(clockIn.getTime()) || Number.isNaN(clockOut.getTime())) {
+    return 0;
+  }
+
+  let totalMinutes = (clockOut.getTime() - clockIn.getTime()) / 60000;
+  if (attendance.break_start && attendance.break_end) {
+    const breakStart = new Date(attendance.break_start);
+    const breakEnd = new Date(attendance.break_end);
+    if (!Number.isNaN(breakStart.getTime()) && !Number.isNaN(breakEnd.getTime())) {
+      const breakMinutes = (breakEnd.getTime() - breakStart.getTime()) / 60000;
+      if (breakMinutes > 0) {
+        totalMinutes -= breakMinutes;
+      }
+    }
+  }
+
+  totalMinutes = Math.max(0, totalMinutes);
+  return Math.round((totalMinutes / 60) * 100) / 100;
+}
+
 function calculateHoursRendered(
   internId: number,
-  attendanceData: { intern_id: number; total_hours: number | null; status: string }[]
+  attendanceData: {
+    intern_id: number;
+    total_hours: number | null;
+    status: string;
+    clock_in_time?: string | null;
+    clock_out_time?: string | null;
+    break_start?: string | null;
+    break_end?: string | null;
+  }[]
 ): number {
   return attendanceData
-    .filter((a) => a.intern_id === internId && a.status === "approved" && a.total_hours !== null)
-    .reduce((sum, a) => sum + (a.total_hours || 0), 0);
+    .filter((a) => a.intern_id === internId && a.status === "approved")
+    .reduce((sum, a) => sum + computeAttendanceHours(a), 0);
 }
 
 function buildHoursRows(
@@ -280,8 +325,12 @@ export default function TimeTrackingPage() {
   const [certificateRow, setCertificateRow] = useState<HoursRow | null>(null);
   const [certificateOpen, setCertificateOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchHoursData = useCallback((setLoading = false) => {
     let active = true;
+    if (setLoading) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     Promise.all([getAdminInterns(), getAttendanceList(), getAdminFilterOptions()])
       .then(([internsResponse, attendanceResponse, options]) => {
@@ -294,45 +343,48 @@ export default function TimeTrackingPage() {
           intern_id: a.intern_id,
           total_hours: a.total_hours,
           status: a.status,
+          clock_in_time: a.clock_in_time,
+          clock_out_time: a.clock_out_time,
+          break_start: a.break_start,
+          break_end: a.break_end,
         }));
 
+        const requiredHoursByIntern = new Map<number, number>();
+        interns.forEach((intern) => {
+          if (typeof intern.required_hours === "number") {
+            requiredHoursByIntern.set(intern.id, intern.required_hours);
+          }
+        });
+
         // Build hours rows with calculated data
-        // Note: required_hours should come from backend API, using default 200 for now
-        const rows = buildHoursRows(interns, attendanceData);
+        const rows = buildHoursRows(interns, attendanceData, requiredHoursByIntern);
         setHoursRows(rows);
         setIsLoading(false);
       })
       .catch((err) => {
         if (!active) return;
-        // Fallback to mock data
-        Promise.all([getAdminInterns(), getAdminFilterOptions()])
-          .then(([interns, options]) => {
-            if (!active) return;
-            setFilterOptions(options ?? { roles: [], groups: [] });
-            // Generate mock attendance data
-            const mockAttendanceData = interns.flatMap((intern) =>
-              Array.from({ length: 20 }, (_, i) => ({
-                intern_id: intern.id,
-                total_hours: Math.random() * 8 + 4, // 4-12 hours per day
-                status: i % 3 === 0 ? "pending" : "approved",
-              }))
-            );
-            setAllInterns(interns);
-            const rows = buildHoursRows(interns, mockAttendanceData);
-            setHoursRows(rows);
-            setIsLoading(false);
-          })
-          .catch((err2) => {
-            if (!active) return;
-            setError(err2 instanceof Error ? err2.message : "Failed to load hours data.");
-            setIsLoading(false);
-          });
+        setError(err instanceof Error ? err.message : "Failed to load hours data.");
+        setIsLoading(false);
       });
 
     return () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    const cleanup = fetchHoursData(true);
+    const refreshIntervalMs = 5000;
+    const intervalId = window.setInterval(() => fetchHoursData(false), refreshIntervalMs);
+    const handleFocus = () => fetchHoursData(false);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      cleanup?.();
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [fetchHoursData]);
 
   const getCompletionBadgeClass = (percentage: number) => {
     if (percentage >= 100) {
@@ -659,4 +711,3 @@ export default function TimeTrackingPage() {
     </div>
   );
 }
-
