@@ -41,6 +41,17 @@ export interface AttendanceListResponse {
   data: Attendance[];
 }
 
+export type ApprovedHoursSummaryItem = {
+  intern_id: number;
+  hours_rendered: number;
+};
+
+export interface ApprovedHoursSummaryResponse {
+  success: boolean;
+  message: string;
+  data: ApprovedHoursSummaryItem[];
+}
+
 export interface ClockInRequest {
   location_lat?: number;
   location_lng?: number;
@@ -130,8 +141,34 @@ export function getAttendanceList(params?: {
   if (params?.status) queryParams.append("status", params.status);
   
   const query = queryParams.toString();
-  return apiClient.get<AttendanceListResponse>(
-    `${API_ENDPOINTS.attendance.list}${query ? `?${query}` : ""}`
+  return apiClient
+    .get<AttendanceListResponse | { success: boolean; message: string; data: { data?: Attendance[]; records?: Attendance[] } }>(
+      `${API_ENDPOINTS.attendance.list}${query ? `?${query}` : ""}`
+    )
+    .then((res) => {
+      const rawData: unknown = (res as AttendanceListResponse).data;
+      if (Array.isArray(rawData)) {
+        return { success: res.success, message: res.message, data: rawData };
+      }
+      if (rawData && typeof rawData === "object") {
+        const objectData = rawData as { data?: unknown; records?: unknown };
+        if (Array.isArray(objectData.data)) {
+          return { success: res.success, message: res.message, data: objectData.data };
+        }
+        if (Array.isArray(objectData.records)) {
+          return { success: res.success, message: res.message, data: objectData.records };
+        }
+      }
+      return { success: res.success, message: res.message, data: [] };
+    });
+}
+
+/**
+ * Get approved hours totals grouped by intern (admin/supervisor).
+ */
+export function getApprovedHoursSummary(): Promise<ApprovedHoursSummaryResponse> {
+  return apiClient.get<ApprovedHoursSummaryResponse>(
+    `${API_ENDPOINTS.attendance.list}/approved-hours-summary`
   );
 }
 

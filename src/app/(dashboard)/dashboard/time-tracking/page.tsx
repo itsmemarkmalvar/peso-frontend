@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { CheckCircle2, Search, FileDown } from "lucide-react";
 
 import {
@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { APP_CONFIG } from "@/lib/constants";
 import { getAdminInterns, getAdminFilterOptions, type AdminIntern, type AdminFilterOptions } from "@/lib/api/intern";
-import { getAttendanceList } from "@/lib/api/attendance";
+import { getApprovedHoursSummary } from "@/lib/api/attendance";
 import certTemplatePng from "@/assets/images/CertOfCompletion.png";
 
 type HoursRow = {
@@ -45,22 +45,20 @@ function formatHours(hours: number): string {
 
 function calculateHoursRendered(
   internId: number,
-  attendanceData: { intern_id: number; total_hours: number | null; status: string }[]
+  approvedHoursByIntern: Map<number, number>
 ): number {
-  return attendanceData
-    .filter((a) => a.intern_id === internId && a.status === "approved" && a.total_hours !== null)
-    .reduce((sum, a) => sum + (a.total_hours || 0), 0);
+  return approvedHoursByIntern.get(internId) ?? 0;
 }
 
 function buildHoursRows(
   interns: AdminIntern[],
-  attendanceData: { intern_id: number; total_hours: number | null; status: string }[],
-  internRequiredHours: Map<number, number> = new Map()
+  internRequiredHours: Map<number, number> = new Map(),
+  approvedHoursByIntern: Map<number, number> = new Map()
 ): HoursRow[] {
   if (!interns.length) return [];
 
   return interns.map((intern) => {
-    const hoursRendered = calculateHoursRendered(intern.id, attendanceData);
+    const hoursRendered = calculateHoursRendered(intern.id, approvedHoursByIntern);
     // Get required_hours from map, or use default 200 hours
     const totalHours = internRequiredHours.get(intern.id) ?? 200;
     const remainingHours = Math.max(0, totalHours - hoursRendered);
@@ -280,59 +278,62 @@ export default function TimeTrackingPage() {
   const [certificateRow, setCertificateRow] = useState<HoursRow | null>(null);
   const [certificateOpen, setCertificateOpen] = useState(false);
 
-  useEffect(() => {
+  const fetchHoursData = useCallback((setLoading = false) => {
     let active = true;
+    if (setLoading) {
+      setIsLoading(true);
+      setError(null);
+    }
 
-    Promise.all([getAdminInterns(), getAttendanceList(), getAdminFilterOptions()])
-      .then(([internsResponse, attendanceResponse, options]) => {
+    Promise.all([getAdminInterns(), getApprovedHoursSummary(), getAdminFilterOptions()])
+      .then(([internsResponse, approvedHoursResponse, options]) => {
         if (!active) return;
 
         const interns = internsResponse;
         setAllInterns(interns);
         setFilterOptions(options ?? { roles: [], groups: [] });
-        const attendanceData = (attendanceResponse.data || []).map((a) => ({
-          intern_id: a.intern_id,
-          total_hours: a.total_hours,
-          status: a.status,
-        }));
+
+        const requiredHoursByIntern = new Map<number, number>();
+        interns.forEach((intern) => {
+          if (typeof intern.required_hours === "number") {
+            requiredHoursByIntern.set(intern.id, intern.required_hours);
+          }
+        });
+
+        const approvedHoursByIntern = new Map<number, number>();
+        (approvedHoursResponse.data || []).forEach((item) => {
+          approvedHoursByIntern.set(item.intern_id, item.hours_rendered);
+        });
 
         // Build hours rows with calculated data
-        // Note: required_hours should come from backend API, using default 200 for now
-        const rows = buildHoursRows(interns, attendanceData);
+        const rows = buildHoursRows(interns, requiredHoursByIntern, approvedHoursByIntern);
         setHoursRows(rows);
         setIsLoading(false);
       })
       .catch((err) => {
         if (!active) return;
-        // Fallback to mock data
-        Promise.all([getAdminInterns(), getAdminFilterOptions()])
-          .then(([interns, options]) => {
-            if (!active) return;
-            setFilterOptions(options ?? { roles: [], groups: [] });
-            // Generate mock attendance data
-            const mockAttendanceData = interns.flatMap((intern) =>
-              Array.from({ length: 20 }, (_, i) => ({
-                intern_id: intern.id,
-                total_hours: Math.random() * 8 + 4, // 4-12 hours per day
-                status: i % 3 === 0 ? "pending" : "approved",
-              }))
-            );
-            setAllInterns(interns);
-            const rows = buildHoursRows(interns, mockAttendanceData);
-            setHoursRows(rows);
-            setIsLoading(false);
-          })
-          .catch((err2) => {
-            if (!active) return;
-            setError(err2 instanceof Error ? err2.message : "Failed to load hours data.");
-            setIsLoading(false);
-          });
+        setError(err instanceof Error ? err.message : "Failed to load hours data.");
+        setIsLoading(false);
       });
 
     return () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    const cleanup = fetchHoursData(true);
+    const refreshIntervalMs = 5000;
+    const intervalId = window.setInterval(() => fetchHoursData(false), refreshIntervalMs);
+    const handleFocus = () => fetchHoursData(false);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      cleanup?.();
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [fetchHoursData]);
 
   const getCompletionBadgeClass = (percentage: number) => {
     if (percentage >= 100) {
@@ -659,4 +660,3 @@ export default function TimeTrackingPage() {
     </div>
   );
 }
-
