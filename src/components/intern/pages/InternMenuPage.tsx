@@ -10,6 +10,7 @@ const menuItems = [
   {
     title: "Documents",
     detail: "View files and internship requirements.",
+    href: "/dashboard/intern/documents",
   },
   {
     title: "Support",

@@ -41,6 +41,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/geofences", label: "Geofences", icon: Navigation2 },
   { href: "/dashboard/time-off", label: "Leave", icon: Plane },
   { href: "/dashboard/reports", label: "Reports", icon: LineChart },
+  { href: "/dashboard/documents", label: "Documents", icon: FileText },
   { href: "/dashboard/people", label: "People", icon: Users },
   { href: "/dashboard/promote", label: "New Users", icon: UserCheck },
   { href: "/dashboard/time-tracking", label: "Time Tracking", icon: Clock3 },

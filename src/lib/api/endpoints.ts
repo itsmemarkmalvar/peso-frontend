@@ -124,6 +124,14 @@ export const API_ENDPOINTS = {
     respond: (id: number) => `/notifications/${id}/respond`,
   },
 
+  // Documents
+  documents: {
+    list: '/documents',
+    create: '/documents',
+    download: (id: number) => `/documents/${id}/download`,
+    delete: (id: number) => `/documents/${id}`,
+  },
+
   // Geofence Locations
   geofenceLocations: {
     list: '/geofence-locations',

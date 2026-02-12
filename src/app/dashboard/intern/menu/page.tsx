@@ -21,7 +21,7 @@ const menuItems: MenuItem[] = [
   {
     title: "Documents",
     detail: "View files and internship requirements.",
-    href: "/dashboard/intern/timesheets",
+    href: "/dashboard/intern/documents",
   },
   {
     title: "Support",

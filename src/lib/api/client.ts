@@ -24,14 +24,19 @@ export class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+    const isFormData =
+      typeof FormData !== "undefined" && options.body instanceof FormData;
+    const headers = new Headers(options.headers);
+    if (!headers.has("Accept")) {
+      headers.set("Accept", "application/json");
+    }
+    if (!isFormData && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
+
     const config: RequestInit = {
       ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        ...options.headers,
-      },
+      headers,
     };
 
     // Add auth token if available
@@ -44,10 +49,10 @@ export class ApiClient {
     }
 
     const response = await fetch(url, config);
+    const contentType = response.headers.get('content-type') ?? '';
 
     if (!response.ok) {
       // Try to extract a useful message (Laravel validation / API error payloads)
-      const contentType = response.headers.get('content-type') ?? '';
       if (contentType.includes('application/json')) {
         const body = (await response.json().catch(() => null)) as LaravelValidationError | null;
         if (body?.errors) {
@@ -58,12 +63,30 @@ export class ApiClient {
         if (body?.message) {
           throw new Error(body.message);
         }
+      } else {
+        const text = await response.text().catch(() => '');
+        if (text) {
+          throw new Error(`Unexpected response: ${text.slice(0, 120)}...`);
+        }
       }
 
       throw new Error(`API Error (${response.status}): ${response.statusText}`);
     }
 
-    return response.json();
+    if (contentType.includes('application/json')) {
+      return response.json();
+    }
+
+    if (response.status === 204) {
+      return undefined as T;
+    }
+
+    const text = await response.text().catch(() => '');
+    throw new Error(
+      text
+        ? `Unexpected response format. Expected JSON, received: ${text.slice(0, 120)}...`
+        : 'Unexpected response format. Expected JSON.'
+    );
   }
 
   private getAuthToken(): string | null {
@@ -81,6 +104,13 @@ export class ApiClient {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: JSON.stringify(data),
+    });
+  }
+
+  postForm<T>(endpoint: string, data: FormData): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "POST",
+      body: data,
     });
   }
 

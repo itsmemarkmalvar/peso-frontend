@@ -84,14 +84,27 @@ export default function LoginPage() {
     e.preventDefault();
     setTouched({ email: true, password: true });
     setFormError(null);
-    if (!isFormValid) return;
+    const formData = new FormData(e.currentTarget);
+    const emailInput = String(formData.get("email") ?? "").trim();
+    const passwordInput = String(formData.get("password") ?? "");
+
+    if (emailInput !== email) {
+      setEmail(emailInput);
+    }
+    if (passwordInput !== password) {
+      setPassword(passwordInput);
+    }
+
+    const isPayloadValid =
+      isValidEmail(emailInput) && passwordInput.length >= 8;
+    if (!isPayloadValid) return;
 
     setIsSubmitting(true);
 
     try {
       const res = await apiClient.post<LoginResponse>(API_ENDPOINTS.auth.login, {
-        email: email.trim(),
-        password,
+        email: emailInput,
+        password: passwordInput,
       });
 
       const user = res?.data?.user;
