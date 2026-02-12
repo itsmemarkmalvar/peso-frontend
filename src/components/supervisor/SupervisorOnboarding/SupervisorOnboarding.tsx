@@ -492,7 +492,7 @@ export function SupervisorOnboarding() {
 
               <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs text-[color:var(--dash-muted)]">
-                  Approval scope can be updated later by an admin or coordinator.
+                  Approval scope can be updated later by an admin.
                 </p>
                 <Button
                   type="submit"

@@ -11,7 +11,6 @@ export const ROLES = {
   ADMIN: 'admin',
   GIP: 'gip',
   INTERN: 'intern',
-  COORDINATOR: 'coordinator',
   SUPERVISOR: 'supervisor',
 } as const;
 
@@ -39,15 +38,14 @@ export const DAYS_OF_WEEK = [
   'Sunday',
 ] as const;
 
-export const ROUTES = {
-  HOME: '/',
-  LOGIN: '/login',
-  DASHBOARD: {
-    INTERN: '/dashboard/intern',
-    COORDINATOR: '/dashboard/coordinator',
-    ADMIN: '/dashboard/admin',
-    SUPERVISOR: '/dashboard/supervisor',
-  },
+export const   ROUTES = {
+    HOME: '/',
+    LOGIN: '/login',
+    DASHBOARD: {
+      INTERN: '/dashboard/intern',
+      ADMIN: '/dashboard/admin',
+      SUPERVISOR: '/dashboard/supervisor',
+    },
   ATTENDANCE: {
     CLOCK: '/attendance/clock',
     HISTORY: '/attendance/history',

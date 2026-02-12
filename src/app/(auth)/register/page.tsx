@@ -136,8 +136,8 @@ export default function RegisterPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl">Request Account</CardTitle>
           <CardDescription>
-            Submit your official details. A coordinator will review and email a
-            setup link for your password and onboarding.
+            Submit your official details. An admin or supervisor will review
+            and email a setup link for your password and onboarding.
           </CardDescription>
         </CardHeader>
 
@@ -265,7 +265,7 @@ export default function RegisterPage() {
 
         <CardFooter className="flex flex-col gap-2 border-t">
           <p className="text-center text-xs text-slate-500">
-            Official use only. Accounts are activated after coordinator approval.
+            Official use only. Accounts are activated after admin approval.
           </p>
         </CardFooter>
     </Card>

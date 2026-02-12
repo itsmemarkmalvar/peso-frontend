@@ -89,7 +89,7 @@ export function LandingPage() {
               >
                 {[
                   "Web-based access (desktop + mobile browsers)",
-                  "Role-based access for interns, supervisors, coordinators, and admins",
+                  "Role-based access for interns, supervisors, GIP, and admins",
                   "Export-ready reports for DTR and hours rendered",
                 ].map((t) => (
                   <div
@@ -157,7 +157,7 @@ export function LandingPage() {
               </h2>
               <p className="mt-3 max-w-3xl text-slate-700">
                 Designed for PESO operations—simple for interns to use and easy
-                for supervisors and coordinators to monitor and approve.
+                for supervisors to monitor and approve.
               </p>
             </div>
           </Reveal>
@@ -258,8 +258,8 @@ export function LandingPage() {
                 </h2>
                 <p className="mt-3 text-slate-700">
                   Interns clock in from any browser. Supervisors review
-                  attendance, add notes, and approve records. Coordinators can
-                  generate reports at any time.
+                  attendance, add notes, and approve records. Admins and
+                  supervisors can generate reports at any time.
                 </p>
               </div>
             </Reveal>

@@ -6,8 +6,7 @@ export type UserRole =
   | 'admin'
   | 'supervisor'
   | 'gip'
-  | 'intern'
-  | 'coordinator';
+  | 'intern';
 
 export interface User {
   id: number;

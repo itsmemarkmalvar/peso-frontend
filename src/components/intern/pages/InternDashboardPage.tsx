@@ -297,7 +297,7 @@ export default function InternDashboardPage() {
           <div>
             <CardTitle className="text-base">Notifications</CardTitle>
             <CardDescription>
-              Updates from your coordinator and schedule changes.
+              Updates from your supervisor and schedule changes.
             </CardDescription>
           </div>
           <Badge className="bg-slate-100 text-slate-700">

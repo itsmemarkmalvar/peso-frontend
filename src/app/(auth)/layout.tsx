@@ -99,8 +99,8 @@ export default function AuthLayout({
                   Role-based access
                 </p>
                 <p className="text-sm leading-6 text-slate-700">
-                  Interns, supervisors, coordinators, and admins have
-                  appropriate permissions.
+                  Interns, supervisors, and admins have appropriate
+                  permissions.
                 </p>
               </div>
             </div>

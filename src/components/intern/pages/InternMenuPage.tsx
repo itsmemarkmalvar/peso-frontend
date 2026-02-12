@@ -13,7 +13,7 @@ const menuItems = [
   },
   {
     title: "Support",
-    detail: "Contact your coordinator or supervisor.",
+    detail: "Contact your supervisor.",
   },
 ] as const
 

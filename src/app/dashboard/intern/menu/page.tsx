@@ -25,7 +25,7 @@ const menuItems: MenuItem[] = [
   },
   {
     title: "Support",
-    detail: "Contact your coordinator or supervisor.",
+    detail: "Contact your supervisor.",
     href: "mailto:pesocabuyaocity@gmail.com?subject=PESO%20OJT%20Attendance%20System%20-%20Intern%20Support",
     external: true,
   },

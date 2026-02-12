@@ -665,7 +665,7 @@ export default function InternDashboardPage() {
             <div>
               <DialogTitle>Notifications</DialogTitle>
               <DialogDescription>
-                Schedule changes and updates from your coordinator.
+                Schedule changes and updates from your supervisor.
               </DialogDescription>
             </div>
             <Badge variant="secondary">{unreadCount} Unread</Badge>

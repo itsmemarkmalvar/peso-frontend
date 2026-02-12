@@ -55,7 +55,7 @@ export default function InternOnboardingPreviewPage() {
             </CardTitle>
             <CardDescription className="text-[color:var(--dash-muted)]">
               Confirm your details so PESO can activate your attendance profile.
-              Your coordinator will complete the remaining fields later.
+              Your supervisor will complete the remaining fields later.
             </CardDescription>
           </CardHeader>
           <CardContent>

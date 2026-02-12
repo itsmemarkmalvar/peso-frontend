@@ -11,7 +11,6 @@ peso-frontend/
 │   │   │   ├── dashboard/
 │   │   │   │   ├── intern/
 │   │   │   │   ├── supervisor/
-│   │   │   │   ├── coordinator/
 │   │   │   │   └── admin/
 │   │   │   ├── attendance/
 │   │   │   ├── approvals/

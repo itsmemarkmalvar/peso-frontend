@@ -59,9 +59,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     process.env.NODE_ENV === "development" &&
     pathname?.startsWith("/dashboard/supervisor") === true;
   const isStaff =
-    user?.role === "admin" ||
-    user?.role === "coordinator" ||
-    user?.role === "supervisor";
+    user?.role === "admin" || user?.role === "supervisor";
   const isSupervisor = user?.role === "supervisor";
   const [supervisorChecked, setSupervisorChecked] = useState(false);
   const [needsSupervisorOnboarding, setNeedsSupervisorOnboarding] =
