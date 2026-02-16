@@ -41,7 +41,6 @@ const NAV_ITEMS = [
   { href: "/dashboard/geofences", label: "Geofences", icon: Navigation2 },
   { href: "/dashboard/time-off", label: "Leave", icon: Plane },
   { href: "/dashboard/reports", label: "Reports", icon: LineChart },
-  { href: "/dashboard/documents", label: "Documents", icon: FileText },
   { href: "/dashboard/people", label: "People", icon: Users },
   { href: "/dashboard/promote", label: "New Users", icon: UserCheck },
   { href: "/dashboard/time-tracking", label: "Time Tracking", icon: Clock3 },
@@ -257,11 +256,11 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             })}
           </nav>
 
-          <div className="mt-auto rounded-xl border border-[color:var(--dash-border)] bg-[color:var(--dash-accent-soft)] p-4 text-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-accent-strong)]">
+          <div className="mt-auto rounded-xl border border-[color:var(--dash-border)] bg-[color:var(--dash-accent-soft)] p-2.5 text-sm">
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[color:var(--dash-accent-strong)]">
               Admin view
             </p>
-            <p className="mt-2 text-xs text-[color:var(--dash-muted)]">
+            <p className="mt-1 text-[10px] leading-snug text-[color:var(--dash-muted)]">
               Review attendance, approvals, and schedules in one place.
             </p>
           </div>
@@ -333,7 +332,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </main>
 
           {/* Subtle footer strip */}
-          <footer className="border-t border-[color:var(--dash-border)] bg-white/80 px-6 py-2 text-[11px] text-[color:var(--dash-muted)]">
+          <footer className="flex-shrink-0 border-t border-[color:var(--dash-border)] bg-white/80 px-6 py-1 text-[10px] leading-tight text-[color:var(--dash-muted)]">
             <div className="flex items-center justify-between gap-2">
               <span>
                 PESO OJT Attendance · Admin view ·{" "}

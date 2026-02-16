@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, MapPin, Smartphone, Webcam, AlertTriangle } from "lucide-react";
+import { CheckCircle2, Smartphone, Webcam, AlertTriangle } from "lucide-react";
 
 import {
   Card,
@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { getAdminInterns, type AdminIntern } from "@/lib/api/intern";
+import { getLiveLocations, type LiveLocationItem } from "@/lib/api/attendance";
 
 type LiveLocationRow = {
   intern: string;
@@ -22,36 +22,34 @@ type LiveLocationRow = {
   verification: string[];
 };
 
-function buildLiveLocationRows(interns: AdminIntern[]): LiveLocationRow[] {
-  if (!interns.length) return [];
+function formatLastSeen(iso: string | null): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  } catch {
+    return "—";
+  }
+}
 
-  const patterns: Omit<LiveLocationRow, "intern" | "id" | "location">[] = [
-    {
-      status: "Clocked in",
-      lastSeen: "2 min ago",
-      verification: ["GPS", "Selfie"],
-    },
-    {
-      status: "Clocked in (off-site)",
-      lastSeen: "8 min ago",
-      verification: ["GPS", "Selfie", "Off-site"],
-    },
-    {
-      status: "Offline",
-      lastSeen: "Yesterday · 5:03 PM",
-      verification: [],
-    },
-  ];
-
-  return interns.slice(0, 20).map((intern, index) => {
-    const pattern = patterns[index % patterns.length];
+function buildLiveLocationRows(items: LiveLocationItem[]): LiveLocationRow[] {
+  return items.map((item) => {
+    const company = item.company_name || "OJT";
+    const loc = item.location && item.location !== "—" ? item.location : "OJT placement";
     return {
-      intern: intern.name,
-      id: intern.id.toString(),
-      status: pattern.status,
-      lastSeen: pattern.lastSeen,
-      location: `${intern.company_name} · OJT placement`,
-      verification: pattern.verification,
+      intern: item.intern_name,
+      id: item.student_id || String(item.intern_id),
+      status: item.status,
+      lastSeen: formatLastSeen(item.last_seen_at),
+      location: `${company} · ${loc}`,
+      verification: item.verification ?? [],
     };
   });
 }
@@ -64,15 +62,17 @@ export default function LiveLocationsPage() {
   useEffect(() => {
     let active = true;
 
-    getAdminInterns()
-      .then((interns) => {
+    getLiveLocations()
+      .then((res) => {
         if (!active) return;
-        setRows(buildLiveLocationRows(interns));
+        const data = Array.isArray(res.data) ? res.data : (res as { data?: LiveLocationItem[] }).data ?? [];
+        setRows(buildLiveLocationRows(data));
         setIsLoading(false);
       })
       .catch((err) => {
         if (!active) return;
-        setError(err instanceof Error ? err.message : "Failed to load interns.");
+        setError(err instanceof Error ? err.message : "Failed to load live locations.");
+        setRows([]);
         setIsLoading(false);
       });
 
@@ -94,8 +94,7 @@ export default function LiveLocationsPage() {
         <CardHeader>
           <CardTitle className="text-base">Clocked-in interns</CardTitle>
           <CardDescription>
-            Live list of OJT interns. Hook this to your attendance API and
-            geolocation endpoints for real-time monitoring.
+            Interns currently clocked in today (no clock-out yet). Last activity, location, and verification (GPS/selfie) from attendance.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -158,7 +157,7 @@ export default function LiveLocationsPage() {
                 ))}
               {!isLoading && !error && rows.length === 0 && (
                 <p className="text-[11px] text-slate-500">
-                  No interns available yet. Seed the database to see sample data.
+                  No one is currently clocked in. Data updates when interns clock in and before they clock out.
                 </p>
               )}
             </div>

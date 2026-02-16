@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, User, Calendar, Clock, FileText } from "lucide-react";
 
 import {
   Card,
@@ -20,6 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import {
   getApprovals,
   approveRequest,
@@ -228,146 +229,191 @@ export default function ApprovalsPage() {
         </CardContent>
       </Card>
 
-      {/* Detail Dialog */}
+      {/* Approval detail dialog — theme-aligned */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent onClose={() => setIsDialogOpen(false)} className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Approval Request Details</DialogTitle>
-            <DialogDescription>
-              Review the request details and approve or reject it.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent
+          onClose={() => setIsDialogOpen(false)}
+          className="max-w-xl border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-0 shadow-xl sm:rounded-xl"
+        >
           {selectedRequest && (
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Intern Name</p>
-                  <p className="text-sm text-slate-900">{selectedRequest.intern_name}</p>
+            <>
+              <DialogHeader className="rounded-t-lg border-b border-[color:var(--dash-border)] bg-[color:var(--dash-bg)] px-6 py-5 text-left sm:rounded-t-xl">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color:var(--dash-accent-soft)] text-[color:var(--dash-accent-strong)]">
+                    <User className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <DialogTitle className="text-lg font-semibold tracking-tight text-[color:var(--dash-ink)]">
+                      {selectedRequest.intern_name}
+                    </DialogTitle>
+                    <DialogDescription className="mt-0.5 text-[color:var(--dash-muted)]">
+                      {selectedRequest.intern_student_id}
+                    </DialogDescription>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs font-medium ${getTypeBadgeClass(selectedRequest.type)}`}
+                      >
+                        {selectedRequest.type}
+                      </Badge>
+                      <Badge className={`text-xs ${getStatusBadgeClass(selectedRequest.status)}`}>
+                        {selectedRequest.status}
+                      </Badge>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Student ID</p>
-                  <p className="text-sm text-slate-900">{selectedRequest.intern_student_id}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Type</p>
-                  <Badge
-                    variant="outline"
-                    className={`text-xs font-medium ${getTypeBadgeClass(selectedRequest.type)}`}
-                  >
-                    {selectedRequest.type}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Status</p>
-                  <Badge className={`text-xs ${getStatusBadgeClass(selectedRequest.status)}`}>
-                    {selectedRequest.status}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Date</p>
-                  <p className="text-sm text-slate-900">
-                    {new Date(selectedRequest.date).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
-                {selectedRequest.clock_in_time && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Clock In</p>
-                    <p className="text-sm text-slate-900">
-                      {new Date(selectedRequest.clock_in_time).toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        minute: "2-digit",
-                        hour12: true,
-                        timeZone: "Asia/Manila",
-                      })}
+              </DialogHeader>
+
+              <div className="space-y-5 px-6 py-5">
+                {/* Date & times */}
+                <section className="space-y-3">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-[color:var(--dash-muted)]">
+                    Date & time
+                  </h3>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="flex items-center gap-3 rounded-lg border border-[color:var(--dash-border)] bg-white px-3 py-2.5">
+                      <Calendar className="h-4 w-4 shrink-0 text-[color:var(--dash-muted)]" />
+                      <div>
+                        <p className="text-[10px] font-medium uppercase tracking-wider text-[color:var(--dash-muted)]">
+                          Date
+                        </p>
+                        <p className="text-sm font-semibold text-[color:var(--dash-ink)]">
+                          {new Date(selectedRequest.date).toLocaleDateString("en-US", {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </p>
+                      </div>
+                    </div>
+                    {(selectedRequest.clock_in_time || selectedRequest.clock_out_time) && (
+                      <div className="flex items-center gap-3 rounded-lg border border-[color:var(--dash-border)] bg-white px-3 py-2.5">
+                        <Clock className="h-4 w-4 shrink-0 text-[color:var(--dash-muted)]" />
+                        <div className="min-w-0">
+                          <p className="text-[10px] font-medium uppercase tracking-wider text-[color:var(--dash-muted)]">
+                            Clock in · out
+                          </p>
+                          <p className="text-sm font-semibold tabular-nums text-[color:var(--dash-ink)]">
+                            {selectedRequest.clock_in_time
+                              ? new Date(selectedRequest.clock_in_time).toLocaleTimeString("en-US", {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                  timeZone: "Asia/Manila",
+                                })
+                              : "—"}
+                            {" · "}
+                            {selectedRequest.clock_out_time
+                              ? new Date(selectedRequest.clock_out_time).toLocaleTimeString("en-US", {
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                  timeZone: "Asia/Manila",
+                                })
+                              : "—"}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Reason */}
+                <section className="space-y-2">
+                  <h3 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[color:var(--dash-muted)]">
+                    <FileText className="h-3.5 w-3.5" />
+                    Reason
+                  </h3>
+                  <div className="rounded-lg border border-[color:var(--dash-border)] bg-white px-3 py-3">
+                    <p className="text-sm font-medium text-[color:var(--dash-ink)]">
+                      {selectedRequest.reason_title || "No reason provided"}
                     </p>
                   </div>
-                )}
-                {selectedRequest.clock_out_time && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Clock Out</p>
-                    <p className="text-sm text-slate-900">
-                      {new Date(selectedRequest.clock_out_time).toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        minute: "2-digit",
-                        hour12: true,
-                        timeZone: "Asia/Manila",
-                      })}
+                </section>
+
+                {selectedRequest.notes && (
+                  <section className="space-y-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-[color:var(--dash-muted)]">
+                      Notes
+                    </h3>
+                    <p className="whitespace-pre-wrap rounded-lg border border-[color:var(--dash-border)] bg-white px-3 py-2.5 text-sm text-[color:var(--dash-ink)]">
+                      {selectedRequest.notes}
                     </p>
-                  </div>
+                  </section>
                 )}
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Reason Title</p>
-                <p className="text-sm text-slate-900">{selectedRequest.reason_title}</p>
-              </div>
-              {selectedRequest.notes && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Notes</p>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedRequest.notes}</p>
-                </div>
-              )}
-              {selectedRequest.rejection_reason && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Rejection Reason</p>
-                  <p className="text-sm text-red-700">{selectedRequest.rejection_reason}</p>
-                </div>
-              )}
-              {selectedRequest.status === "Pending" && (
-                <div className="space-y-2 pt-2">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase mb-1 block">
-                      Rejection Reason (if rejecting)
-                    </label>
+
+                {selectedRequest.rejection_reason && (
+                  <section className="space-y-2">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-[color:var(--dash-muted)]">
+                      Rejection reason
+                    </h3>
+                    <p className="rounded-lg border border-[color:var(--dash-alert)]/30 bg-[color:var(--dash-alert-soft)] px-3 py-2.5 text-sm text-[color:var(--dash-alert)]">
+                      {selectedRequest.rejection_reason}
+                    </p>
+                  </section>
+                )}
+
+                {selectedRequest.status === "Pending" && (
+                  <section className="space-y-2 border-t border-[color:var(--dash-border)] pt-4">
+                    <Label
+                      htmlFor="rejection-reason"
+                      className="text-xs font-semibold uppercase tracking-wider text-[color:var(--dash-muted)]"
+                    >
+                      Rejection reason (required if rejecting)
+                    </Label>
                     <textarea
+                      id="rejection-reason"
                       value={rejectReason}
                       onChange={(e) => setRejectReason(e.target.value)}
-                      placeholder="Enter reason for rejection..."
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter a brief reason for rejection..."
+                      rows={3}
+                      className="w-full resize-y rounded-lg border border-[color:var(--dash-border)] bg-white px-3 py-2.5 text-sm text-[color:var(--dash-ink)] placeholder:text-[color:var(--dash-muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--dash-accent)] focus:ring-offset-1"
                     />
-                  </div>
-                </div>
-              )}
-            </div>
+                  </section>
+                )}
+              </div>
+
+              <DialogFooter className="flex flex-col-reverse gap-2 border-t border-[color:var(--dash-border)] bg-slate-50/80 px-6 py-4 sm:flex-row sm:justify-end">
+                {selectedRequest.status === "Pending" ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      disabled={isProcessing}
+                      className="border-[color:var(--dash-border)] text-[color:var(--dash-ink)] hover:bg-white"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={handleReject}
+                      disabled={isProcessing || !rejectReason.trim()}
+                      className="gap-2"
+                    >
+                      <XCircle className="h-4 w-4" />
+                      Reject
+                    </Button>
+                    <Button
+                      onClick={handleApprove}
+                      disabled={isProcessing}
+                      className="gap-2 bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Approve
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsDialogOpen(false)}
+                    className="border-[color:var(--dash-border)] text-[color:var(--dash-ink)] hover:bg-white"
+                  >
+                    Close
+                  </Button>
+                )}
+              </DialogFooter>
+            </>
           )}
-          <DialogFooter>
-            {selectedRequest?.status === "Pending" && (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  disabled={isProcessing}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleReject}
-                  disabled={isProcessing || !rejectReason.trim()}
-                  className="gap-2"
-                >
-                  <XCircle className="h-4 w-4" />
-                  Reject
-                </Button>
-                <Button
-                  onClick={handleApprove}
-                  disabled={isProcessing}
-                  className="gap-2 bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Approve
-                </Button>
-              </>
-            )}
-            {selectedRequest?.status !== "Pending" && (
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Close
-              </Button>
-            )}
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Calendar, Clock, MapPin, Play, Square } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, MapPin, Coffee, Timer, LogIn, LogOut } from "lucide-react";
 import Image from "next/image";
 
 import {
@@ -115,203 +115,224 @@ export default function TimesheetDetailPage() {
     }
   };
 
+  const periodLabel = `${new Date(data.date_range.start).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })} – ${new Date(data.date_range.end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
+
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+    <div className="flex flex-col gap-8">
+      {/* Header with breadcrumb feel */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
           <Button
             variant="ghost"
-            size="sm"
+            size="icon"
             onClick={() => router.back()}
-            className="gap-2"
+            className="h-9 w-9 shrink-0 rounded-lg"
+            aria-label="Back to timesheets"
           >
             <ArrowLeft className="h-4 w-4" />
-            Back
           </Button>
-          <div>
-            <h1 className="text-lg font-semibold text-slate-900">Timesheet Details</h1>
-            <p className="text-sm text-slate-600">
-              {data.intern.name} · {data.intern.company}
+          <div className="min-w-0">
+            <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900">
+              {data.intern.name}
+            </h1>
+            <p className="text-sm text-slate-500">
+              {data.intern.company}
+              {data.intern.student_id && ` · ${data.intern.student_id}`}
             </p>
           </div>
         </div>
       </div>
 
-      {/* Summary Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Summary</CardTitle>
-          <CardDescription>
-            Period: {new Date(data.date_range.start).toLocaleDateString()} – {new Date(data.date_range.end).toLocaleDateString()}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-medium text-slate-600">Total Days</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">{data.summary.total_days}</p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-medium text-slate-600">Total Hours</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">{data.summary.total_hours_label}</p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-medium text-slate-600">Student ID</p>
-              <p className="mt-1 text-lg font-semibold text-slate-900">{data.intern.student_id}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Summary strip */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <Card className="border-slate-200/80 bg-gradient-to-br from-slate-50 to-white">
+          <CardContent className="pt-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+              Period
+            </p>
+            <p className="mt-1.5 text-sm font-medium text-slate-900">{periodLabel}</p>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200/80 bg-gradient-to-br from-blue-50/80 to-white">
+          <CardContent className="pt-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+              Total days
+            </p>
+            <p className="mt-1.5 text-2xl font-bold tabular-nums text-slate-900">
+              {data.summary.total_days}
+            </p>
+          </CardContent>
+        </Card>
+        <Card className="border-slate-200/80 bg-gradient-to-br from-emerald-50/80 to-white">
+          <CardContent className="pt-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+              Total hours
+            </p>
+            <p className="mt-1.5 text-2xl font-bold tabular-nums text-emerald-700">
+              {data.summary.total_hours_label}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Attendance Records */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Daily Attendance Records</CardTitle>
-          <CardDescription>
-            Clock in, start break, end break, and clock out with captured photos and tracked hours
+      {/* Daily Attendance Records */}
+      <Card className="overflow-hidden border-slate-200/80 shadow-sm">
+        <CardHeader className="border-b border-slate-100 bg-slate-50/50 pb-5">
+          <CardTitle className="text-lg">Daily attendance</CardTitle>
+          <CardDescription className="max-w-xl">
+            Clock in, break start/end, and clock out with timestamps and verification photos per day.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {data.records.length === 0 ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-sm text-slate-500">No attendance records found for this period.</p>
+            <div className="flex flex-col items-center justify-center gap-3 py-16 px-6">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100">
+                <Calendar className="h-7 w-7 text-slate-400" />
+              </div>
+              <p className="text-center text-sm font-medium text-slate-600">
+                No attendance for this period
+              </p>
+              <p className="text-center text-xs text-slate-500">
+                Records will appear when the intern clocks in for dates in the selected range.
+              </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <ul className="divide-y divide-slate-100">
               {data.records.map((record: AttendanceRecord) => (
-                <div
-                  key={record.id}
-                  className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 sm:p-5"
-                >
-                  {/* Day header */}
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                <li key={record.id} className="px-6 py-5 sm:px-6 sm:py-6">
+                  {/* Day row */}
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{record.date_label}</p>
-                      <p className="text-xs text-slate-500">{record.day_name}</p>
+                      <span className="text-base font-semibold text-slate-900">
+                        {record.date_label}
+                      </span>
+                      <span className="ml-2 text-sm text-slate-500">{record.day_name}</span>
                     </div>
-                    {getStatusBadge(record.status)}
-                  </div>
-
-                  {/* Four events: Clock In | Start Break | End Break | Clock Out */}
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    {/* Clock In */}
-                    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
-                          <Clock className="h-4 w-4 text-blue-600" />
-                        </div>
-                        <span className="text-xs font-medium text-slate-600">Clock In</span>
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {record.clock_in_time_label || "—"}
-                      </p>
-                      {record.is_late && (
-                        <Badge variant="outline" className="w-fit border-orange-300 bg-orange-50 text-orange-700 text-[10px]">
-                          Late
-                        </Badge>
-                      )}
-                      {record.clock_in_photo && (
-                        <div className="relative mt-2 aspect-square w-full max-w-[120px] overflow-hidden rounded-lg border border-slate-200">
-                          <Image
-                            src={record.clock_in_photo}
-                            alt="Clock in"
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Start Break */}
-                    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100">
-                          <Play className="h-4 w-4 text-amber-600" />
-                        </div>
-                        <span className="text-xs font-medium text-slate-600">Start Break</span>
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {record.break_start_time_label || "—"}
-                      </p>
-                    </div>
-
-                    {/* End Break */}
-                    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-100">
-                          <Square className="h-4 w-4 text-orange-600" />
-                        </div>
-                        <span className="text-xs font-medium text-slate-600">End Break</span>
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {record.break_end_time_label || "—"}
-                      </p>
-                    </div>
-
-                    {/* Clock Out */}
-                    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white p-3">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100">
-                          <Clock className="h-4 w-4 text-red-600" />
-                        </div>
-                        <span className="text-xs font-medium text-slate-600">Clock Out</span>
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {record.clock_out_time_label || "—"}
-                      </p>
-                      {(record.is_undertime || record.is_overtime) && (
-                        <div className="flex flex-wrap gap-1">
-                          {record.is_undertime && (
-                            <Badge variant="outline" className="border-orange-300 bg-orange-50 text-orange-700 text-[10px]">
-                              Undertime
-                            </Badge>
-                          )}
-                          {record.is_overtime && (
-                            <Badge variant="outline" className="border-green-300 bg-green-50 text-green-700 text-[10px]">
-                              Overtime
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                      {record.clock_out_photo && (
-                        <div className="relative mt-2 aspect-square w-full max-w-[120px] overflow-hidden rounded-lg border border-slate-200">
-                          <Image
-                            src={record.clock_out_photo}
-                            alt="Clock out"
-                            fill
-                            className="object-cover"
-                            unoptimized
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Location & total hours */}
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-white px-3 py-2 border border-slate-200">
-                    {record.location_address ? (
-                      <div className="flex items-center gap-2 min-w-0">
-                        <MapPin className="h-4 w-4 shrink-0 text-slate-400" />
-                        <p className="text-xs text-slate-600 truncate">{record.location_address}</p>
-                      </div>
-                    ) : (
-                      <span />
-                    )}
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-slate-500" />
-                      <p className="text-sm font-semibold text-slate-900">
-                        Tracked: <span className="text-blue-600">{record.total_hours_label}</span>
-                      </p>
+                      {getStatusBadge(record.status)}
+                      <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium tabular-nums text-slate-600">
+                        {record.total_hours_label}
+                      </span>
                     </div>
                   </div>
-                </div>
+
+                  {/* Timeline: 4 steps */}
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <TimeBlock
+                      icon={LogIn}
+                      label="Clock in"
+                      time={record.clock_in_time_label}
+                      photo={record.clock_in_photo}
+                      photoAlt="Clock in"
+                      badge={record.is_late ? "Late" : null}
+                      badgeClass="border-amber-300 bg-amber-50 text-amber-800"
+                    />
+                    <TimeBlock
+                      icon={Coffee}
+                      label="Break start"
+                      time={record.break_start_time_label}
+                      iconBg="bg-amber-100"
+                      iconColor="text-amber-600"
+                    />
+                    <TimeBlock
+                      icon={Timer}
+                      label="Break end"
+                      time={record.break_end_time_label}
+                      iconBg="bg-orange-100"
+                      iconColor="text-orange-600"
+                    />
+                    <TimeBlock
+                      icon={LogOut}
+                      label="Clock out"
+                      time={record.clock_out_time_label}
+                      photo={record.clock_out_photo}
+                      photoAlt="Clock out"
+                      badge={
+                        record.is_undertime
+                          ? "Undertime"
+                          : record.is_overtime
+                            ? "Overtime"
+                            : null
+                      }
+                      badgeClass={
+                        record.is_undertime
+                          ? "border-amber-300 bg-amber-50 text-amber-800"
+                          : "border-emerald-300 bg-emerald-50 text-emerald-800"
+                      }
+                    />
+                  </div>
+
+                  {/* Location footer */}
+                  {record.location_address && (
+                    <div className="mt-4 flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2">
+                      <MapPin className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      <p className="text-xs text-slate-600 truncate">{record.location_address}</p>
+                    </div>
+                  )}
+                </li>
               ))}
-            </div>
+            </ul>
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function TimeBlock({
+  icon: Icon,
+  label,
+  time,
+  photo,
+  photoAlt,
+  badge,
+  badgeClass,
+  iconBg = "bg-blue-100",
+  iconColor = "text-blue-600",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  time: string | null | undefined;
+  photo?: string | null;
+  photoAlt?: string;
+  badge?: string | null;
+  badgeClass?: string;
+  iconBg?: string;
+  iconColor?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2 rounded-xl border border-slate-100 bg-white p-3 shadow-sm transition-shadow hover:shadow">
+      <div className="flex items-center gap-2">
+        <div
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${iconBg} ${iconColor}`}
+        >
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-xs font-medium text-slate-500">{label}</span>
+      </div>
+      <p className="text-sm font-semibold tabular-nums text-slate-900">
+        {time || "—"}
+      </p>
+      {badge && (
+        <Badge
+          variant="outline"
+          className={`w-fit text-[10px] ${badgeClass ?? "border-slate-200 bg-slate-50 text-slate-700"}`}
+        >
+          {badge}
+        </Badge>
+      )}
+      {photo && (
+        <div className="relative mt-2 aspect-square w-full max-w-[100px] overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+          <Image
+            src={photo}
+            alt={photoAlt ?? label}
+            fill
+            className="object-cover"
+            unoptimized
+            sizes="100px"
+          />
+        </div>
+      )}
     </div>
   );
 }

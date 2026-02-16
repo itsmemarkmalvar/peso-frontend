@@ -43,6 +43,7 @@ export const API_ENDPOINTS = {
     update: (id: number) => `/attendance/${id}`,
     today: '/attendance/today',
     todayAll: '/attendance/today-all',
+    liveLocations: '/attendance/live-locations',
     history: '/attendance/history',
   },
 

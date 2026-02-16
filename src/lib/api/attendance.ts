@@ -192,6 +192,27 @@ export function getTodayAttendanceAll(): Promise<{ success: boolean; message: st
   );
 }
 
+export type LiveLocationItem = {
+  intern_id: number;
+  intern_name: string;
+  student_id: string;
+  company_name: string;
+  status: "Clocked in" | "On break";
+  last_seen_at: string | null;
+  location: string;
+  verification: string[];
+};
+
+/**
+ * Get live locations: interns currently clocked in today (no clock-out yet).
+ * Admin/supervisor only. Uses real attendance data (last activity, location, GPS/selfie).
+ */
+export function getLiveLocations(): Promise<{ success: boolean; message: string; data: LiveLocationItem[] }> {
+  return apiClient.get<{ success: boolean; message: string; data: LiveLocationItem[] }>(
+    API_ENDPOINTS.attendance.liveLocations
+  );
+}
+
 /**
  * Get attendance history
  */
