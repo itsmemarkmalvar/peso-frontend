@@ -14,6 +14,7 @@ import {
 } from "@/lib/api/intern"
 import { getGeofenceLocations } from "@/lib/api/geofenceLocations"
 import { getSettings } from "@/lib/api/settings"
+import { DEFAULT_MAP_CENTER } from "@/lib/mapConstants"
 import type { SystemSettings } from "@/types"
 import { clockIn, clockOut, breakStart, breakEnd, getTodayAttendance } from "@/lib/api/attendance"
 import { Button } from "@/components/ui/button"
@@ -74,16 +75,6 @@ const MapBackdrop = dynamic(
     loading: () => <div className="h-full w-full bg-slate-100" />,
   }
 )
-
-const defaultStoredGeofences: StoredGeofenceLocation[] = [
-  {
-    id: "cabuyao-city-hall",
-    name: "Cabuyao City Hall",
-    latitude: 14.2486,
-    longitude: 121.1258,
-    radius_meters: 100,
-  },
-]
 
 const earthRadiusMeters = 6371000
 
@@ -292,11 +283,7 @@ export default function InternTimePage() {
   const [week, setWeek] =
     useState<InternTimeClockWeekItem[]>(placeholderWeek)
   const [logs, setLogs] = useState<InternActivityItem[]>([])
-  const [geofences, setGeofences] = useState<GeofenceArea[]>(
-    defaultStoredGeofences
-      .map((item, index) => toGeofenceArea(item, index))
-      .filter((item): item is GeofenceArea => Boolean(item))
-  )
+  const [geofences, setGeofences] = useState<GeofenceArea[]>([])
   const [isClockedIn, setIsClockedIn] = useState(false)
   const [clockNotice, setClockNotice] = useState<string | null>(null)
   const [alertModalOpen, setAlertModalOpen] = useState(false)
@@ -1162,7 +1149,7 @@ export default function InternTimePage() {
     ? [userLocation.lat, userLocation.lng]
     : geofences.length
       ? [geofences[0].lat, geofences[0].lng]
-      : [14.2486, 121.1258]
+      : DEFAULT_MAP_CENTER
   const mapZoom = userLocation ? 16 : geofences.length ? 15 : 13
 
   const clockInWindowClosed =

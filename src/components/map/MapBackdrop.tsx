@@ -6,6 +6,7 @@ import L from "leaflet"
 import "leaflet/dist/leaflet.css"
 
 import { cn } from "@/lib/utils"
+import { DEFAULT_MAP_CENTER } from "@/lib/mapConstants"
 
 type MapBackdropProps = {
   center?: [number, number]
@@ -38,7 +39,7 @@ if (typeof window !== "undefined") {
 }
 
 export function MapBackdrop({
-  center = [14.2486, 121.1258],
+  center = DEFAULT_MAP_CENTER,
   zoom = 13,
   interactive = false,
   geofences = [],

@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, Circle, Marker, useMapEvents } from "react-lea
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeofenceLocation as ApiGeofenceLocation } from "@/lib/api/geofenceLocations";
+import { DEFAULT_MAP_CENTER } from "@/lib/mapConstants";
 
 // Fix for default marker icon in Next.js
 if (typeof window !== "undefined") {
@@ -59,7 +60,7 @@ export function GeofenceMap({
   onLocationSelect,
   selectedLocation,
   mode = "view",
-  initialCenter = [14.2486, 121.1258], // Default: Cabuyao, Laguna, Philippines
+  initialCenter = DEFAULT_MAP_CENTER,
   initialZoom = 13,
 }: GeofenceMapProps) {
   const [mapCenter] = useState<[number, number]>(initialCenter);
@@ -211,7 +212,7 @@ export function GeofenceMap({
               <input
                 type="text"
                 id="create-name"
-                placeholder="e.g., Cabuyao City Hall"
+                placeholder="e.g., Main Office"
                 value={newLocation.name || ""}
                 onChange={(e) =>
                   setNewLocation({

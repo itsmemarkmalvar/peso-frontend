@@ -9,6 +9,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { isWithinGeofence } from "@/lib/geolocation";
 import { getGeofenceLocations, type GeofenceLocation } from "@/lib/api/geofenceLocations";
+import { DEFAULT_MAP_CENTER } from "@/lib/mapConstants";
 
 // Dynamic import for map (SSR disabled)
 const GeofenceMapDynamic = dynamic(
@@ -141,7 +142,7 @@ export default function ClockInPage() {
                 locations={geofenceLocations}
                 mode="view"
                 initialCenter={
-                  location ? [location.latitude, location.longitude] : [14.2486, 121.1258]
+                  location ? [location.latitude, location.longitude] : DEFAULT_MAP_CENTER
                 }
                 initialZoom={location ? 16 : 13}
               />

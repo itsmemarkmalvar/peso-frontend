@@ -17,6 +17,7 @@ import {
   type CreateGeofenceLocationPayload,
   type GeofenceLocation,
 } from "@/lib/api/geofenceLocations";
+import { DEFAULT_MAP_CENTER } from "@/lib/mapConstants";
 
 // Dynamic import to avoid SSR issues with Leaflet
 const GeofenceMapDynamic = dynamic(
@@ -221,8 +222,15 @@ export default function GeofencesPage() {
                     onLocationSelect={handleLocationSelect}
                     selectedLocation={selectedLocation}
                     mode={mode}
-                    initialCenter={[14.2486, 121.1258]} // Cabuyao, Laguna
-                    initialZoom={13}
+                    initialCenter={
+                      locations.length > 0
+                        ? [
+                            locations.reduce((s, l) => s + l.latitude, 0) / locations.length,
+                            locations.reduce((s, l) => s + l.longitude, 0) / locations.length,
+                          ]
+                        : DEFAULT_MAP_CENTER
+                    }
+                    initialZoom={locations.length > 0 ? 14 : 6}
                   />
                 </div>
               )}
@@ -305,7 +313,7 @@ export default function GeofencesPage() {
                       setFormData({ ...formData, name: e.target.value })
                     }
                     disabled={mode === "view"}
-                    placeholder="e.g., Cabuyao City Hall"
+                    placeholder="e.g., Main Office"
                     className="h-8 text-sm"
                   />
                 </div>
