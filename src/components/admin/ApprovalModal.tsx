@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { getDepartments } from "@/lib/api/departments";
+import { getDepartments, getDepartmentSupervisors, type DepartmentSupervisor } from "@/lib/api/departments";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -30,7 +30,7 @@ interface ApprovalModalProps {
     full_name: string;
     email: string;
   } | null;
-  onApprove: (role: string, departmentId: number | null) => Promise<void>;
+  onApprove: (role: string, departmentId: number | null, supervisorUserId: number | null) => Promise<void>;
 }
 
 export function ApprovalModal({
@@ -44,17 +44,48 @@ export function ApprovalModal({
   const [role, setRole] = useState<string>("intern");
   const [departmentId, setDepartmentId] = useState<string>("");
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [departmentsSupervisors, setDepartmentsSupervisors] = useState<DepartmentSupervisor[]>([]);
+  const [selectedSupervisorId, setSelectedSupervisorId] = useState<string>("");
   const [isLoadingDepartments, setIsLoadingDepartments] = useState(false);
+  const [isLoadingSupervisors, setIsLoadingSupervisors] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (open) {
       loadDepartments();
-      // Reset form when modal opens; supervisors default to intern
       setRole(isSupervisor ? "intern" : "intern");
       setDepartmentId("");
+      setDepartmentsSupervisors([]);
+      setSelectedSupervisorId("");
     }
   }, [open, isSupervisor]);
+
+  useEffect(() => {
+    if (open && (role === "intern" || role === "gip") && departmentId) {
+      loadSupervisors(parseInt(departmentId, 10));
+    } else {
+      setDepartmentsSupervisors([]);
+      setSelectedSupervisorId("");
+    }
+  }, [open, role, departmentId]);
+
+  const loadSupervisors = async (deptId: number) => {
+    setIsLoadingSupervisors(true);
+    try {
+      const data = await getDepartmentSupervisors(deptId);
+      setDepartmentsSupervisors(data);
+      if (data.length > 0) {
+        setSelectedSupervisorId(data[0].id.toString());
+      } else {
+        setSelectedSupervisorId("");
+      }
+    } catch {
+      setDepartmentsSupervisors([]);
+      setSelectedSupervisorId("");
+    } finally {
+      setIsLoadingSupervisors(false);
+    }
+  };
 
   const loadDepartments = async () => {
     setIsLoadingDepartments(true);
@@ -87,7 +118,8 @@ export function ApprovalModal({
 
     setIsSubmitting(true);
     try {
-      await onApprove(effectiveRole, departmentId ? parseInt(departmentId, 10) : null);
+      const supId = selectedSupervisorId ? parseInt(selectedSupervisorId, 10) : null;
+      await onApprove(effectiveRole, departmentId ? parseInt(departmentId, 10) : null, supId);
       onOpenChange(false);
     } catch (err) {
       console.error("Approval failed:", err);
@@ -187,6 +219,38 @@ export function ApprovalModal({
                 : "Optional: Assign to a specific department"}
             </p>
           </div>
+
+          {(role === "intern" || role === "gip") && departmentId && (
+            <div className="space-y-2.5">
+              <Label htmlFor="supervisor" className="text-sm font-semibold text-slate-700">
+                Supervisor
+              </Label>
+              {isLoadingSupervisors ? (
+                <p className="text-xs text-slate-500">Loading supervisors…</p>
+              ) : departmentsSupervisors.length === 0 ? (
+                <p className="text-xs text-slate-500">No supervisors assigned to this department.</p>
+              ) : (
+                <>
+                  <Select
+                    id="supervisor"
+                    value={selectedSupervisorId}
+                    onChange={(e) => setSelectedSupervisorId(e.target.value)}
+                    disabled={isSubmitting}
+                    className="w-full"
+                  >
+                    {departmentsSupervisors.map((s) => (
+                      <option key={s.id} value={s.id.toString()}>
+                        {s.name} ({s.email})
+                      </option>
+                    ))}
+                  </Select>
+                  <p className="text-xs text-slate-500 mt-1.5">
+                    Auto-filled from department. Supervisor name and email will be saved to the intern record.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         <DialogFooter>

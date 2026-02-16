@@ -116,6 +116,7 @@ export const API_ENDPOINTS = {
   // Departments
   departments: {
     list: '/departments',
+    supervisors: (id: number) => `/departments/${id}/supervisors`,
   },
 
   // Notifications

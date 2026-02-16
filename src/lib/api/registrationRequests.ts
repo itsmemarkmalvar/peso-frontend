@@ -99,20 +99,25 @@ const APPROVE_VALID_ROLES = ['admin', 'supervisor', 'gip', 'intern'] as const;
 /**
  * Approve a registration request.
  * Backend requires "role"; undefined is omitted by JSON.stringify so we always send a valid role.
+ * When role is intern or gip, supervisor_user_id auto-fills supervisor name and email on the intern record.
  */
 export async function approveRegistrationRequest(
   id: number,
   role: string,
-  departmentId: number | null
+  departmentId: number | null,
+  supervisorUserId: number | null = null
 ): Promise<ApproveResponse['data']> {
   const safeRole =
     role && typeof role === "string" && APPROVE_VALID_ROLES.includes(role as (typeof APPROVE_VALID_ROLES)[number])
       ? role
       : "intern";
-  const payload = {
+  const payload: { role: string; department_id: number | null; supervisor_user_id?: number | null } = {
     role: safeRole,
     department_id: departmentId ?? null,
   };
+  if (supervisorUserId != null) {
+    payload.supervisor_user_id = supervisorUserId;
+  }
   const response = await apiClient.post<ApproveResponse>(
     API_ENDPOINTS.registrationRequests.approve(id),
     payload

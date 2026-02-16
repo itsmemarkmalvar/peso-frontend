@@ -54,17 +54,18 @@ export default function NewUsersPage() {
     setApprovalModalOpen(true);
   };
 
-  const handleApprove = async (role: string, departmentId: number | null) => {
+  const handleApprove = async (role: string, departmentId: number | null, supervisorUserId: number | null) => {
     if (!selectedRequest) return;
 
     setProcessingId(selectedRequest.id);
     setActionError(null);
     setSuccessMessage(null);
     try {
-      const result = await approveRegistrationRequest(
+      await approveRegistrationRequest(
         selectedRequest.id,
         role,
-        departmentId
+        departmentId,
+        supervisorUserId
       );
       setSuccessMessage(
         `Registration approved! User account created with role "${role}". Invitation email has been sent to ${selectedRequest.email}.`

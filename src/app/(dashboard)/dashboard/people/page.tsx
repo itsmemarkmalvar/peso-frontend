@@ -456,20 +456,12 @@ export default function PeoplePage() {
                         </h3>
                         <dl className="space-y-3 text-sm">
                           <div>
-                            <dt className="mb-0.5 text-xs text-slate-500">Company</dt>
+                            <dt className="mb-0.5 text-xs text-slate-500">Department</dt>
                             <dd className="flex items-center gap-2 font-medium text-slate-900">
                               <Building2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
-                              {(personDetail ?? selectedPerson).company_name || "—"}
+                              {(personDetail ?? selectedPerson).department_name || "—"}
                             </dd>
                           </div>
-                          {(personDetail ?? selectedPerson).department_name && (
-                            <div>
-                              <dt className="mb-0.5 text-xs text-slate-500">Department</dt>
-                              <dd className="font-medium text-slate-900">
-                                {(personDetail ?? selectedPerson).department_name}
-                              </dd>
-                            </div>
-                          )}
                           {(personDetail ?? selectedPerson).required_hours != null && (
                             <div>
                               <dt className="mb-0.5 text-xs text-slate-500">Required Hours</dt>
