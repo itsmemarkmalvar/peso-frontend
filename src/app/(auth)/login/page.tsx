@@ -137,7 +137,7 @@ export default function LoginPage() {
   return (
     <Card className="relative overflow-hidden border-slate-200 shadow-sm">
         {/* subtle brand accent */}
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-700 via-blue-600 to-slate-900" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-blue-700 via-blue-600 to-slate-900" />
 
         {/* watermark */}
         <div className="pointer-events-none absolute -right-24 -top-24 opacity-[0.06]">

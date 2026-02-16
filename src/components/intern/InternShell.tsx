@@ -204,7 +204,7 @@ export function InternShell({ children }: InternShellProps) {
       <div className="relative flex min-h-screen">
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[color:var(--dash-border)] bg-[color:var(--dash-card)]/95 px-4 py-5 backdrop-blur transition-[width,transform] lg:sticky lg:translate-x-0",
+            "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[color:var(--dash-border)] bg-[color:var(--dash-card)]/95 px-4 py-5 backdrop-blur transition-[width,transform] lg:translate-x-0",
             mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
             collapsed ? "lg:w-20" : "lg:w-64"
           )}
@@ -279,8 +279,19 @@ export function InternShell({ children }: InternShellProps) {
 
         </aside>
 
-        <div className="flex min-h-screen flex-1 flex-col">
-          <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[color:var(--dash-border)] bg-white/90 px-6 py-4 backdrop-blur">
+        <div
+          className={cn(
+            "flex min-h-screen flex-1 flex-col transition-[margin]",
+            collapsed ? "lg:ml-20" : "lg:ml-64"
+          )}
+        >
+          <header
+            className={cn(
+              "fixed right-0 top-0 z-[1100] flex items-center justify-between border-b border-[color:var(--dash-border)] bg-white/90 px-6 py-4 backdrop-blur transition-[left]",
+              "left-0",
+              collapsed ? "lg:left-20" : "lg:left-64"
+            )}
+          >
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -316,7 +327,7 @@ export function InternShell({ children }: InternShellProps) {
             </div>
           </header>
 
-          <main className="flex-1 px-6 py-8">{children}</main>
+          <main className="flex-1 px-6 py-8 pt-20">{children}</main>
         </div>
       </div>
     </div>
