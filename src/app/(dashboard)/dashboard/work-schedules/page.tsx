@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Edit2, Save, X, Info, Loader2 } from "lucide-react";
 
 import {
@@ -87,6 +87,7 @@ export default function WorkSchedulesPage() {
   const [gracePeriodMinutes, setGracePeriodMinutes] = useState(10);
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(true);
   const canViewExcused = user?.role === "admin" || user?.role === "supervisor";
+  const workDaysSectionRef = useRef<HTMLDivElement>(null);
 
   // Calculate break duration automatically
   const calculateBreakDuration = (start: string, end: string): number => {
@@ -165,6 +166,7 @@ export default function WorkSchedulesPage() {
         if (!active || !data) return;
         if (data.name != null && data.name !== "") setScheduleName(data.name);
         if (data.admin_notes != null) setAdminNotes(data.admin_notes ?? "");
+        const defaultWeekdays = ["monday", "tuesday", "wednesday", "thursday", "friday"];
         if (data.days?.length) {
           const days = data.days;
           const selectedRaw = days.map((d) => dayOfWeekToId[d.day_of_week]).filter(Boolean);
@@ -179,8 +181,11 @@ export default function WorkSchedulesPage() {
               };
             }
           });
-          setSelectedDays(selected.length ? selected : ["monday", "tuesday", "wednesday", "thursday", "friday"]);
+          setSelectedDays(selected.length ? selected : defaultWeekdays);
           setDaySchedules((prev) => ({ ...prev, ...schedules }));
+        } else {
+          // No days from API (e.g. no schedule set yet): keep at least weekdays so Save never sends empty
+          setSelectedDays(defaultWeekdays);
         }
         if (data.lunch_break_start) setLunchBreakStart(data.lunch_break_start.length === 5 ? data.lunch_break_start : data.lunch_break_start.slice(0, 5));
         if (data.lunch_break_end) setLunchBreakEnd(data.lunch_break_end.length === 5 ? data.lunch_break_end : data.lunch_break_end.slice(0, 5));
@@ -264,21 +269,41 @@ export default function WorkSchedulesPage() {
     setSaveSuccess(false);
 
     try {
-      // Convert day schedules to the format expected by the API
-      const days = selectedDays.map((dayId) => {
-        const schedule = daySchedules[dayId];
-        return {
-          day_of_week: getDayOfWeek(dayId),
-          start_time: schedule.startTime,
-          end_time: schedule.endTime,
-        };
-      });
+      // Require at least one work day (backend expects non-empty days array)
+      if (selectedDays.length === 0) {
+        setSaveError("Select at least one work day.");
+        setIsSaving(false);
+        setTimeout(() => workDaysSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+        return;
+      }
+
+      // Normalize time to HH:mm (backend expects date_format:H:i, no seconds)
+      const toHHmm = (t: string) => (t && t.length >= 5 ? t.slice(0, 5) : t);
+
+      // Convert day schedules to the format expected by the API (only include days that have a schedule)
+      const days = selectedDays
+        .filter((dayId) => daySchedules[dayId])
+        .map((dayId) => {
+          const schedule = daySchedules[dayId]!;
+          return {
+            day_of_week: getDayOfWeek(dayId),
+            start_time: toHHmm(schedule.startTime),
+            end_time: toHHmm(schedule.endTime),
+          };
+        });
+
+      if (days.length === 0) {
+        setSaveError("Select at least one work day and set its times.");
+        setIsSaving(false);
+        setTimeout(() => workDaysSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+        return;
+      }
 
       await updateDefaultSchedule({
         name: scheduleName,
         days,
-        lunch_break_start: lunchBreakStart,
-        lunch_break_end: lunchBreakEnd,
+        lunch_break_start: toHHmm(lunchBreakStart),
+        lunch_break_end: toHHmm(lunchBreakEnd),
         admin_notes: adminNotes.trim() ? adminNotes.trim() : undefined,
       });
 
@@ -290,7 +315,11 @@ export default function WorkSchedulesPage() {
         setSaveSuccess(false);
       }, 3000);
     } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Failed to save schedule");
+      const message = err instanceof Error ? err.message : "Failed to save schedule";
+      setSaveError(message);
+      if (message.toLowerCase().includes("work day") || message.toLowerCase().includes("day")) {
+        workDaysSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
     } finally {
       setIsSaving(false);
     }
@@ -426,9 +455,12 @@ export default function WorkSchedulesPage() {
               />
             </div>
 
-            {/* Days of the Week */}
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-700">Days of the week</Label>
+            {/* Days of the Week — at least one required */}
+            <div className="space-y-2" id="work-days-section" ref={workDaysSectionRef}>
+              <Label className="text-xs font-semibold text-slate-700">
+                Work days <span className="text-red-500">*</span>
+              </Label>
+              <p className="text-xs text-slate-500">Select at least one day. Blue = work day.</p>
               <div className="flex gap-2">
                 {DAYS_OF_WEEK.map((day) => (
                   <button
@@ -445,6 +477,9 @@ export default function WorkSchedulesPage() {
                   </button>
                 ))}
               </div>
+              {saveError && (saveError.includes("work day") || saveError.includes("day")) && (
+                <p className="text-sm text-red-600">{saveError}</p>
+              )}
             </div>
 
             {/* Daily Time Schedules */}

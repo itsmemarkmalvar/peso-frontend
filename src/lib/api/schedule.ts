@@ -160,6 +160,10 @@ export async function updateDefaultSchedule(
     notifications_created?: number;
   };
 }> {
+  const days = payload.days ?? [];
+  if (!Array.isArray(days) || days.length === 0) {
+    throw new Error("At least one work day must be selected.");
+  }
   const response = await apiClient.post<{
     success: boolean;
     message: string;

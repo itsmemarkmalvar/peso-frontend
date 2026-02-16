@@ -21,12 +21,25 @@ export async function getSettings(): Promise<SystemSettings> {
   const response = await apiClient.get<SettingsResponse>(
     API_ENDPOINTS.settings.get
   );
-  return response.data;
+  const data = response?.data;
+  if (data && typeof data === "object" && "grace_period_minutes" in data) {
+    const grace = Number(data.grace_period_minutes);
+    return {
+      grace_period_minutes: Number.isFinite(grace) ? Math.min(120, Math.max(0, grace)) : 10,
+      verification_gps: Boolean(data.verification_gps),
+      verification_selfie: Boolean(data.verification_selfie),
+    };
+  }
+  return {
+    grace_period_minutes: 10,
+    verification_gps: true,
+    verification_selfie: true,
+  };
 }
 
 /**
  * Update system settings.
- * Admin only.
+ * Admin only (enforced by backend).
  */
 export async function updateSettings(
   payload: Partial<SystemSettings>
@@ -35,5 +48,18 @@ export async function updateSettings(
     API_ENDPOINTS.settings.update,
     payload
   );
-  return response.data;
+  const data = response?.data;
+  if (data && typeof data === "object") {
+    const grace = Number(data.grace_period_minutes);
+    return {
+      grace_period_minutes: Number.isFinite(grace) ? Math.min(120, Math.max(0, grace)) : 10,
+      verification_gps: Boolean(data.verification_gps),
+      verification_selfie: Boolean(data.verification_selfie),
+    };
+  }
+  return {
+    grace_period_minutes: 10,
+    verification_gps: true,
+    verification_selfie: true,
+  };
 }
