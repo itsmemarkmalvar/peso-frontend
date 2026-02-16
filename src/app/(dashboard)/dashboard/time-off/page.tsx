@@ -56,7 +56,7 @@ export default function LeavePage() {
       .catch((err) => {
         if (!active) return;
         setRows([]);
-        setError(err instanceof Error ? err.message : "Failed to load leave requests.");
+        setError(err instanceof Error ? err.message : "Failed to load absent requests.");
         setIsLoading(false);
       });
 
@@ -155,31 +155,31 @@ export default function LeavePage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-lg font-semibold text-[color:var(--dash-ink)]">Leave requests</h1>
+        <h1 className="text-lg font-semibold text-[color:var(--dash-ink)]">Absent requests</h1>
         <p className="text-sm text-[color:var(--dash-muted)]">
-          Review and approve leave and holiday requests from OJT interns.
+          Review and approve absent and holiday requests from OJT interns.
         </p>
       </div>
 
       <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)]">
         <CardHeader>
-          <CardTitle className="text-base text-[color:var(--dash-ink)]">Pending & completed leave requests</CardTitle>
+          <CardTitle className="text-base text-[color:var(--dash-ink)]">Pending & completed absent requests</CardTitle>
           <CardDescription className="text-[color:var(--dash-muted)]">
             Click on any row to view details and approve or reject requests.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading && (
-            <p className="text-sm text-[color:var(--dash-muted)] py-4">Loading leave requests…</p>
+            <p className="text-sm text-[color:var(--dash-muted)] py-4">Loading absent requests…</p>
           )}
           {error && !isLoading && (
             <p className="text-sm text-[color:var(--dash-alert)] py-4">
-              {error} Unable to load leave requests.
+              {error} Unable to load absent requests.
             </p>
           )}
           {!isLoading && !error && rows.length === 0 && (
             <p className="text-sm text-[color:var(--dash-muted)] py-4">
-              No leave requests yet. Once interns submit leave requests, they will appear here.
+              No absent requests yet. Once interns submit absent requests, they will appear here.
             </p>
           )}
           {!isLoading && !error && rows.length > 0 && (
@@ -223,7 +223,7 @@ export default function LeavePage() {
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent onClose={() => setIsDialogOpen(false)} className="flex max-h-[90vh] max-w-xl flex-col rounded-xl border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-xl">
           <DialogHeader className="shrink-0 space-y-1.5 pb-0">
-            <DialogTitle className="text-lg font-semibold text-[color:var(--dash-ink)]">Leave Request Details</DialogTitle>
+            <DialogTitle className="text-lg font-semibold text-[color:var(--dash-ink)]">Absent Request Details</DialogTitle>
             <DialogDescription className="text-sm text-[color:var(--dash-muted)]">
               Review the request and approve or reject it.
             </DialogDescription>

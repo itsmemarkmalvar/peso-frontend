@@ -868,7 +868,7 @@ export default function InternDashboardPage() {
                 </div>
               </div>
               <p className="text-[11px] text-slate-500">
-                Leave end date blank if the absence is for one day only.
+                Leave end date blank if the absent request is for one day only.
               </p>
             </div>
           </div>

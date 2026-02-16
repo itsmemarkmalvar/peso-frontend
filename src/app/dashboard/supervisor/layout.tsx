@@ -13,7 +13,7 @@ import {
   MapPin,
   Menu,
   Navigation2,
-  Plane,
+  UserX,
   Settings,
   Users,
 } from "lucide-react"
@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/supervisor/approvals", label: "Approvals", icon: CheckCircle2 },
   { href: "/dashboard/supervisor/live-locations", label: "Live Locations", icon: MapPin },
   { href: "/dashboard/supervisor/geofences", label: "Geofences", icon: Navigation2 },
-  { href: "/dashboard/supervisor/time-off", label: "Leave", icon: Plane },
+  { href: "/dashboard/supervisor/time-off", label: "Absent Request", icon: UserX },
   { href: "/dashboard/supervisor/reports", label: "Reports", icon: LineChart },
   { href: "/dashboard/supervisor/people", label: "People", icon: Users },
   { href: "/dashboard/supervisor/time-tracking", label: "Time Tracking", icon: Clock3 },
