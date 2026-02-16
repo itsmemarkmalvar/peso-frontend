@@ -383,7 +383,7 @@ export default function TimeTrackingPage() {
           row.student_id.toLowerCase().includes(query) ||
           (intern.email && intern.email.toLowerCase().includes(query)) ||
           intern.course.toLowerCase().includes(query) ||
-          intern.company_name.toLowerCase().includes(query) ||
+          (intern.department_name && intern.department_name.toLowerCase().includes(query)) ||
           intern.supervisor_name.toLowerCase().includes(query);
 
         if (!matchesSearch) return false;

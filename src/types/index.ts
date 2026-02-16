@@ -25,8 +25,6 @@ export interface Intern {
   student_id: string;
   full_name: string;
   course: string;
-  year_level: string;
-  company_name: string;
   supervisor_name: string;
   start_date: string;
   end_date: string;

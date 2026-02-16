@@ -90,8 +90,6 @@ export type AdminIntern = {
   email: string | null
   student_id: string
   course: string
-  year_level: string | null
-  company_name: string
   department_id: number | null
   department_name: string | null
   supervisor_name: string
@@ -112,7 +110,6 @@ export type AdminInternDetail = Omit<AdminIntern, "name"> & {
   emergency_contact_phone: string | null
   weekly_availability: InternWeeklyAvailability | null
   supervisor_email: string | null
-  supervisor_contact: string | null
   start_date: string | null
   end_date: string | null
   onboarded_at: string | null

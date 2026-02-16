@@ -129,7 +129,7 @@ export default function PeoplePage() {
           (person.email && person.email.toLowerCase().includes(q)) ||
           person.student_id.toLowerCase().includes(q) ||
           person.course.toLowerCase().includes(q) ||
-          person.company_name.toLowerCase().includes(q) ||
+          (person.department_name && person.department_name.toLowerCase().includes(q)) ||
           person.supervisor_name.toLowerCase().includes(q);
         if (!matches) return false;
       }
@@ -282,7 +282,7 @@ export default function PeoplePage() {
                         {person.name}
                       </p>
                       <p className="truncate text-xs text-slate-500">
-                        {person.company_name || "—"} {person.student_id && `· ${person.student_id}`}
+                        {person.department_name || "—"} {person.student_id && `· ${person.student_id}`}
                       </p>
                       {person.email && (
                         <p className="truncate text-[11px] text-slate-400">{person.email}</p>
@@ -437,7 +437,6 @@ export default function PeoplePage() {
                             <dd className="flex items-center gap-2 font-medium text-slate-900">
                               <GraduationCap className="h-3.5 w-3.5 shrink-0 text-slate-400" />
                               {(personDetail ?? selectedPerson).course || "—"}
-                              {(personDetail ?? selectedPerson).year_level && ` • Year ${(personDetail ?? selectedPerson).year_level}`}
                             </dd>
                           </div>
                           {(personDetail?.student_id ?? selectedPerson.student_id) && (
@@ -511,12 +510,6 @@ export default function PeoplePage() {
                                       {(personDetail ?? selectedPerson).supervisor_email}
                                     </a>
                                   </dd>
-                                </div>
-                              )}
-                              {personDetail?.supervisor_contact && (
-                                <div>
-                                  <dt className="mb-0.5 text-xs text-slate-500">Contact</dt>
-                                  <dd className="font-medium text-slate-900">{personDetail.supervisor_contact}</dd>
                                 </div>
                               )}
                             </>
