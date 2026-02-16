@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
         source: "/api/:path*",
         destination: "http://127.0.0.1:8000/api/:path*",
       },
+      // Proxy storage so profile images load (frontend on 3000, Laravel serves files on 8000)
+      {
+        source: "/storage/:path*",
+        destination: "http://127.0.0.1:8000/storage/:path*",
+      },
     ];
   },
 };

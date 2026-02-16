@@ -1,7 +1,21 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { CheckCircle2, Search, Users, Loader2, UserCircle2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Search,
+  Users,
+  Loader2,
+  UserCircle2,
+  Mail,
+  Building2,
+  GraduationCap,
+  Phone,
+  Calendar,
+  Clock,
+  AlertCircle,
+  BookOpen,
+} from "lucide-react";
 
 import {
   Card,
@@ -13,7 +27,22 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { getAdminInterns, getAdminFilterOptions, type AdminIntern, type AdminFilterOptions } from "@/lib/api/intern";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import {
+  getAdminInterns,
+  getAdminFilterOptions,
+  getAdminInternDetail,
+  type AdminIntern,
+  type AdminFilterOptions,
+  type AdminInternDetail,
+} from "@/lib/api/intern";
 
 function getRoleBadgeClass(role: string): string {
   switch (role) {
@@ -36,6 +65,39 @@ export default function PeoplePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState<string>("");
   const [filterGroup, setFilterGroup] = useState<string>("");
+  const [selectedPerson, setSelectedPerson] = useState<AdminIntern | null>(null);
+  const [personDetail, setPersonDetail] = useState<AdminInternDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [failedProfilePhotos, setFailedProfilePhotos] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    if (!selectedPerson) {
+      setPersonDetail(null);
+      return;
+    }
+    let active = true;
+    setDetailLoading(true);
+    getAdminInternDetail(selectedPerson.id)
+      .then((detail) => {
+        if (active) {
+          setPersonDetail(detail);
+          setDetailLoading(false);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setPersonDetail(null);
+          setDetailLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedPerson?.id]);
+
+  const handleImageError = (id: number) => {
+    setFailedProfilePhotos((prev) => new Set(prev).add(id));
+  };
 
   useEffect(() => {
     let active = true;
@@ -200,11 +262,21 @@ export default function PeoplePage() {
                   <article
                     key={person.id}
                     role="listitem"
-                    className="flex items-center gap-4 rounded-xl border border-[color:var(--dash-border)] bg-white p-3 transition hover:border-slate-300 hover:shadow-sm"
+                    onClick={() => setSelectedPerson(person)}
+                    className="flex cursor-pointer items-center gap-4 rounded-xl border border-[color:var(--dash-border)] bg-white p-3 transition hover:border-slate-300 hover:shadow-sm"
                   >
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--dash-accent-soft)] text-sm font-semibold text-[color:var(--dash-accent-strong)]">
-                      {person.name.trim().charAt(0).toUpperCase() || "?"}
-                    </div>
+                    {person.profile_photo && !failedProfilePhotos.has(person.id) ? (
+                      <img
+                        src={person.profile_photo}
+                        alt=""
+                        className="h-11 w-11 shrink-0 rounded-full object-cover"
+                        onError={() => handleImageError(person.id)}
+                      />
+                    ) : (
+                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[color:var(--dash-accent-soft)] text-sm font-semibold text-[color:var(--dash-accent-strong)]">
+                        {person.name.trim().charAt(0).toUpperCase() || "?"}
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1 space-y-0.5">
                       <p className="truncate text-sm font-semibold text-slate-900">
                         {person.name}
@@ -245,6 +317,295 @@ export default function PeoplePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Person Detail Modal */}
+      <Dialog open={!!selectedPerson} onOpenChange={(open) => !open && setSelectedPerson(null)}>
+        <DialogContent
+          onClose={() => setSelectedPerson(null)}
+          className="max-w-2xl border-[color:var(--dash-border)] bg-white p-0 shadow-xl"
+        >
+          {selectedPerson && (
+            <>
+              {detailLoading ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-16">
+                  <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
+                  <p className="text-sm text-slate-600">Loading profile…</p>
+                </div>
+              ) : (
+                <>
+                  {/* Header */}
+                  <div className="rounded-t-lg border-b border-slate-200 bg-slate-50/80 px-6 py-5">
+                    <DialogHeader>
+                      <div className="flex items-center gap-4">
+                        {personDetail?.profile_photo && !failedProfilePhotos.has(selectedPerson.id) ? (
+                          <img
+                            src={personDetail.profile_photo}
+                            alt=""
+                            className="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-white shadow"
+                            onError={() => handleImageError(selectedPerson.id)}
+                          />
+                        ) : (
+                          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-slate-200 text-xl font-semibold text-slate-600">
+                            {(personDetail?.full_name ?? selectedPerson.name).trim().charAt(0).toUpperCase() || "?"}
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <DialogTitle className="text-xl font-semibold text-slate-900">
+                            {personDetail?.full_name ?? selectedPerson.name}
+                          </DialogTitle>
+                          <DialogDescription className="mt-0.5">
+                            {personDetail?.student_id || selectedPerson.student_id
+                              ? `Student ID: ${personDetail?.student_id ?? selectedPerson.student_id}`
+                              : "OJT Trainee"}
+                          </DialogDescription>
+                          <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <Badge className={`text-xs ${getRoleBadgeClass((personDetail ?? selectedPerson).role ?? "")}`}>
+                              {roleLabel((personDetail ?? selectedPerson).role ?? "")}
+                            </Badge>
+                            <span
+                              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                (personDetail ?? selectedPerson).is_active
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : "bg-slate-200 text-slate-600"
+                              }`}
+                            >
+                              <CheckCircle2
+                                className={`h-3 w-3 ${(personDetail ?? selectedPerson).is_active ? "text-emerald-600" : "text-slate-400"}`}
+                              />
+                              {(personDetail ?? selectedPerson).is_active ? "Active" : "Inactive"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </DialogHeader>
+                  </div>
+
+                  {/* Content - two-column grid on desktop */}
+                  <div className="max-h-[65vh] overflow-y-auto px-6 py-5">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      {/* Contact */}
+                      <section className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                        <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                          Contact
+                        </h3>
+                        <dl className="space-y-3 text-sm">
+                          {(personDetail?.email ?? selectedPerson.email) && (
+                            <div>
+                              <dt className="mb-0.5 text-xs text-slate-500">Email</dt>
+                              <dd>
+                                <a
+                                  href={`mailto:${personDetail?.email ?? selectedPerson.email}`}
+                                  className="font-medium text-blue-600 hover:underline"
+                                >
+                                  {personDetail?.email ?? selectedPerson.email}
+                                </a>
+                              </dd>
+                            </div>
+                          )}
+                          {personDetail?.phone && (
+                            <div>
+                              <dt className="mb-0.5 text-xs text-slate-500">Phone</dt>
+                              <dd className="flex items-center gap-2 font-medium text-slate-900">
+                                <Phone className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                {personDetail.phone}
+                              </dd>
+                            </div>
+                          )}
+                          {!personDetail?.email && !selectedPerson.email && !personDetail?.phone && (
+                            <p className="py-2 text-slate-400">—</p>
+                          )}
+                        </dl>
+                      </section>
+
+                      {/* Academic */}
+                      <section className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                        <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                          Academic
+                        </h3>
+                        <dl className="space-y-3 text-sm">
+                          {personDetail?.school && (
+                            <div>
+                              <dt className="mb-0.5 text-xs text-slate-500">School</dt>
+                              <dd className="flex items-center gap-2 font-medium text-slate-900">
+                                <BookOpen className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                {personDetail.school}
+                              </dd>
+                            </div>
+                          )}
+                          <div>
+                            <dt className="mb-0.5 text-xs text-slate-500">Course / Program</dt>
+                            <dd className="flex items-center gap-2 font-medium text-slate-900">
+                              <GraduationCap className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                              {(personDetail ?? selectedPerson).course || "—"}
+                              {(personDetail ?? selectedPerson).year_level && ` • Year ${(personDetail ?? selectedPerson).year_level}`}
+                            </dd>
+                          </div>
+                          {(personDetail?.student_id ?? selectedPerson.student_id) && (
+                            <div>
+                              <dt className="mb-0.5 text-xs text-slate-500">Student ID</dt>
+                              <dd className="font-medium text-slate-900">{personDetail?.student_id ?? selectedPerson.student_id}</dd>
+                            </div>
+                          )}
+                        </dl>
+                      </section>
+
+                      {/* OJT Placement */}
+                      <section className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                        <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                          OJT Placement
+                        </h3>
+                        <dl className="space-y-3 text-sm">
+                          <div>
+                            <dt className="mb-0.5 text-xs text-slate-500">Company</dt>
+                            <dd className="flex items-center gap-2 font-medium text-slate-900">
+                              <Building2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                              {(personDetail ?? selectedPerson).company_name || "—"}
+                            </dd>
+                          </div>
+                          {(personDetail ?? selectedPerson).department_name && (
+                            <div>
+                              <dt className="mb-0.5 text-xs text-slate-500">Department</dt>
+                              <dd className="font-medium text-slate-900">
+                                {(personDetail ?? selectedPerson).department_name}
+                              </dd>
+                            </div>
+                          )}
+                          {(personDetail ?? selectedPerson).required_hours != null && (
+                            <div>
+                              <dt className="mb-0.5 text-xs text-slate-500">Required Hours</dt>
+                              <dd className="flex items-center gap-2 font-medium text-slate-900">
+                                <Clock className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                {(personDetail ?? selectedPerson).required_hours} hours
+                              </dd>
+                            </div>
+                          )}
+                          {(personDetail?.start_date || personDetail?.end_date) && (
+                            <div>
+                              <dt className="mb-0.5 text-xs text-slate-500">Schedule</dt>
+                              <dd className="flex items-center gap-2 font-medium text-slate-900">
+                                <Calendar className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                {personDetail.start_date && personDetail.end_date
+                                  ? `${personDetail.start_date} – ${personDetail.end_date}`
+                                  : personDetail.start_date ?? personDetail.end_date ?? "—"}
+                              </dd>
+                            </div>
+                          )}
+                        </dl>
+                      </section>
+
+                      {/* Supervisor */}
+                      <section className="rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                        <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                          Supervisor
+                        </h3>
+                        <dl className="space-y-3 text-sm">
+                          {(personDetail ?? selectedPerson).supervisor_name ? (
+                            <>
+                              <div>
+                                <dt className="mb-0.5 text-xs text-slate-500">Name</dt>
+                                <dd className="flex items-center gap-2 font-medium text-slate-900">
+                                  <UserCircle2 className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                  {(personDetail ?? selectedPerson).supervisor_name}
+                                </dd>
+                              </div>
+                              {(personDetail ?? selectedPerson).supervisor_email && (
+                                <div>
+                                  <dt className="mb-0.5 text-xs text-slate-500">Email</dt>
+                                  <dd>
+                                    <a
+                                      href={`mailto:${(personDetail ?? selectedPerson).supervisor_email ?? ""}`}
+                                      className="font-medium text-blue-600 hover:underline"
+                                    >
+                                      {(personDetail ?? selectedPerson).supervisor_email}
+                                    </a>
+                                  </dd>
+                                </div>
+                              )}
+                              {personDetail?.supervisor_contact && (
+                                <div>
+                                  <dt className="mb-0.5 text-xs text-slate-500">Contact</dt>
+                                  <dd className="font-medium text-slate-900">{personDetail.supervisor_contact}</dd>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <p className="py-2 text-slate-400">—</p>
+                          )}
+                        </dl>
+                      </section>
+
+                      {/* Emergency Contact - full width if present */}
+                      {(personDetail?.emergency_contact_name || personDetail?.emergency_contact_phone) && (
+                        <section className="sm:col-span-2 rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                          <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                            Emergency Contact
+                          </h3>
+                          <dl className="flex flex-wrap gap-x-8 gap-y-3 text-sm sm:flex-row">
+                            {personDetail.emergency_contact_name && (
+                              <div>
+                                <dt className="mb-0.5 text-xs text-slate-500">Name</dt>
+                                <dd className="flex items-center gap-2 font-medium text-slate-900">
+                                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                                  {personDetail.emergency_contact_name}
+                                </dd>
+                              </div>
+                            )}
+                            {personDetail.emergency_contact_phone && (
+                              <div>
+                                <dt className="mb-0.5 text-xs text-slate-500">Phone</dt>
+                                <dd className="font-medium text-slate-900">{personDetail.emergency_contact_phone}</dd>
+                              </div>
+                            )}
+                          </dl>
+                        </section>
+                      )}
+
+                      {/* Weekly Availability */}
+                      {personDetail?.weekly_availability && (
+                        <section className="sm:col-span-2 rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                          <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                            Weekly Availability
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            {(["monday", "tuesday", "wednesday", "thursday", "friday"] as const).map((day) => {
+                              const val = personDetail.weekly_availability?.[day] as string | undefined;
+                              const label = day.charAt(0).toUpperCase() + day.slice(1);
+                              const availLabel =
+                                val === "available" || val === "full_day"
+                                  ? "Available"
+                                  : val === "half_day"
+                                    ? "Half day"
+                                    : "Not available";
+                              const style =
+                                val === "available" || val === "full_day"
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : val === "half_day"
+                                    ? "bg-amber-50 text-amber-700"
+                                    : "bg-slate-100 text-slate-600";
+                              return (
+                                <span key={day} className={`rounded-md px-2.5 py-1 text-xs font-medium ${style}`}>
+                                  {label}: {availLabel}
+                                </span>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="rounded-b-lg flex justify-end border-t border-slate-200 bg-slate-50/50 px-6 py-4">
+                    <Button variant="outline" size="sm" onClick={() => setSelectedPerson(null)}>
+                      Close
+                    </Button>
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

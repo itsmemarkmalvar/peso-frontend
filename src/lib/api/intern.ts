@@ -95,9 +95,27 @@ export type AdminIntern = {
   department_id: number | null
   department_name: string | null
   supervisor_name: string
+  supervisor_email?: string | null
   is_active: boolean
   role: string
   required_hours: number | null
+  profile_photo?: string | null
+}
+
+/** Full intern detail from onboarding (for People modal) */
+export type AdminInternDetail = Omit<AdminIntern, "name"> & {
+  full_name: string
+  name?: string // alias for list compatibility
+  school: string | null
+  phone: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  weekly_availability: InternWeeklyAvailability | null
+  supervisor_email: string | null
+  supervisor_contact: string | null
+  start_date: string | null
+  end_date: string | null
+  onboarded_at: string | null
 }
 
 export type InternAvailabilityOption = "available" | "not_available"
@@ -121,6 +139,7 @@ export type InternProfile = {
   end_date: string | null
   onboarded_at: string | null
   weekly_availability: InternWeeklyAvailability | null
+  profile_photo?: string | null
 }
 
 export type InternOnboardingPayload = {
@@ -132,6 +151,7 @@ export type InternOnboardingPayload = {
   emergency_contact_phone: string
   required_hours: number
   weekly_availability: InternWeeklyAvailability
+  profile_photo?: string | null
 }
 
 export function getInternDashboard(): Promise<InternDashboardData> {
@@ -186,6 +206,14 @@ export function getAdminInterns(search?: string): Promise<AdminIntern[]> {
   return apiClient.get<{ success: boolean; message: string; data: AdminIntern[] }>(
     endpoint
   ).then((res) => res.data ?? [])
+}
+
+export function getAdminInternDetail(id: number): Promise<AdminInternDetail | null> {
+  return apiClient
+    .get<{ success: boolean; message: string; data: AdminInternDetail | null }>(
+      API_ENDPOINTS.interns.show(id)
+    )
+    .then((res) => res.data ?? null)
 }
 
 export function getInternProfile(): Promise<InternProfile | null> {

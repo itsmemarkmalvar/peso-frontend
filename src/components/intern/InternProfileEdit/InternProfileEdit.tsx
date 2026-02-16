@@ -58,7 +58,21 @@ const DEFAULT_WEEKLY_AVAILABILITY: InternWeeklyAvailability = {
   friday: "available",
 }
 
-const MAX_PHOTO_SIZE_BYTES = 2 * 1024 * 1024
+const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
+
+/** Read image file as base64 data URL. Uses FileReader only (no canvas) for maximum reliability. */
+function readImageAsBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : null
+      if (result) resolve(result)
+      else reject(new Error("Failed to read file"))
+    }
+    reader.onerror = () => reject(new Error("Failed to read file"))
+    reader.readAsDataURL(file)
+  })
+}
 
 const getInitials = (name: string) => {
   const parts = name.trim().split(/\s+/).filter(Boolean)
@@ -105,9 +119,6 @@ export function InternProfileEdit() {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement | null>(null)
-  const photoStorageKey = user?.id
-    ? `intern_profile_photo_${user.id}`
-    : "intern_profile_photo"
 
   useEffect(() => {
     let active = true
@@ -130,6 +141,9 @@ export function InternProfileEdit() {
             profile.weekly_availability
           ),
         })
+        if (profile.profile_photo) {
+          setPhotoPreview(profile.profile_photo)
+        }
       })
       .catch(() => {})
       .finally(() => {
@@ -142,14 +156,6 @@ export function InternProfileEdit() {
       active = false
     }
   }, [])
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const stored = window.localStorage.getItem(photoStorageKey)
-    if (stored) {
-      setPhotoPreview(stored)
-    }
-  }, [photoStorageKey])
 
   const requiredHours = Number(form.required_hours)
   const hasValidRequiredHours =
@@ -193,39 +199,32 @@ export function InternProfileEdit() {
     photoInputRef.current?.click()
   }
 
-  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
     if (!file.type.startsWith("image/")) {
-      setPhotoError("Please upload a valid image file.")
+      setPhotoError("Please upload an image file (JPG, PNG).")
       event.target.value = ""
       return
     }
     if (file.size > MAX_PHOTO_SIZE_BYTES) {
-      setPhotoError("Image must be 2MB or smaller.")
+      setPhotoError("Image must be 5MB or smaller.")
       event.target.value = ""
       return
     }
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : null
-      if (!result) return
+    setPhotoError(null)
+    try {
+      const result = await readImageAsBase64(file)
       setPhotoPreview(result)
-      setPhotoError(null)
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(photoStorageKey, result)
-      }
+    } catch {
+      setPhotoError("Failed to read image. Use JPG or PNG format, up to 5MB.")
     }
-    reader.readAsDataURL(file)
     event.target.value = ""
   }
 
   const handlePhotoRemove = () => {
     setPhotoPreview(null)
     setPhotoError(null)
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(photoStorageKey)
-    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -238,6 +237,7 @@ export function InternProfileEdit() {
       const payload: InternOnboardingPayload = {
         ...form,
         required_hours: requiredHours,
+        ...(photoPreview ? { profile_photo: photoPreview } : {}),
       }
       await saveInternOnboarding(payload)
       router.replace("/dashboard/intern/menu")
@@ -263,6 +263,7 @@ export function InternProfileEdit() {
             alt=""
             width={360}
             height={360}
+            loading="eager"
             className="h-[360px] w-[360px] rotate-6 object-contain"
           />
         </div>
@@ -296,7 +297,7 @@ export function InternProfileEdit() {
                 <input
                   ref={photoInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/jpg"
                   onChange={handlePhotoChange}
                   className="hidden"
                 />
@@ -321,7 +322,7 @@ export function InternProfileEdit() {
                   ) : null}
                 </div>
                 <p className="text-xs text-(--dash-muted)">
-                  JPG/PNG, up to 2MB
+                  JPG/PNG, up to 5MB
                 </p>
                 {photoError ? (
                   <p className="text-xs text-red-600">{photoError}</p>
