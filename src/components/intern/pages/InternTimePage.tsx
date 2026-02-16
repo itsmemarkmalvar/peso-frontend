@@ -17,6 +17,7 @@ import { getSettings } from "@/lib/api/settings"
 import type { SystemSettings } from "@/types"
 import { clockIn, clockOut, breakStart, breakEnd, getTodayAttendance } from "@/lib/api/attendance"
 import { Button } from "@/components/ui/button"
+import { InternBackButton } from "@/components/intern/InternBackButton"
 
 type VerificationAction = "clock-in" | "break-start" | "break-end" | "clock-out"
 type SelfieCaptureKey = VerificationAction | "break"
@@ -1171,6 +1172,7 @@ export default function InternTimePage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
+      <InternBackButton href="/dashboard/intern" label="Back to dashboard" />
       {/* Primary: Time clock first (left on desktop), map as secondary context (right) */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
         <div className="flex flex-col gap-4">

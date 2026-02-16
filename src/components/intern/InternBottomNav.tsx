@@ -63,7 +63,7 @@ export function InternBottomNav() {
     pathname !== "/" && pathname.endsWith("/") ? pathname.slice(0, -1) : pathname
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[color:var(--dash-border)] bg-[color:var(--dash-card)]/95 backdrop-blur">
+    <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-(--dash-border) bg-(--dash-card)/95 backdrop-blur">
       <nav className="mx-auto grid w-full max-w-4xl grid-cols-5 gap-1 px-3 py-2">
         {navItems.map((item) => {
           const active = isActiveRoute(normalizedPath, item)
@@ -76,16 +76,16 @@ export function InternBottomNav() {
               className={cn(
                 "group flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 py-2 text-[11px] font-semibold transition",
                 active
-                  ? "bg-[color:var(--dash-accent-soft)] text-[color:var(--dash-accent-strong)]"
-                  : "text-[color:var(--dash-muted)] hover:text-[color:var(--dash-ink)]"
+                  ? "bg-(--dash-accent-soft) text-(--dash-accent-strong)"
+                  : "text-(--dash-muted) hover:text-(--dash-ink)"
               )}
             >
               <Icon
                 className={cn(
                   "h-5 w-5",
                   active
-                    ? "text-[color:var(--dash-accent)]"
-                    : "text-[color:var(--dash-muted)] group-hover:text-[color:var(--dash-ink)]"
+                    ? "text-(--dash-accent)"
+                    : "text-(--dash-muted) group-hover:text-(--dash-ink)"
                 )}
               />
               <span className="whitespace-nowrap">{item.label}</span>

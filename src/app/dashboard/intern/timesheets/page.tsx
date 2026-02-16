@@ -275,20 +275,20 @@ export default function InternTimesheetsPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+      <header className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
           Timesheets
         </p>
         <h1 className="mt-2 text-2xl font-semibold">Weekly log</h1>
-        <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+        <p className="mt-1 text-sm text-(--dash-muted)">
           Review your daily hours before submitting for approval.
         </p>
       </header>
 
-      <div className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
+      <div className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
               {weekLabel}
             </p>
             <p className="mt-2 text-lg font-semibold">{totalLabel}</p>
@@ -298,7 +298,7 @@ export default function InternTimesheetsPage() {
               type="button"
               variant="outline"
               size="icon"
-              className="h-8 w-8 shrink-0 rounded-full border-[color:var(--dash-border)]"
+              className="h-8 w-8 shrink-0 rounded-full border-(--dash-border)"
               onClick={() =>
                 setStartOfWeek((prev) => {
                   const d = new Date(prev)
@@ -314,7 +314,7 @@ export default function InternTimesheetsPage() {
               type="button"
               variant="outline"
               size="icon"
-              className="h-8 w-8 shrink-0 rounded-full border-[color:var(--dash-border)]"
+              className="h-8 w-8 shrink-0 rounded-full border-(--dash-border)"
               onClick={() =>
                 setStartOfWeek((prev) => {
                   const d = new Date(prev)
@@ -329,7 +329,7 @@ export default function InternTimesheetsPage() {
             <Button
               onClick={handleExportDtr}
               disabled={isExporting}
-              className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+              className="bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong)"
             >
               {isExporting ? "Preparing DTR..." : "View DTR PDF"}
             </Button>
@@ -358,11 +358,11 @@ export default function InternTimesheetsPage() {
             entries.map((entry) => (
               <div
                 key={entry.day}
-                className="flex items-center justify-between rounded-xl border border-[color:var(--dash-border)] bg-white px-4 py-3"
+                className="flex items-center justify-between rounded-xl border border-(--dash-border) bg-white px-4 py-3"
               >
                 <div>
                   <p className="font-semibold">{entry.day}</p>
-                  <p className="text-xs text-[color:var(--dash-muted)]">
+                  <p className="text-xs text-(--dash-muted)">
                     {entry.hours}
                   </p>
                 </div>
