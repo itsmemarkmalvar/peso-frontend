@@ -16,7 +16,7 @@ import { getGeofenceLocations } from "@/lib/api/geofenceLocations"
 import { getSettings } from "@/lib/api/settings"
 import { DEFAULT_MAP_CENTER } from "@/lib/mapConstants"
 import type { SystemSettings } from "@/types"
-import { clockIn, clockOut, breakStart, breakEnd, getTodayAttendance } from "@/lib/api/attendance"
+import { clockIn, clockOut, clockInCorrection, breakStart, breakEnd, getTodayAttendance } from "@/lib/api/attendance"
 import { Button } from "@/components/ui/button"
 import { InternBackButton } from "@/components/intern/InternBackButton"
 
@@ -199,21 +199,6 @@ function elapsedSecondsSince(iso: string | null): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
 }
 
-/** True if current time in Asia/Manila is after the given cutoff time (e.g. "08:30:00") */
-function isPastCutoffInManila(cutoffTime: string): boolean {
-  const [h = 0, m = 0] = cutoffTime.split(":").map(Number)
-  const formatter = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Manila",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  })
-  const parts = formatter.formatToParts(new Date())
-  const hour = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10)
-  const minute = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10)
-  return hour > h || (hour === h && minute > m)
-}
-
 /** Sync timer state from attendance data (used on load and after refresh) */
 function syncTimerFromAttendance(
   att: { clock_in_time: string | null; clock_out_time: string | null; break_start: string | null; break_end: string | null },
@@ -289,6 +274,8 @@ export default function InternTimePage() {
   const [alertModalOpen, setAlertModalOpen] = useState(false)
   const [alertModalMessage, setAlertModalMessage] = useState("")
   const [clockInCutoff, setClockInCutoff] = useState<ClockInCutoff | null>(null)
+  const [isRequestingCorrection, setIsRequestingCorrection] = useState(false)
+  const [correctionReason, setCorrectionReason] = useState("")
   const [consent, setConsent] = useState<ConsentState | null>(null)
   const [consentOpen, setConsentOpen] = useState(false)
   const [consentForm, setConsentForm] = useState({
@@ -754,18 +741,8 @@ export default function InternTimePage() {
   const openVerification = (action: VerificationAction) => {
     setConsentNotice(null)
     setClockNotice(null)
-    if (
-      action === "clock-in" &&
-      !isClockedIn &&
-      clockInCutoff &&
-      isPastCutoffInManila(clockInCutoff.time)
-    ) {
-      const msg = `Clock-in is only allowed until ${clockInCutoff.label}. You can no longer clock in for today.`
-      setClockNotice(msg)
-      setAlertModalMessage(msg)
-      setAlertModalOpen(true)
-      return
-    }
+    setIsRequestingCorrection(false)
+    setCorrectionReason("")
     if ((action === "break-start" || action === "break-end" || action === "clock-out") && !isClockedIn) {
       setClockNotice("Clock in first to start a break or clock out.")
       return
@@ -854,19 +831,30 @@ export default function InternTimePage() {
       return
     }
     if (isSubmittingSelfie) return
-    if (settings?.verification_gps !== false && locationStatus !== "success") {
-      return
-    }
-    if (!selfieImage) {
-      return
-    }
     const action = selfieAction
+    const useCorrection = action === "clock-in" && isRequestingCorrection
+    if (!useCorrection) {
+      if (settings?.verification_gps !== false && locationStatus !== "success") {
+        return
+      }
+    } else {
+      if (!correctionReason.trim()) return
+    }
+    // Selfie required for both normal and correction flows
+    if (!selfieImage || typeof selfieImage !== "string" || selfieImage.length < 100) {
+      setClockNotice("Please capture your selfie before submitting.")
+      return
+    }
     // Prefer location captured for this action; fall back to general userLocation so backend always receives lat/lng when GPS is required
     const coords = locationCapture[action]?.coords ?? userLocation ?? null
-    const needLocation = settings?.verification_gps === true
+    const needLocation = settings?.verification_gps === true && !useCorrection
     if (needLocation && !coords) {
       return
     }
+
+    // Capture payload synchronously before any async work (avoids stale closure)
+    const photoToSend = selfieImage
+    const reasonToSend = correctionReason.trim() || "GPS/device issue"
 
     setIsSubmittingSelfie(true)
     const geofenceId = insideMatch?.geofence.id ? parseInt(insideMatch.geofence.id) : undefined
@@ -875,11 +863,16 @@ export default function InternTimePage() {
       setClockNotice(null)
       
       if (action === "clock-in") {
-        const response = await clockIn({
-          ...(coords && { location_lat: coords.lat, location_lng: coords.lng }),
-          photo: selfieImage,
-          ...(geofenceId && { geofence_location_id: geofenceId }),
-        })
+        const response = useCorrection
+          ? await clockInCorrection({
+              photo: photoToSend,
+              reason: reasonToSend,
+            })
+          : await clockIn({
+              ...(coords && { location_lat: coords.lat, location_lng: coords.lng }),
+              photo: photoToSend,
+              ...(geofenceId && { geofence_location_id: geofenceId }),
+            })
         
         if (response.success) {
           setIsClockedIn(true)
@@ -925,7 +918,7 @@ export default function InternTimePage() {
       } else if (action === "clock-out") {
         const response = await clockOut({
           ...(coords && { location_lat: coords.lat, location_lng: coords.lng }),
-          photo: selfieImage,
+          photo: photoToSend,
           ...(geofenceId && { geofence_location_id: geofenceId }),
         })
         
@@ -977,7 +970,7 @@ export default function InternTimePage() {
       } else if (action === "break-start") {
         const response = await breakStart({
           ...(coords && { location_lat: coords.lat, location_lng: coords.lng }),
-          photo: selfieImage,
+          photo: photoToSend,
           ...(geofenceId && { geofence_location_id: geofenceId }),
         })
         if (response.success) {
@@ -1006,7 +999,7 @@ export default function InternTimePage() {
       } else if (action === "break-end") {
         const response = await breakEnd({
           ...(coords && { location_lat: coords.lat, location_lng: coords.lng }),
-          photo: selfieImage,
+          photo: photoToSend,
           ...(geofenceId && { geofence_location_id: geofenceId }),
         })
         if (response.success) {
@@ -1133,6 +1126,8 @@ export default function InternTimePage() {
     : ""
   const isLocationVerified =
     settings?.verification_gps === false || locationStatus === "success"
+  const allowCaptureWithoutLocation =
+    selfieAction === "clock-in" && isRequestingCorrection
   const overlayTimestamp = selfieImage
     ? selfieOverlayTimestamp
     : cameraOverlayTimestamp
@@ -1152,10 +1147,6 @@ export default function InternTimePage() {
       : DEFAULT_MAP_CENTER
   const mapZoom = userLocation ? 16 : geofences.length ? 15 : 13
 
-  const clockInWindowClosed =
-    !isClockedIn &&
-    !!clockInCutoff &&
-    isPastCutoffInManila(clockInCutoff.time)
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
@@ -1176,63 +1167,21 @@ export default function InternTimePage() {
           <section className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
             <div className="flex flex-col gap-6">
               <div>
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
-                      Current time
-                    </p>
-                    <div className="mt-3 flex items-end gap-2">
-                      <span className="text-5xl font-semibold tracking-tight">
-                        {header.currentTime}
-                      </span>
-                      <span className="pb-2 text-sm font-semibold text-(--dash-muted)">
-                        {header.meridiem}
-                      </span>
-                    </div>
-                    <p className="mt-2 text-sm text-(--dash-muted)">
-                      {header.dateLabel}
-                    </p>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
+                    Current time
+                  </p>
+                  <div className="mt-3 flex items-end gap-2">
+                    <span className="text-5xl font-semibold tracking-tight">
+                      {header.currentTime}
+                    </span>
+                    <span className="pb-2 text-sm font-semibold text-(--dash-muted)">
+                      {header.meridiem}
+                    </span>
                   </div>
-                  <div
-                    className={`flex flex-col rounded-xl border px-4 py-3 ${
-                      timerMode === "work"
-                        ? "border-blue-200 bg-blue-50"
-                        : timerMode === "break"
-                          ? "border-yellow-300 bg-yellow-50"
-                          : "border-slate-200 bg-slate-50"
-                    }`}
-                  >
-                    <p
-                      className={`text-xs font-semibold uppercase tracking-wide ${
-                        timerMode === "work"
-                          ? "text-blue-600"
-                          : timerMode === "break"
-                            ? "text-yellow-700"
-                            : "text-slate-500"
-                      }`}
-                    >
-                      {timerMode === "work"
-                        ? "Running Time"
-                        : timerMode === "break"
-                          ? "Break Time"
-                          : "Timer"}
-                    </p>
-                    <p
-                      className={`mt-2 font-mono text-2xl font-semibold tabular-nums ${
-                        timerMode === "work"
-                          ? "text-blue-700"
-                          : timerMode === "break"
-                            ? "text-yellow-800"
-                            : "text-slate-500"
-                      }`}
-                    >
-                      {timerMode === "work"
-                        ? formatTimer(workTimerSeconds)
-                        : timerMode === "break"
-                          ? formatTimer(breakTimerSeconds)
-                          : "00:00:00"}
-                    </p>
-                  </div>
+                  <p className="mt-2 text-sm text-(--dash-muted)">
+                    {header.dateLabel}
+                  </p>
                 </div>
                 <div className="mt-4 flex flex-wrap items-center gap-2">
                   <span
@@ -1257,8 +1206,6 @@ export default function InternTimePage() {
               <Button
                 className="h-12 w-full text-base font-semibold bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong) disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => openVerification("clock-in")}
-                disabled={clockInWindowClosed}
-                title={clockInWindowClosed && clockInCutoff ? `Clock-in closed. Allowed until ${clockInCutoff.label} only.` : undefined}
               >
                 Clock In
               </Button>
@@ -1320,11 +1267,7 @@ export default function InternTimePage() {
                 {consentNotice}
               </p>
             ) : null}
-            {clockInWindowClosed && clockInCutoff ? (
-              <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800">
-                Clock-in is only allowed until {clockInCutoff.label}. You can no longer clock in for today.
-              </p>
-            ) : clockNotice ? (
+            {clockNotice ? (
               <p className="mt-2 rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-xs text-yellow-700">
                 {clockNotice}
               </p>
@@ -1477,7 +1420,7 @@ export default function InternTimePage() {
                 </div>
               )}
 
-              {requiresLocation && !isLocationVerified ? (
+              {requiresLocation && !isLocationVerified && !allowCaptureWithoutLocation ? (
                 <div
                   className={[
                     "rounded-lg border px-3 py-2 text-xs",
@@ -1488,6 +1431,45 @@ export default function InternTimePage() {
                 >
                   {locationGateMessage} You cannot take a selfie until your
                   location is verified.
+                  {selfieAction === "clock-in" && (
+                    <div className="mt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-8 text-xs border-amber-300 text-amber-800 hover:bg-amber-50"
+                        onClick={() => setIsRequestingCorrection(true)}
+                      >
+                        Request correction (GPS/device issue)
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : allowCaptureWithoutLocation ? (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  <p className="font-semibold">Requesting clock-in correction</p>
+                  <p className="mt-1 text-amber-700">
+                    Location is not required. Capture your selfie, provide a reason, then submit.
+                  </p>
+                  <textarea
+                    value={correctionReason}
+                    onChange={(e) => setCorrectionReason(e.target.value)}
+                    placeholder="e.g. GPS not working, device location unavailable..."
+                    rows={3}
+                    className="mt-2 w-full resize-y rounded border border-amber-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2 h-7 text-xs text-amber-700 hover:bg-amber-100"
+                    onClick={() => {
+                      setIsRequestingCorrection(false)
+                      setCorrectionReason("")
+                    }}
+                  >
+                    Cancel correction, use location instead
+                  </Button>
                 </div>
               ) : null}
 
@@ -1594,7 +1576,42 @@ export default function InternTimePage() {
                 >
                   Cancel
                 </Button>
-                {selfieError ? null : selfieImage ? (
+                {allowCaptureWithoutLocation ? (
+                  <>
+                    {selfieImage ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 border-slate-200"
+                        onClick={() => {
+                          setSelfieImage(null)
+                          setSelfieOverlayTimestamp(null)
+                        }}
+                        disabled={isSubmittingSelfie}
+                      >
+                        Retake
+                      </Button>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 border-slate-200"
+                        onClick={handleCaptureSelfie}
+                        disabled={isSubmittingSelfie}
+                      >
+                        Capture selfie
+                      </Button>
+                    )}
+                    <Button
+                      type="button"
+                      className="h-10 bg-amber-600 text-white hover:bg-amber-700"
+                      onClick={handleConfirmSelfie}
+                      disabled={!selfieImage || !correctionReason.trim() || isSubmittingSelfie}
+                    >
+                      {isSubmittingSelfie ? "Submitting…" : "Submit correction"}
+                    </Button>
+                  </>
+                ) : selfieError ? null : selfieImage ? (
                   <>
                     <Button
                       type="button"

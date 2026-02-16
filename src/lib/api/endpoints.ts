@@ -35,6 +35,7 @@ export const API_ENDPOINTS = {
   // Attendance
   attendance: {
     clockIn: '/attendance/clock-in',
+    clockInCorrection: '/attendance/clock-in-correction',
     clockOut: '/attendance/clock-out',
     breakStart: '/attendance/break-start',
     breakEnd: '/attendance/break-end',

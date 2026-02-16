@@ -59,6 +59,11 @@ export interface ClockInRequest {
   geofence_location_id?: number;
 }
 
+export interface ClockInCorrectionRequest {
+  photo: string; // required - selfie for audit
+  reason: string;
+}
+
 export interface ClockOutRequest {
   location_lat?: number;
   location_lng?: number;
@@ -90,6 +95,13 @@ export interface ClockOutResponse {
  */
 export function clockIn(data: ClockInRequest): Promise<ClockInResponse> {
   return apiClient.post<ClockInResponse>(API_ENDPOINTS.attendance.clockIn, data);
+}
+
+/**
+ * Clock-in correction (GPS/device failure within grace period)
+ */
+export function clockInCorrection(data: ClockInCorrectionRequest): Promise<ClockInResponse> {
+  return apiClient.post<ClockInResponse>(API_ENDPOINTS.attendance.clockInCorrection, data);
 }
 
 /**

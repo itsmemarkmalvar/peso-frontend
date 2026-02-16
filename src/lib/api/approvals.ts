@@ -6,10 +6,11 @@
 import { apiClient } from "./client";
 import { API_ENDPOINTS } from "./endpoints";
 
-export type ApprovalType = "Overtime" | "Correction" | "Undertime";
+export type ApprovalType = "Overtime" | "Correction" | "Undertime" | "Late" | "Early out";
 export type ApprovalStatus = "Pending" | "Approved" | "Rejected";
 
 export interface ApprovalRequest {
+  approval_type?: string; // Backend: late_clock_in, gps_correction, early_clock_out, overtime
   id: number;
   attendance_id: number;
   intern_id: number;

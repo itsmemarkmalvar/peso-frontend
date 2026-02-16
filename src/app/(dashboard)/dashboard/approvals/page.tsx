@@ -134,6 +134,10 @@ export default function ApprovalsPage() {
         return "border-blue-200 bg-blue-50 text-blue-900";
       case "Correction":
         return "border-amber-200 bg-amber-50 text-amber-900";
+      case "Late":
+        return "border-orange-200 bg-orange-50 text-orange-900";
+      case "Early out":
+        return "border-red-200 bg-red-50 text-red-900";
       case "Undertime":
         return "border-red-200 bg-red-50 text-red-900";
       default:
