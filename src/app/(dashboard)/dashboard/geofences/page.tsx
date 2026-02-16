@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
+import { useAuth } from "@/hooks/useAuth";
 import { MapPin, Plus, Trash2, Edit2, Save, X, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +34,8 @@ const GeofenceMapDynamic = dynamic(
 );
 
 export default function GeofencesPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [locations, setLocations] = useState<GeofenceLocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -173,15 +176,17 @@ export default function GeofencesPage() {
             Manage locations where interns can clock in/out
           </p>
         </div>
-        <Button
-          onClick={handleCreateMode}
-          className="bg-blue-700 hover:bg-blue-800"
-          size="sm"
-          disabled={isLoading}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Create Location
-        </Button>
+        {isAdmin && (
+          <Button
+            onClick={handleCreateMode}
+            className="bg-blue-700 hover:bg-blue-800"
+            size="sm"
+            disabled={isLoading}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Create Location
+          </Button>
+        )}
       </div>
 
       {error && (
@@ -202,7 +207,9 @@ export default function GeofencesPage() {
                 <CardDescription>
                   {mode === "create"
                     ? "Click on the map to create a new geofence location"
-                    : "Click on a location marker to view details"}
+                    : isAdmin
+                      ? "Click on a location marker to view or edit details"
+                      : "Click on a location marker to view details (view only for supervisors)"}
                 </CardDescription>
               </div>
             </CardHeader>
@@ -247,7 +254,7 @@ export default function GeofencesPage() {
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-base">Location Details</CardTitle>
                   <div className="flex gap-2">
-                    {mode === "view" && (
+                    {mode === "view" && isAdmin && (
                       <>
                         <Button
                           variant="outline"

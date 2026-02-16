@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { CheckCircle2, Search, FileDown } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   Card,
@@ -272,6 +273,8 @@ async function exportCertificateAsPdf(data: CertificateData): Promise<void> {
 }
 
 export default function TimeTrackingPage() {
+  const { user } = useAuth();
+  const canPrintCOC = user?.role === "admin";
   const [hoursRows, setHoursRows] = useState<HoursRow[]>([]);
   const [allInterns, setAllInterns] = useState<AdminIntern[]>([]);
   const [filterOptions, setFilterOptions] = useState<AdminFilterOptions>({ roles: [], groups: [] });
@@ -657,20 +660,22 @@ export default function TimeTrackingPage() {
                 <Button type="button" variant="outline" onClick={() => setCertificateOpen(false)}>
                   Close
                 </Button>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    const data = buildCertificateData(certificateRow, internMap.get(certificateRow.intern_id));
-                    exportCertificateAsPdf(data).catch((err) => {
-                      console.error("PDF export failed:", err);
-                      alert("Failed to export PDF. Please try again.");
-                    });
-                  }}
-                  className="gap-2"
-                >
-                  <FileDown className="h-4 w-4" />
-                  Export as PDF
-                </Button>
+                {canPrintCOC && (
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      const data = buildCertificateData(certificateRow, internMap.get(certificateRow.intern_id));
+                      exportCertificateAsPdf(data).catch((err) => {
+                        console.error("PDF export failed:", err);
+                        alert("Failed to export PDF. Please try again.");
+                      });
+                    }}
+                    className="gap-2"
+                  >
+                    <FileDown className="h-4 w-4" />
+                    Export as PDF
+                  </Button>
+                )}
               </DialogFooter>
             </>
           )}

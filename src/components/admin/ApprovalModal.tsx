@@ -50,7 +50,7 @@ export function ApprovalModal({
   useEffect(() => {
     if (open) {
       loadDepartments();
-      // Reset form when modal opens
+      // Reset form when modal opens; supervisors default to intern
       setRole(isSupervisor ? "intern" : "intern");
       setDepartmentId("");
     }
@@ -74,8 +74,10 @@ export function ApprovalModal({
   const handleApprove = async () => {
     if (!registrationRequest) return;
 
-    // Ensure role is always valid (backend requires "role" field)
-    const effectiveRole = isSupervisor ? "intern" : (role && (VALID_ROLES as readonly string[]).includes(role) ? role : "intern");
+    // Supervisors can only assign Intern or GIP; admins can assign any role
+    const effectiveRole = isSupervisor
+      ? (role === "gip" ? "gip" : "intern")
+      : (role && (VALID_ROLES as readonly string[]).includes(role) ? role : "intern");
 
     // Validate: Department is required for intern and GIP roles
     if ((effectiveRole === "intern" || effectiveRole === "gip") && !departmentId) {
@@ -116,10 +118,21 @@ export function ApprovalModal({
               Role <span className="text-red-600">*</span>
             </Label>
             {isSupervisor ? (
-              <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
-                <span className="text-slate-600">Role is fixed for supervisors</span>
-                <Badge variant="secondary">Intern</Badge>
-              </div>
+              <>
+                <Select
+                  id="role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  disabled={isSubmitting}
+                  className="w-full"
+                >
+                  <option value="intern">Intern</option>
+                  <option value="gip">GIP</option>
+                </Select>
+                <p className="text-xs text-slate-500 mt-1.5">
+                  Supervisors can only assign Intern or GIP
+                </p>
+              </>
             ) : (
               <>
                 <Select

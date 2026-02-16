@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { BarChart3, Download, FileText, Calendar, Loader2 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 import {
   Card,
@@ -48,6 +49,8 @@ function parseLocalDate(ymd: string): Date {
 }
 
 export default function ReportsPage() {
+  const { user } = useAuth();
+  const canExport = user?.role === "admin";
   const [selectedReport, setSelectedReport] = useState<"dtr" | "attendance" | "hours" | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
@@ -671,6 +674,7 @@ export default function ReportsPage() {
             onPreview={() => handlePreview("dtr")}
             onExport={() => handleExportClick("dtr")}
             isExporting={isExporting}
+            canExport={canExport}
           />
           <ExportRow
             title="Late / Absent Summary"
@@ -678,6 +682,7 @@ export default function ReportsPage() {
             onPreview={() => handlePreview("attendance")}
             onExport={() => handleExportClick("attendance")}
             isExporting={isExporting}
+            canExport={canExport}
           />
           <ExportRow
             title="Hours Rendered"
@@ -685,6 +690,7 @@ export default function ReportsPage() {
             onPreview={() => handlePreview("hours")}
             onExport={() => handleExportClick("hours")}
             isExporting={isExporting}
+            canExport={canExport}
           />
         </CardContent>
       </Card>
@@ -730,7 +736,7 @@ export default function ReportsPage() {
                 />
               </div>
             </div>
-            {!isPreview && (
+            {!isPreview && canExport && (
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">Export Format</Label>
                 <div className="flex gap-2">
@@ -819,12 +825,14 @@ function ExportRow({
   onPreview,
   onExport,
   isExporting,
+  canExport = true,
 }: {
   title: string;
   description: string;
   onPreview: () => void;
   onExport: () => void;
   isExporting?: boolean;
+  canExport?: boolean;
 }) {
   return (
     <div className="rounded-lg border border-slate-100 bg-white px-3 py-3 text-xs text-slate-700">
@@ -833,7 +841,7 @@ function ExportRow({
           <p className="text-sm font-medium text-slate-900">{title}</p>
           <p className="text-[11px] text-slate-500">{description}</p>
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className={`grid gap-2 ${canExport ? "grid-cols-2" : "grid-cols-1"}`}>
           <Button
             variant="outline"
             size="sm"
@@ -844,16 +852,18 @@ function ExportRow({
             <FileText className="h-3.5 w-3.5" />
             Preview
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 gap-1 rounded-full border-slate-200 text-xs"
-            onClick={onExport}
-            disabled={isExporting}
-          >
-            <Download className="h-3.5 w-3.5" />
-            Export
-          </Button>
+          {canExport && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 gap-1 rounded-full border-slate-200 text-xs"
+              onClick={onExport}
+              disabled={isExporting}
+            >
+              <Download className="h-3.5 w-3.5" />
+              Export
+            </Button>
+          )}
         </div>
       </div>
     </div>
