@@ -81,9 +81,17 @@ export async function getGeofenceLocation(
 export async function createGeofenceLocation(
   payload: CreateGeofenceLocationPayload
 ): Promise<GeofenceLocation> {
+  const body = {
+    name: (payload.name && String(payload.name).trim()) || "Unnamed Location",
+    address: payload.address ?? "",
+    latitude: Number(payload.latitude),
+    longitude: Number(payload.longitude),
+    radius_meters: Number(payload.radius_meters) || 100,
+    is_active: payload.is_active ?? true,
+  };
   const response = await apiClient.post<GeofenceLocationResponse>(
     API_ENDPOINTS.geofenceLocations.create,
-    payload
+    body
   );
   return response.data;
 }

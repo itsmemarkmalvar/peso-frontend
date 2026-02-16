@@ -337,6 +337,10 @@ export default function InternTimePage() {
     lat: number
     lng: number
   } | null>(null)
+  const [locationAccuracyMeters, setLocationAccuracyMeters] = useState<
+    number | null
+  >(null)
+  const [locationRefreshTrigger, setLocationRefreshTrigger] = useState(0)
   const [settings, setSettings] = useState<SystemSettings | null>(null)
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -674,6 +678,7 @@ export default function InternTimePage() {
     setLocationStatus("loading")
     setLocationError(null)
     setLocationCheck(null)
+    setLocationAccuracyMeters(null)
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -683,7 +688,17 @@ export default function InternTimePage() {
         })
         const lat = position.coords.latitude
         const lng = position.coords.longitude
+        const accuracy = position.coords.accuracy
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Location] Raw from browser:", {
+            latitude: lat,
+            longitude: lng,
+            accuracyMeters: accuracy,
+            source: "getCurrentPosition",
+          })
+        }
         setUserLocation({ lat, lng })
+        setLocationAccuracyMeters(Number.isFinite(accuracy) ? accuracy : null)
         setLocationCapture((prev) => ({
           ...prev,
           [action]: {
@@ -695,6 +710,20 @@ export default function InternTimePage() {
           },
         }))
         const check = checkGeofence(lat, lng, geofences)
+        if (process.env.NODE_ENV === "development") {
+          console.log("[Location] Geofence check:", {
+            lat,
+            lng,
+            inside: check.inside,
+            closest: check.closest
+              ? {
+                  name: check.closest.geofence.name,
+                  distanceMeters: Math.round(check.closest.distanceMeters),
+                  radiusMeters: check.closest.geofence.radiusMeters,
+                }
+              : null,
+          })
+        }
         setLocationCheck(check)
         if (!check.inside) {
           setLocationStatus("error")
@@ -711,17 +740,18 @@ export default function InternTimePage() {
       },
       (error) => {
         setLocationStatus("error")
+        setLocationAccuracyMeters(null)
         setLocationError(
           error.message || "Unable to read your current location."
         )
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 15000,
         maximumAge: 0,
       }
     )
-  }, [selfieAction, consent, geofences, settings?.verification_gps])
+  }, [selfieAction, consent, geofences, settings?.verification_gps, locationRefreshTrigger])
 
   const statusClassName =
     header.statusTone === "active"
@@ -1519,20 +1549,52 @@ export default function InternTimePage() {
                     </div>
                   )
                 ) : null}
-                {locationStatus === "success" &&
-                selfieAction &&
-                locationCapture[selfieAction]?.coords ? (
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    Lat {locationCapture[selfieAction]?.coords.lat.toFixed(6)} , Lng{" "}
-                    {locationCapture[selfieAction]?.coords.lng.toFixed(6)} at{" "}
-                    {locationCapture[selfieAction]?.capturedAt}
-                  </p>
+                {selfieAction && locationCapture[selfieAction]?.coords ? (
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
+                    <span>
+                      Your position: Lat{" "}
+                      {locationCapture[selfieAction].coords.lat.toFixed(6)}, Lng{" "}
+                      {locationCapture[selfieAction].coords.lng.toFixed(6)}
+                      {locationCapture[selfieAction].capturedAt
+                        ? ` at ${locationCapture[selfieAction].capturedAt}`
+                        : ""}
+                    </span>
+                    <a
+                      href={`https://www.google.com/maps?q=${locationCapture[selfieAction].coords.lat},${locationCapture[selfieAction].coords.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-blue-600 underline hover:text-blue-800"
+                    >
+                      Verify on map
+                    </a>
+                  </div>
                 ) : null}
-                {locationStatus === "error" ? (
-                  <p className="mt-1 text-[11px] text-red-600">
-                    {locationError ||
-                      "Location verification is required to continue."}
+                {locationAccuracyMeters != null && (
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    Your position accuracy: ±{Math.round(locationAccuracyMeters)}m
                   </p>
+                )}
+                {locationStatus === "error" ? (
+                  <div className="mt-1 space-y-1">
+                    <p className="text-[11px] text-red-600">
+                      {locationError ||
+                        "Location verification is required to continue."}
+                    </p>
+                    {locationCapture[selfieAction!]?.coords ? (
+                      <p className="text-[11px] text-slate-500">
+                        Use &quot;Verify on map&quot; above to confirm this is your actual location. If the pin is wrong, try &quot;Refresh location&quot; or allow precise location for this site.
+                      </p>
+                    ) : null}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-[11px]"
+                      onClick={() => setLocationRefreshTrigger((t) => t + 1)}
+                    >
+                      Refresh location
+                    </Button>
+                  </div>
                 ) : null}
               </div>
               ) : null}

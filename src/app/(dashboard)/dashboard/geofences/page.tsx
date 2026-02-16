@@ -76,14 +76,15 @@ export default function GeofencesPage() {
   }, []);
 
   const handleLocationCreate = async (location: CreateGeofenceLocationPayload) => {
+    const name = (location.name && String(location.name).trim()) || "Unnamed Location";
     setIsSaving(true);
     setError(null);
     try {
       const newLocation = await createGeofenceLocation({
-        name: location.name,
+        name,
         latitude: location.latitude,
         longitude: location.longitude,
-        radius_meters: location.radius_meters,
+        radius_meters: location.radius_meters ?? 100,
       });
       setLocations((prev) => [...prev, newLocation]);
       setSelectedLocation(newLocation);

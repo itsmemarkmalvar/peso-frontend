@@ -46,7 +46,11 @@ export function MapBackdrop({
   className,
 }: MapBackdropProps) {
   const [isMounted, setIsMounted] = useState(false)
-  const [mapKey, setMapKey] = useState(0)
+  // Stable key per component instance so we don't remount MapContainer and hit "already initialized"
+  const mapKeyRef = useRef<string | number>(
+    typeof window !== "undefined" ? `${Date.now()}-${Math.random().toString(36).slice(2)}` : 0
+  )
+  const mapKey = mapKeyRef.current
   const enableInteraction = Boolean(interactive)
   const userLocationIcon = L.divIcon({
     className: "map-user-marker",
@@ -60,8 +64,6 @@ export function MapBackdrop({
 
   useEffect(() => {
     setIsMounted(true)
-    // Force remount on Fast Refresh to prevent "already initialized" error
-    setMapKey((prev) => prev + 1)
   }, [])
 
   return (

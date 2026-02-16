@@ -24,7 +24,8 @@ import { ApprovalModal } from "@/components/admin/ApprovalModal";
 export default function NewUsersPage() {
   const [pendingUsers, setPendingUsers] = useState<RegistrationRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [approvalModalOpen, setApprovalModalOpen] = useState(false);
@@ -32,12 +33,12 @@ export default function NewUsersPage() {
 
   const loadRegistrationRequests = async () => {
     setIsLoading(true);
-    setError(null);
+    setLoadError(null);
     try {
       const data = await getRegistrationRequests('pending');
       setPendingUsers(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load registration requests.");
+      setLoadError(err instanceof Error ? err.message : "Failed to load registration requests.");
     } finally {
       setIsLoading(false);
     }
@@ -48,6 +49,7 @@ export default function NewUsersPage() {
   }, []);
 
   const handleApproveClick = (user: RegistrationRequest) => {
+    setActionError(null);
     setSelectedRequest(user);
     setApprovalModalOpen(true);
   };
@@ -56,7 +58,7 @@ export default function NewUsersPage() {
     if (!selectedRequest) return;
 
     setProcessingId(selectedRequest.id);
-    setError(null);
+    setActionError(null);
     setSuccessMessage(null);
     try {
       const result = await approveRegistrationRequest(
@@ -72,7 +74,7 @@ export default function NewUsersPage() {
       setApprovalModalOpen(false);
       setSelectedRequest(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to approve registration request.");
+      setActionError(err instanceof Error ? err.message : "Failed to approve registration request.");
     } finally {
       setProcessingId(null);
     }
@@ -83,7 +85,7 @@ export default function NewUsersPage() {
       return;
     }
     setProcessingId(id);
-    setError(null);
+    setActionError(null);
     setSuccessMessage(null);
     try {
       await rejectRegistrationRequest(id);
@@ -91,11 +93,13 @@ export default function NewUsersPage() {
       // Reload the list
       await loadRegistrationRequests();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reject registration request.");
+      setActionError(err instanceof Error ? err.message : "Failed to reject registration request.");
     } finally {
       setProcessingId(null);
     }
   };
+
+  const error = loadError ?? actionError;
 
   const pendingCount = pendingUsers.filter((u) => u.status === "pending").length;
 
@@ -142,15 +146,20 @@ export default function NewUsersPage() {
             <p className="text-[11px] text-slate-500">Loading pending registrations…</p>
           )}
 
-          {error && !isLoading && (
+          {loadError && !isLoading && (
             <p className="text-[11px] text-red-600">
-              {error} Unable to load pending users.
+              {loadError} Unable to load pending users.
+            </p>
+          )}
+          {actionError && !isLoading && (
+            <p className="text-[11px] text-red-600">
+              {actionError}
             </p>
           )}
 
           <div className="max-h-[420px] space-y-2 overflow-y-auto pr-1">
             {!isLoading &&
-              !error &&
+              !loadError &&
               pendingUsers.map((user) => (
                 <div
                   key={user.id}
@@ -219,7 +228,7 @@ export default function NewUsersPage() {
                 </div>
               ))}
 
-            {!isLoading && !error && pendingUsers.length === 0 && (
+            {!isLoading && !loadError && pendingUsers.length === 0 && (
               <p className="text-[11px] text-slate-500">
                 No pending registrations. New signups will appear here for your review.
               </p>

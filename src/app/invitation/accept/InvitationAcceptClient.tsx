@@ -33,11 +33,13 @@ interface InvitationData {
 export function InvitationAcceptClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const token = searchParams.get("token")
+  const tokenFromUrl = searchParams.get("token")
   const { login } = useAuth()
 
   const [invitationData, setInvitationData] =
     useState<InvitationData | null>(null)
+  /** Keep token in state so submit always has it (URL can be lost on client nav/hydration) */
+  const [invitationToken, setInvitationToken] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -49,22 +51,24 @@ export function InvitationAcceptClient() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   useEffect(() => {
-    if (!token) {
+    if (!tokenFromUrl) {
       setError("Invalid invitation link. No token provided.")
       setIsLoading(false)
       return
     }
 
     verifyInvitation()
-  }, [token])
+  }, [tokenFromUrl])
 
   const verifyInvitation = async () => {
+    if (!tokenFromUrl) return
     try {
       const response = await apiClient.get<{
         success: boolean
         data: { user: InvitationData }
-      }>(`${API_ENDPOINTS.auth.invitationVerify}?token=${token}`)
+      }>(`${API_ENDPOINTS.auth.invitationVerify}?token=${encodeURIComponent(tokenFromUrl)}`)
       setInvitationData(response.data.user)
+      setInvitationToken(tokenFromUrl)
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
@@ -79,6 +83,12 @@ export function InvitationAcceptClient() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    const tokenToSend = invitationToken ?? tokenFromUrl
+    if (!tokenToSend) {
+      setError("Invitation token is missing. Please use the link from your invitation email.")
+      return
+    }
 
     if (password.length < 8) {
       setError("Password must be at least 8 characters long.")
@@ -97,7 +107,7 @@ export function InvitationAcceptClient() {
         success: boolean
         data: { user: any; token: string }
       }>(API_ENDPOINTS.auth.invitationAccept, {
-        token,
+        token: tokenToSend,
         password,
         password_confirmation: confirmPassword,
       })

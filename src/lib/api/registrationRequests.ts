@@ -94,20 +94,28 @@ export async function getRegistrationRequest(id: number): Promise<RegistrationRe
   return response.data;
 }
 
+const APPROVE_VALID_ROLES = ['admin', 'supervisor', 'gip', 'intern'] as const;
+
 /**
- * Approve a registration request
+ * Approve a registration request.
+ * Backend requires "role"; undefined is omitted by JSON.stringify so we always send a valid role.
  */
 export async function approveRegistrationRequest(
   id: number,
   role: string,
   departmentId: number | null
 ): Promise<ApproveResponse['data']> {
+  const safeRole =
+    role && typeof role === "string" && APPROVE_VALID_ROLES.includes(role as (typeof APPROVE_VALID_ROLES)[number])
+      ? role
+      : "intern";
+  const payload = {
+    role: safeRole,
+    department_id: departmentId ?? null,
+  };
   const response = await apiClient.post<ApproveResponse>(
     API_ENDPOINTS.registrationRequests.approve(id),
-    {
-      role,
-      department_id: departmentId,
-    }
+    payload
   );
   return response.data;
 }

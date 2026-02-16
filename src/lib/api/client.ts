@@ -101,9 +101,11 @@ export class ApiClient {
   }
 
   post<T>(endpoint: string, data?: unknown): Promise<T> {
+    // Always send a JSON body: undefined is omitted by JSON.stringify, so use {} if no data
+    const body = data !== undefined && data !== null ? JSON.stringify(data) : "{}";
     return this.request<T>(endpoint, {
-      method: 'POST',
-      body: JSON.stringify(data),
+      method: "POST",
+      body,
     });
   }
 
@@ -115,9 +117,11 @@ export class ApiClient {
   }
 
   put<T>(endpoint: string, data?: unknown): Promise<T> {
+    const body =
+      data !== undefined && data !== null ? JSON.stringify(data) : "{}";
     return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: JSON.stringify(data),
+      method: "PUT",
+      body,
     });
   }
 

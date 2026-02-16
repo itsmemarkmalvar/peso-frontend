@@ -245,8 +245,14 @@ export function InternOnboarding() {
     setIsSubmitting(true)
     try {
       const payload: InternOnboardingPayload = {
-        ...form,
+        full_name: form.full_name?.trim() ?? "",
+        school: form.school?.trim() ?? "",
+        program: form.program?.trim() ?? "",
+        phone: form.phone?.trim() ?? "",
+        emergency_contact_name: form.emergency_contact_name?.trim() ?? "",
+        emergency_contact_phone: form.emergency_contact_phone?.trim() ?? "",
         required_hours: requiredHours,
+        weekly_availability: form.weekly_availability ?? DEFAULT_WEEKLY_AVAILABILITY,
       }
       await saveInternOnboarding(payload)
       router.replace("/dashboard/intern")

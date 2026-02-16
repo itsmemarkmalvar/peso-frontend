@@ -69,18 +69,23 @@ export function ApprovalModal({
     }
   };
 
+  const VALID_ROLES = ["admin", "supervisor", "gip", "intern"] as const;
+
   const handleApprove = async () => {
     if (!registrationRequest) return;
 
+    // Ensure role is always valid (backend requires "role" field)
+    const effectiveRole = isSupervisor ? "intern" : (role && (VALID_ROLES as readonly string[]).includes(role) ? role : "intern");
+
     // Validate: Department is required for intern and GIP roles
-    if ((role === "intern" || role === "gip") && !departmentId) {
-      alert(`Please select a department for ${role} role.`);
+    if ((effectiveRole === "intern" || effectiveRole === "gip") && !departmentId) {
+      alert(`Please select a department for ${effectiveRole} role.`);
       return;
     }
 
     setIsSubmitting(true);
     try {
-      await onApprove(isSupervisor ? "intern" : role, departmentId ? parseInt(departmentId) : null);
+      await onApprove(effectiveRole, departmentId ? parseInt(departmentId, 10) : null);
       onOpenChange(false);
     } catch (err) {
       console.error("Approval failed:", err);
@@ -93,10 +98,14 @@ export function ApprovalModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[540px]" onClose={() => onOpenChange(false)}>
+      <DialogContent
+        className="sm:max-w-[540px] z-[100]"
+        onClose={() => onOpenChange(false)}
+        aria-describedby="approval-modal-description"
+      >
         <DialogHeader>
           <DialogTitle>Approve Registration Request</DialogTitle>
-          <DialogDescription>
+          <DialogDescription id="approval-modal-description">
             Assign a role and department for <span className="font-medium text-slate-900">{registrationRequest.full_name}</span> ({registrationRequest.email})
           </DialogDescription>
         </DialogHeader>
@@ -177,7 +186,7 @@ export function ApprovalModal({
           >
             Cancel
           </Button>
-          <Button
+            <Button
             type="button"
             onClick={handleApprove}
             disabled={isSubmitting || ((role === "intern" || role === "gip") && !departmentId)}
