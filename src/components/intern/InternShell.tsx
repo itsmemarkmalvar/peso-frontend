@@ -188,7 +188,7 @@ export function InternShell({ children }: InternShellProps) {
   return (
     <div
       style={internTheme}
-      className="relative min-h-screen overflow-hidden bg-[color:var(--dash-bg)] text-[color:var(--dash-ink)]"
+      className="relative min-h-screen overflow-hidden bg-(--dash-bg) text-(--dash-ink)"
     >
       <div className="pointer-events-none absolute left-1/2 top-20 h-64 w-64 -translate-x-1/2 rounded-full bg-blue-200/40 blur-3xl" />
 
@@ -204,7 +204,7 @@ export function InternShell({ children }: InternShellProps) {
       <div className="relative flex min-h-screen">
         <aside
           className={cn(
-            "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[color:var(--dash-border)] bg-[color:var(--dash-card)]/95 px-4 py-5 backdrop-blur transition-[width,transform] lg:translate-x-0",
+            "fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-(--dash-border) bg-(--dash-card)/95 px-4 py-5 backdrop-blur transition-[width,transform] lg:translate-x-0",
             mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
             collapsed ? "lg:w-20" : "lg:w-64"
           )}
@@ -222,7 +222,7 @@ export function InternShell({ children }: InternShellProps) {
                 />
               </div>
               <div className={cn(collapsed ? "lg:hidden" : "opacity-100")}>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
                   {getInternOrGipRoleLabel(user?.role)} Portal
                 </p>
                 <p className="text-sm font-semibold">PESO Attendance</p>
@@ -233,7 +233,7 @@ export function InternShell({ children }: InternShellProps) {
               type="button"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               onClick={() => setCollapsed((value) => !value)}
-              className="hidden h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--dash-border)] text-[color:var(--dash-muted)] transition hover:text-[color:var(--dash-ink)] lg:inline-flex"
+              className="hidden h-9 w-9 items-center justify-center rounded-lg border border-(--dash-border) text-(--dash-muted) transition hover:text-(--dash-ink) lg:inline-flex"
             >
               {collapsed ? (
                 <ChevronRight className="h-5 w-5" />
@@ -257,16 +257,16 @@ export function InternShell({ children }: InternShellProps) {
                     "group flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold transition",
                     collapsed ? "lg:justify-center lg:px-2" : "justify-start",
                     active
-                      ? "bg-[color:var(--dash-accent-soft)] text-[color:var(--dash-accent-strong)]"
-                      : "text-[color:var(--dash-muted)] hover:bg-slate-50 hover:text-[color:var(--dash-ink)]"
+                      ? "bg-(--dash-accent-soft) text-(--dash-accent-strong)"
+                      : "text-(--dash-muted) hover:bg-slate-50 hover:text-(--dash-ink)"
                   )}
                 >
                   <Icon
                     className={cn(
                       "h-5 w-5",
                       active
-                        ? "text-[color:var(--dash-accent)]"
-                        : "text-[color:var(--dash-muted)] group-hover:text-[color:var(--dash-ink)]"
+                        ? "text-(--dash-accent)"
+                        : "text-(--dash-muted) group-hover:text-(--dash-ink)"
                     )}
                   />
                   <span className={cn(collapsed ? "lg:hidden" : "opacity-100")}>
@@ -287,7 +287,7 @@ export function InternShell({ children }: InternShellProps) {
         >
           <header
             className={cn(
-              "fixed right-0 top-0 z-[1100] flex items-center justify-between border-b border-[color:var(--dash-border)] bg-white/90 px-6 py-4 backdrop-blur transition-[left]",
+              "fixed right-0 top-0 z-1100 flex items-center justify-between border-b border-(--dash-border) bg-white/90 px-6 py-4 backdrop-blur transition-[left]",
               "left-0",
               collapsed ? "lg:left-20" : "lg:left-64"
             )}
@@ -297,12 +297,12 @@ export function InternShell({ children }: InternShellProps) {
                 type="button"
                 aria-label="Open navigation"
                 onClick={() => setMobileOpen(true)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-[color:var(--dash-border)] text-[color:var(--dash-muted)] transition hover:text-[color:var(--dash-ink)] lg:hidden"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-(--dash-border) text-(--dash-muted) transition hover:text-(--dash-ink) lg:hidden"
               >
                 <Menu className="h-5 w-5" />
               </button>
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
                   {getInternOrGipRoleLabel(user?.role)} Dashboard
                 </p>
                 <p className="text-sm font-semibold">
@@ -320,7 +320,7 @@ export function InternShell({ children }: InternShellProps) {
                   logout()
                   router.replace("/login")
                 }}
-                className="rounded-full border border-[color:var(--dash-border)] bg-white px-3 py-1 text-xs font-semibold text-[color:var(--dash-muted)] transition hover:text-[color:var(--dash-ink)]"
+                className="rounded-full border border-(--dash-border) bg-white px-3 py-1 text-xs font-semibold text-(--dash-muted) transition hover:text-(--dash-ink)"
               >
                 Log out
               </button>

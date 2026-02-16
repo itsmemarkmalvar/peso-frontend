@@ -17,6 +17,7 @@ import { getSettings } from "@/lib/api/settings"
 import type { SystemSettings } from "@/types"
 import { clockIn, clockOut, breakStart, breakEnd, getTodayAttendance } from "@/lib/api/attendance"
 import { Button } from "@/components/ui/button"
+import { InternBackButton } from "@/components/intern/InternBackButton"
 
 type VerificationAction = "clock-in" | "break-start" | "break-end" | "clock-out"
 type SelfieCaptureKey = VerificationAction | "break"
@@ -1171,36 +1172,37 @@ export default function InternTimePage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
+      <InternBackButton href="/dashboard/intern" label="Back to dashboard" />
       {/* Primary: Time clock first (left on desktop), map as secondary context (right) */}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
         <div className="flex flex-col gap-4">
-          <header className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-5 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+          <header className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-5 shadow-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
               Time and Clock
             </p>
             <h1 className="mt-1 text-xl font-semibold">Time clock</h1>
-            <p className="mt-0.5 text-sm text-[color:var(--dash-muted)]">
+            <p className="mt-0.5 text-sm text-(--dash-muted)">
               Clock in, manage breaks, and review your day.
             </p>
           </header>
 
-          <section className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
+          <section className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
             <div className="flex flex-col gap-6">
               <div>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
                       Current time
                     </p>
                     <div className="mt-3 flex items-end gap-2">
                       <span className="text-5xl font-semibold tracking-tight">
                         {header.currentTime}
                       </span>
-                      <span className="pb-2 text-sm font-semibold text-[color:var(--dash-muted)]">
+                      <span className="pb-2 text-sm font-semibold text-(--dash-muted)">
                         {header.meridiem}
                       </span>
                     </div>
-                    <p className="mt-2 text-sm text-[color:var(--dash-muted)]">
+                    <p className="mt-2 text-sm text-(--dash-muted)">
                       {header.dateLabel}
                     </p>
                   </div>
@@ -1251,22 +1253,22 @@ export default function InternTimePage() {
                   >
                     {header.statusLabel}
                   </span>
-                  <span className="text-xs text-[color:var(--dash-muted)]">
+                  <span className="text-xs text-(--dash-muted)">
                     {header.shiftLabel}
                   </span>
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-xl border border-[color:var(--dash-border)] bg-white/80 px-4 py-3 text-sm">
-                <div><span className="text-[color:var(--dash-muted)]">Last clock </span><span className="font-semibold">{snapshot.lastClock}</span></div>
-                <div><span className="text-[color:var(--dash-muted)]">Break </span><span className="font-semibold">{snapshot.breakLabel}</span></div>
-                <div className="min-w-0 flex-1"><span className="text-[color:var(--dash-muted)]">Location </span><span className="font-semibold break-words">{snapshot.locationLabel}</span></div>
+              <div className="flex flex-wrap gap-x-6 gap-y-2 rounded-xl border border-(--dash-border) bg-white/80 px-4 py-3 text-sm">
+                <div><span className="text-(--dash-muted)">Last clock </span><span className="font-semibold">{snapshot.lastClock}</span></div>
+                <div><span className="text-(--dash-muted)">Break </span><span className="font-semibold">{snapshot.breakLabel}</span></div>
+                <div className="min-w-0 flex-1"><span className="text-(--dash-muted)">Location </span><span className="font-semibold wrap-break-word">{snapshot.locationLabel}</span></div>
               </div>
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-3">
               <Button
-                className="h-12 w-full text-base font-semibold bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)] disabled:opacity-60 disabled:cursor-not-allowed"
+                className="h-12 w-full text-base font-semibold bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong) disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => openVerification("clock-in")}
                 disabled={clockInWindowClosed}
                 title={clockInWindowClosed && clockInCutoff ? `Clock-in closed. Allowed until ${clockInCutoff.label} only.` : undefined}
@@ -1302,7 +1304,7 @@ export default function InternTimePage() {
                 Clock Out
               </Button>
             </div>
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-[color:var(--dash-muted)]">
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-(--dash-muted)">
               <span>
                 {requiresLocation
                   ? "Selfie and location verification required for clock-in, breaks, and clock-out."
@@ -1348,7 +1350,7 @@ export default function InternTimePage() {
         </div>
 
         {/* Map: secondary context for location verification - compact, below time clock on mobile */}
-        <section className="relative min-h-[220px] overflow-hidden rounded-2xl border border-[color:var(--dash-border)] lg:min-h-[320px]">
+        <section className="relative min-h-[220px] overflow-hidden rounded-2xl border border-(--dash-border) lg:min-h-[320px]">
           <MapBackdrop
             center={mapCenter}
             zoom={mapZoom}
@@ -1357,7 +1359,7 @@ export default function InternTimePage() {
             userLocation={userLocation}
             className="h-full w-full"
           />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-white/40" />
+          <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-white/30 via-transparent to-white/40" />
           <div className="absolute bottom-2 left-2 rounded-lg bg-white/90 px-2 py-1 text-[10px] text-slate-600 shadow-sm">
             Location verification
           </div>
@@ -1368,13 +1370,13 @@ export default function InternTimePage() {
         {summary.map((item) => (
           <div
             key={item.label}
-            className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-5 shadow-sm"
+            className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-5 shadow-sm"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
               {item.label}
             </p>
             <p className="mt-3 text-2xl font-semibold">{item.value}</p>
-            <p className="mt-2 text-xs text-[color:var(--dash-muted)]">
+            <p className="mt-2 text-xs text-(--dash-muted)">
               {item.sub}
             </p>
           </div>
@@ -1382,48 +1384,48 @@ export default function InternTimePage() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+        <div className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
             Recent activity
           </p>
           <div className="mt-4 space-y-4">
             {logs.length > 0 ? (
               logs.map((entry) => (
                 <div key={entry.time} className="flex items-start gap-3">
-                  <div className="mt-1 h-2 w-2 rounded-full bg-[color:var(--dash-accent)]" />
+                  <div className="mt-1 h-2 w-2 rounded-full bg-(--dash-accent)" />
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm font-medium">
                       <span>{entry.title}</span>
-                      <span className="text-xs text-[color:var(--dash-muted)]">
+                      <span className="text-xs text-(--dash-muted)">
                         {entry.time}
                       </span>
                     </div>
-                    <p className="text-xs text-[color:var(--dash-muted)]">
+                    <p className="text-xs text-(--dash-muted)">
                       {entry.detail}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-xs text-[color:var(--dash-muted)]">
+              <p className="text-xs text-(--dash-muted)">
                 No activity logged yet.
               </p>
             )}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+        <div className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
             This week logs
           </p>
           <div className="mt-4 space-y-3">
             {week.map((entry) => (
               <div
                 key={entry.day}
-                className="flex items-center justify-between rounded-xl border border-[color:var(--dash-border)] bg-white px-4 py-3 text-sm"
+                className="flex items-center justify-between rounded-xl border border-(--dash-border) bg-white px-4 py-3 text-sm"
               >
                 <span className="font-semibold">{entry.day}</span>
-                <span className="text-[color:var(--dash-muted)]">
+                <span className="text-(--dash-muted)">
                   {entry.hours}
                 </span>
               </div>
@@ -1433,7 +1435,7 @@ export default function InternTimePage() {
       </div>
 
       {selfieOpen ? (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 px-4 py-6">
+        <div className="fixed inset-0 z-2000 flex items-center justify-center bg-slate-900/40 px-4 py-6">
           <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -1621,7 +1623,7 @@ export default function InternTimePage() {
                     </Button>
                     <Button
                       type="button"
-                      className="h-10 bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+                      className="h-10 bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong)"
                       onClick={handleConfirmSelfie}
                       disabled={!isLocationVerified || isSubmittingSelfie}
                     >
@@ -1631,7 +1633,7 @@ export default function InternTimePage() {
                 ) : (
                   <Button
                     type="button"
-                    className="h-10 bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+                    className="h-10 bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong)"
                     onClick={handleCaptureSelfie}
                     disabled={!isLocationVerified}
                   >
@@ -1645,7 +1647,7 @@ export default function InternTimePage() {
       ) : null}
 
       {consentOpen ? (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-slate-900/40 px-4 py-6">
+        <div className="fixed inset-0 z-2000 flex items-center justify-center bg-slate-900/40 px-4 py-6">
           <div className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -1732,7 +1734,7 @@ export default function InternTimePage() {
               </Button>
               <Button
                 type="button"
-                className="h-10 bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+                className="h-10 bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong)"
                 onClick={handleConsentConfirm}
               >
                 Agree and continue

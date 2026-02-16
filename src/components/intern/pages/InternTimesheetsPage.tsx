@@ -8,6 +8,7 @@ import {
   type InternTimesheetEntry,
 } from "@/lib/api/intern"
 import { Button } from "@/components/ui/button"
+import { InternBackButton } from "@/components/intern/InternBackButton"
 
 export default function InternTimesheetsPage() {
   const [timesheet, setTimesheet] = useState<InternTimesheetData | null>(null)
@@ -51,25 +52,26 @@ export default function InternTimesheetsPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+      <InternBackButton href="/dashboard/intern" label="Back to dashboard" />
+      <header className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
           Timesheets
         </p>
         <h1 className="mt-2 text-2xl font-semibold">Weekly log</h1>
-        <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+        <p className="mt-1 text-sm text-(--dash-muted)">
           Review your daily hours before submitting for approval.
         </p>
       </header>
 
-      <div className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
+      <div className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
               {weekLabel}
             </p>
             <p className="mt-2 text-lg font-semibold">{totalLabel}</p>
           </div>
-          <Button className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]">
+          <Button className="bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong)">
             Submit Timesheet
           </Button>
         </div>
@@ -91,11 +93,11 @@ export default function InternTimesheetsPage() {
             entries.map((entry) => (
               <div
                 key={entry.day}
-                className="flex items-center justify-between rounded-xl border border-[color:var(--dash-border)] bg-white px-4 py-3"
+                className="flex items-center justify-between rounded-xl border border-(--dash-border) bg-white px-4 py-3"
               >
                 <div>
                   <p className="font-semibold">{entry.day}</p>
-                  <p className="text-xs text-[color:var(--dash-muted)]">
+                  <p className="text-xs text-(--dash-muted)">
                     {entry.hours}
                   </p>
                 </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 
+import { InternBackButton } from "@/components/intern/InternBackButton"
 import {
   getNotifications,
   markNotificationRead,
@@ -124,14 +125,15 @@ export default function InternNotificationsPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <header className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
+      <InternBackButton href="/dashboard/intern/menu" label="Back to menu" />
+      <header className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
               Notifications
             </p>
             <h1 className="mt-2 text-2xl font-semibold">Your updates</h1>
-            <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+            <p className="mt-1 text-sm text-(--dash-muted)">
               All your alerts are saved here for easy reference.
             </p>
           </div>
@@ -140,16 +142,16 @@ export default function InternNotificationsPage() {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+        <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg">All notifications</CardTitle>
-            <CardDescription className="text-[color:var(--dash-muted)]">
+            <CardDescription className="text-(--dash-muted)">
               Schedule changes, approvals, and system updates.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {isLoadingNotifications && (
-              <p className="text-xs text-[color:var(--dash-muted)]">
+              <p className="text-xs text-(--dash-muted)">
                 Loading notifications...
               </p>
             )}
@@ -159,7 +161,7 @@ export default function InternNotificationsPage() {
             {!isLoadingNotifications &&
               !notificationsError &&
               notifications.length === 0 && (
-                <p className="text-xs text-[color:var(--dash-muted)]">
+                <p className="text-xs text-(--dash-muted)">
                   No notifications yet. We&apos;ll let you know when something
                   needs your attention.
                 </p>
@@ -195,10 +197,10 @@ export default function InternNotificationsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+        <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg">Details</CardTitle>
-            <CardDescription className="text-[color:var(--dash-muted)]">
+            <CardDescription className="text-(--dash-muted)">
               Review and respond to important updates.
             </CardDescription>
           </CardHeader>
@@ -276,7 +278,7 @@ export default function InternNotificationsPage() {
                 )}
               </>
             ) : (
-              <p className="text-xs text-[color:var(--dash-muted)]">
+              <p className="text-xs text-(--dash-muted)">
                 Select a notification to see the details.
               </p>
             )}

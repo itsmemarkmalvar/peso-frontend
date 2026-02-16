@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 
+import { InternBackButton } from "@/components/intern/InternBackButton"
 import { getInternApprovals, type InternApprovalItem } from "@/lib/api/intern"
 
 const fallbackApprovals: InternApprovalItem[] = [
@@ -47,12 +48,13 @@ export default function InternApprovalsPage() {
 
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+      <InternBackButton href="/dashboard/intern" label="Back to dashboard" />
+      <header className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
           Approvals
         </p>
         <h1 className="mt-2 text-2xl font-semibold">Submission status</h1>
-        <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+        <p className="mt-1 text-sm text-(--dash-muted)">
           Track which attendance logs are pending or approved.
         </p>
       </header>
@@ -61,12 +63,12 @@ export default function InternApprovalsPage() {
         {approvals.map((approval) => (
           <div
             key={approval.date}
-            className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm"
+            className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm"
           >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold">{approval.date}</p>
-                <p className="mt-1 text-xs text-[color:var(--dash-muted)]">
+                <p className="mt-1 text-xs text-(--dash-muted)">
                   {approval.detail}
                 </p>
               </div>

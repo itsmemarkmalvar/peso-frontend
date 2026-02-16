@@ -460,16 +460,16 @@ export default function InternDashboardPage() {
     >
       <motion.header
         variants={reduceMotion ? undefined : item}
-        className="flex flex-col gap-4 rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm md:flex-row md:items-center md:justify-between"
+        className="flex flex-col gap-4 rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm md:flex-row md:items-center md:justify-between"
       >
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+          <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
             {headerDateLabel}
           </p>
           <h1 className="mt-2 text-2xl font-semibold">
             Welcome back, {getInternOrGipRoleLabel(user?.role)}
           </h1>
-          <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+          <p className="mt-1 text-sm text-(--dash-muted)">
             Keep your time logs accurate for approvals and reports.
           </p>
         </div>
@@ -481,7 +481,7 @@ export default function InternDashboardPage() {
               setIsNotificationsOpen(true)
               setSelectedNotification(null)
             }}
-            className="relative w-full justify-center border-[color:var(--dash-border)] text-[color:var(--dash-ink)] sm:w-auto"
+            className="relative w-full justify-center border-(--dash-border) text-(--dash-ink) sm:w-auto"
           >
             <Bell className="h-4 w-4" />
             Notifications
@@ -493,21 +493,21 @@ export default function InternDashboardPage() {
           </Button>
           <Button
             asChild
-            className="w-full justify-center bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)] sm:w-auto"
+            className="w-full justify-center bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong) sm:w-auto"
           >
             <Link href="/dashboard/intern/time">{primaryClockLabel}</Link>
           </Button>
           <Button
             asChild
             variant="outline"
-            className="w-full justify-center border-[color:var(--dash-border)] text-[color:var(--dash-ink)] sm:w-auto"
+            className="w-full justify-center border-(--dash-border) text-(--dash-ink) sm:w-auto"
           >
             <Link href="/dashboard/intern/timesheets">View Timesheets</Link>
           </Button>
           <Button
             variant="outline"
             onClick={openLeaveDialog}
-            className="w-full justify-center border-[color:var(--dash-border)] text-[color:var(--dash-ink)] sm:w-auto"
+            className="w-full justify-center border-(--dash-border) text-(--dash-ink) sm:w-auto"
           >
             File An Absence
           </Button>
@@ -521,13 +521,13 @@ export default function InternDashboardPage() {
         {stats.map((stat) => (
           <div
             key={stat.label}
-            className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-5 shadow-sm"
+            className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-5 shadow-sm"
           >
-            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
               {stat.label}
             </p>
             <p className="mt-3 text-2xl font-semibold">{stat.value}</p>
-            <p className="mt-2 text-xs text-[color:var(--dash-muted)]">
+            <p className="mt-2 text-xs text-(--dash-muted)">
               {stat.sub}
             </p>
           </div>
@@ -538,10 +538,10 @@ export default function InternDashboardPage() {
         variants={reduceMotion ? undefined : item}
         className="grid gap-4 lg:grid-cols-2"
       >
-        <div className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
+        <div className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
                 Workday Status
               </p>
               <p className="mt-2 text-lg font-semibold">
@@ -553,13 +553,13 @@ export default function InternDashboardPage() {
             </span>
           </div>
           <div className="mt-4">
-            <div className="flex items-center justify-between text-xs text-[color:var(--dash-muted)]">
+            <div className="flex items-center justify-between text-xs text-(--dash-muted)">
               <span>Progress</span>
               <span>{progressLabel}</span>
             </div>
             <div className="mt-2 h-2 w-full rounded-full bg-slate-100">
               <div
-                className="h-2 rounded-full bg-[color:var(--dash-accent)]"
+                className="h-2 rounded-full bg-(--dash-accent)"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
@@ -568,7 +568,7 @@ export default function InternDashboardPage() {
             <Button
               asChild
               size="sm"
-              className="w-full justify-center bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)] sm:w-auto"
+              className="w-full justify-center bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong) sm:w-auto"
             >
               <Link href="/dashboard/intern/time">{primaryClockLabel}</Link>
             </Button>
@@ -576,15 +576,15 @@ export default function InternDashboardPage() {
               asChild
               size="sm"
               variant="outline"
-              className="w-full justify-center border-[color:var(--dash-border)] text-[color:var(--dash-ink)] sm:w-auto"
+              className="w-full justify-center border-(--dash-border) text-(--dash-ink) sm:w-auto"
             >
               <Link href="/dashboard/intern/time">View Schedule</Link>
             </Button>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+        <div className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
+          <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
             Recent Activity
           </p>
           <div className="mt-4 space-y-4">
@@ -594,22 +594,22 @@ export default function InternDashboardPage() {
                   key={`${entry.time}-${entry.title}`}
                   className="flex items-start gap-3"
                 >
-                  <div className="mt-1 h-2 w-2 rounded-full bg-[color:var(--dash-accent)]" />
+                  <div className="mt-1 h-2 w-2 rounded-full bg-(--dash-accent)" />
                   <div className="flex-1">
                     <div className="flex items-center justify-between text-sm font-medium">
                       <span>{entry.title}</span>
-                      <span className="text-xs text-[color:var(--dash-muted)]">
+                      <span className="text-xs text-(--dash-muted)">
                         {entry.time}
                       </span>
                     </div>
-                    <p className="text-xs text-[color:var(--dash-muted)]">
+                    <p className="text-xs text-(--dash-muted)">
                       {entry.detail}
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-xs text-[color:var(--dash-muted)]">
+              <p className="text-xs text-(--dash-muted)">
                 No activity logged yet.
               </p>
             )}
@@ -618,7 +618,7 @@ export default function InternDashboardPage() {
             asChild
             size="sm"
             variant="outline"
-            className="mt-5 border-[color:var(--dash-border)] text-[color:var(--dash-ink)]"
+            className="mt-5 border-(--dash-border) text-(--dash-ink)"
           >
             <Link href="/dashboard/intern/time">Open Time Logs</Link>
           </Button>
@@ -633,15 +633,15 @@ export default function InternDashboardPage() {
           <Link
             key={link.href}
             href={link.href}
-            className="group rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
+            className="group rounded-2xl border border-(--dash-border) bg-(--dash-card) p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-md"
           >
             <div className="flex items-center justify-between">
               <p className="text-sm font-semibold">{link.label}</p>
-              <span className="text-xs font-semibold text-[color:var(--dash-accent)]">
+              <span className="text-xs font-semibold text-(--dash-accent)">
                 Open
               </span>
             </div>
-            <p className="mt-2 text-xs text-[color:var(--dash-muted)]">
+            <p className="mt-2 text-xs text-(--dash-muted)">
               {link.desc}
             </p>
           </Link>
@@ -883,7 +883,7 @@ export default function InternDashboardPage() {
             <Button
               onClick={handleSubmitLeave}
               disabled={isSubmittingLeave}
-              className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+              className="bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong)"
             >
               {isSubmittingLeave ? "Submitting..." : "Submit"}
             </Button>

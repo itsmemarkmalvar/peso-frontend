@@ -21,12 +21,12 @@ const menuItems = [
 export default function InternMenuPage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+      <header className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
           Menu
         </p>
         <h1 className="mt-2 text-2xl font-semibold">Tools and settings</h1>
-        <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+        <p className="mt-1 text-sm text-(--dash-muted)">
           Quickly access helpful resources for your internship.
         </p>
       </header>
@@ -35,10 +35,10 @@ export default function InternMenuPage() {
         {menuItems.map((item) => (
           <div
             key={item.title}
-            className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm"
+            className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm"
           >
             <p className="text-sm font-semibold">{item.title}</p>
-            <p className="mt-2 text-xs text-[color:var(--dash-muted)]">
+            <p className="mt-2 text-xs text-(--dash-muted)">
               {item.detail}
             </p>
           </div>

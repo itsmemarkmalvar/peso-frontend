@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { InternBackButton } from "@/components/intern/InternBackButton"
 import {
   fetchDocumentBlob,
   getDocuments,
@@ -98,14 +99,15 @@ export default function InternDocumentsPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <header className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
+      <InternBackButton href="/dashboard/intern/menu" label="Back to menu" />
+      <header className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
               Documents
             </p>
             <h1 className="mt-2 text-2xl font-semibold">Printable resources</h1>
-            <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+            <p className="mt-1 text-sm text-(--dash-muted)">
               Download or print the forms shared by your coordinator.
             </p>
           </div>
@@ -114,16 +116,16 @@ export default function InternDocumentsPage() {
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+        <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg">All documents</CardTitle>
-            <CardDescription className="text-[color:var(--dash-muted)]">
+            <CardDescription className="text-(--dash-muted)">
               Files uploaded by admins for your internship.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {isLoadingDocuments && (
-              <p className="text-xs text-[color:var(--dash-muted)]">
+              <p className="text-xs text-(--dash-muted)">
                 Loading documents...
               </p>
             )}
@@ -133,7 +135,7 @@ export default function InternDocumentsPage() {
             {!isLoadingDocuments &&
               !documentsError &&
               documents.length === 0 && (
-                <p className="text-xs text-[color:var(--dash-muted)]">
+                <p className="text-xs text-(--dash-muted)">
                   No documents yet. We&apos;ll add files here as soon as they
                   are available.
                 </p>
@@ -176,10 +178,10 @@ export default function InternDocumentsPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+        <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg">Document details</CardTitle>
-            <CardDescription className="text-[color:var(--dash-muted)]">
+            <CardDescription className="text-(--dash-muted)">
               Review before you print or download.
             </CardDescription>
           </CardHeader>
@@ -206,7 +208,7 @@ export default function InternDocumentsPage() {
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
-                    className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+                    className="bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong)"
                     onClick={() => handlePrint(selectedDocument)}
                   >
                     <Printer className="mr-2 h-4 w-4" />
@@ -223,7 +225,7 @@ export default function InternDocumentsPage() {
                 </div>
               </>
             ) : (
-              <p className="text-xs text-[color:var(--dash-muted)]">
+              <p className="text-xs text-(--dash-muted)">
                 Select a document to view details.
               </p>
             )}

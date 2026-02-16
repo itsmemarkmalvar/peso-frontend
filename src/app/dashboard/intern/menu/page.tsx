@@ -1,5 +1,7 @@
 import Link from "next/link"
 
+import { InternBackButton } from "@/components/intern/InternBackButton"
+
 type MenuItem = {
   title: string
   detail: string
@@ -34,12 +36,13 @@ const menuItems: MenuItem[] = [
 export default function InternMenuPage() {
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-6">
-      <header className="rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm">
-        <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+      <InternBackButton href="/dashboard/intern" label="Back to dashboard" />
+      <header className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
           Menu
         </p>
         <h1 className="mt-2 text-2xl font-semibold">Tools and settings</h1>
-        <p className="mt-1 text-sm text-[color:var(--dash-muted)]">
+        <p className="mt-1 text-sm text-(--dash-muted)">
           Quickly access helpful resources for your internship.
         </p>
       </header>
@@ -49,14 +52,14 @@ export default function InternMenuPage() {
           const content = (
             <>
               <p className="text-sm font-semibold">{item.title}</p>
-              <p className="mt-2 text-xs text-[color:var(--dash-muted)]">
+              <p className="mt-2 text-xs text-(--dash-muted)">
                 {item.detail}
               </p>
             </>
           )
 
           const cardClassName =
-            "rounded-2xl border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] p-6 shadow-sm transition hover:border-[color:var(--dash-accent)] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--dash-accent)]"
+            "rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm transition hover:border-(--dash-accent) hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--dash-accent)"
 
           if (item.external) {
             return (

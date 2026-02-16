@@ -26,6 +26,7 @@ import {
 } from "@/lib/api/intern"
 import pesoLogo from "@/assets/images/image-Photoroom.png"
 import { cn } from "@/lib/utils"
+import { InternBackButton } from "@/components/intern/InternBackButton"
 
 type WeekdayKey = keyof InternWeeklyAvailability
 
@@ -267,9 +268,10 @@ export function InternOnboarding() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <InternBackButton href="/dashboard/intern" label="Back to dashboard" />
       {/* Header Card */}
-      <Card className="relative overflow-hidden border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
-        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-blue-700 via-blue-600 to-slate-900" />
+      <Card className="relative overflow-hidden border-(--dash-border) bg-(--dash-card) shadow-sm">
+        <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-blue-700 via-blue-600 to-slate-900" />
 
         <div className="pointer-events-none absolute -right-24 -top-24 opacity-[0.06]">
           <Image
@@ -281,10 +283,10 @@ export function InternOnboarding() {
           />
         </div>
         <CardHeader className="space-y-2">
-          <CardTitle className="text-2xl text-[color:var(--dash-ink)]">
+          <CardTitle className="text-2xl text-(--dash-ink)">
             {getInternOrGipRoleLabel(user?.role)} profile
           </CardTitle>
-          <CardDescription className="text-[color:var(--dash-muted)]">
+          <CardDescription className="text-(--dash-muted)">
             Keep your details and optional profile photo up to date for
             attendance and approvals.
           </CardDescription>
@@ -292,11 +294,11 @@ export function InternOnboarding() {
       </Card>
 
       {/* Profile Photo Section */}
-      <Card className="relative overflow-hidden border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+      <Card className="relative overflow-hidden border-(--dash-border) bg-(--dash-card) shadow-sm">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start">
             <div className="flex flex-col items-center gap-4">
-              <div className="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-3xl bg-gradient-to-br from-blue-100 to-slate-100 text-3xl font-semibold text-slate-700 shadow-md">
+              <div className="relative flex h-32 w-32 items-center justify-center overflow-hidden rounded-3xl bg-linear-to-br from-blue-100 to-slate-100 text-3xl font-semibold text-slate-700 shadow-md">
                 {photoPreview ? (
                   <img
                     src={photoPreview}
@@ -335,7 +337,7 @@ export function InternOnboarding() {
                     </Button>
                   ) : null}
                 </div>
-                <p className="text-xs text-[color:var(--dash-muted)]">
+                <p className="text-xs text-(--dash-muted)">
                   JPG/PNG, up to 2MB
                 </p>
                 {photoError ? (
@@ -346,39 +348,39 @@ export function InternOnboarding() {
 
             {/* Profile Summary */}
             <div className="flex-1 space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+              <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
                 Profile summary
               </p>
               <div className="grid gap-4 grid-cols-2">
-                <div className="rounded-xl border border-[color:var(--dash-border)] bg-white p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                <div className="rounded-xl border border-(--dash-border) bg-white p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
                     Role
                   </p>
-                  <p className="mt-2 font-semibold text-[color:var(--dash-ink)]">
+                  <p className="mt-2 font-semibold text-(--dash-ink)">
                     {getInternOrGipRoleLabel(user?.role)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-[color:var(--dash-border)] bg-white p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                <div className="rounded-xl border border-(--dash-border) bg-white p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
                     School
                   </p>
-                  <p className="mt-2 font-semibold text-[color:var(--dash-ink)]">
+                  <p className="mt-2 font-semibold text-(--dash-ink)">
                     {form.school || "-"}
                   </p>
                 </div>
-                <div className="rounded-xl border border-[color:var(--dash-border)] bg-white p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                <div className="rounded-xl border border-(--dash-border) bg-white p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
                     Program
                   </p>
-                  <p className="mt-2 font-semibold text-[color:var(--dash-ink)]">
+                  <p className="mt-2 font-semibold text-(--dash-ink)">
                     {form.program || "-"}
                   </p>
                 </div>
-                <div className="rounded-xl border border-[color:var(--dash-border)] bg-white p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[color:var(--dash-muted)]">
+                <div className="rounded-xl border border-(--dash-border) bg-white p-4 shadow-sm">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
                     Required hours
                   </p>
-                  <p className="mt-2 font-semibold text-[color:var(--dash-ink)]">
+                  <p className="mt-2 font-semibold text-(--dash-ink)">
                     {form.required_hours || "-"}
                   </p>
                 </div>
@@ -400,11 +402,11 @@ export function InternOnboarding() {
         {/* Details Section */}
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Basic Details */}
-          <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+          <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
             <CardHeader>
               <div>
                 <CardTitle className="text-lg">Basic details</CardTitle>
-                <CardDescription className="text-[color:var(--dash-muted)]">
+                <CardDescription className="text-(--dash-muted)">
                   These details appear on your attendance records.
                 </CardDescription>
               </div>
@@ -465,11 +467,11 @@ export function InternOnboarding() {
           </Card>
 
           {/* Contact Details */}
-          <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+          <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
             <CardHeader>
               <div>
                 <CardTitle className="text-lg">Contact details</CardTitle>
-                <CardDescription className="text-[color:var(--dash-muted)]">
+                <CardDescription className="text-(--dash-muted)">
                   We only use this for official updates.
                 </CardDescription>
               </div>
@@ -535,11 +537,11 @@ export function InternOnboarding() {
         {/* Internship Details + Weekly Availability */}
         <div className="grid gap-6 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
           {/* Internship Details */}
-          <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+          <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
             <CardHeader>
               <div>
                 <CardTitle className="text-lg">Internship details</CardTitle>
-                <CardDescription className="text-[color:var(--dash-muted)]">
+                <CardDescription className="text-(--dash-muted)">
                   Help us track your completion.
                 </CardDescription>
               </div>
@@ -566,7 +568,7 @@ export function InternOnboarding() {
                 />
               </div>
               <div className="flex-1" />
-              <p className="text-xs text-[color:var(--dash-muted)]">
+              <p className="text-xs text-(--dash-muted)">
                 OJT start date is your first clock-in. End date is set once you
                 complete the required hours.
               </p>
@@ -574,11 +576,11 @@ export function InternOnboarding() {
           </Card>
 
           {/* Weekly Availability */}
-          <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-sm">
+          <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
             <CardHeader>
               <div>
                 <CardTitle className="text-lg">Weekly availability</CardTitle>
-                <CardDescription className="text-[color:var(--dash-muted)]">
+                <CardDescription className="text-(--dash-muted)">
                   Let us know which weekdays (Mon - Fri) you can report for OJT.
                 </CardDescription>
               </div>
@@ -590,10 +592,10 @@ export function InternOnboarding() {
                   return (
                     <div
                       key={day.id}
-                      className="rounded-xl border border-[color:var(--dash-border)] bg-white p-4 shadow-sm"
+                      className="rounded-xl border border-(--dash-border) bg-white p-4 shadow-sm"
                     >
                       <div className="space-y-3">
-                        <p className="text-sm font-semibold text-[color:var(--dash-ink)]">
+                        <p className="text-sm font-semibold text-(--dash-ink)">
                           {day.label}
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -607,8 +609,8 @@ export function InternOnboarding() {
                                 className={cn(
                                   "rounded-full border px-3 py-1 text-xs font-semibold transition",
                                   isActive
-                                    ? "border-[color:var(--dash-accent)] bg-[color:var(--dash-accent)] text-white"
-                                    : "border-[color:var(--dash-border)] bg-white text-[color:var(--dash-muted)] hover:border-slate-300"
+                                    ? "border-(--dash-accent) bg-(--dash-accent) text-white"
+                                    : "border-(--dash-border) bg-white text-(--dash-muted) hover:border-slate-300"
                                 )}
                               >
                                 {option.label}
@@ -629,7 +631,7 @@ export function InternOnboarding() {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
           <Button
             type="submit"
-            className="bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)]"
+            className="bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong)"
             disabled={!isFormValid || isSubmitting || isLoading}
           >
             {isSubmitting ? "Saving..." : "Save and continue"}
