@@ -33,6 +33,20 @@ import { getAttendanceList } from "@/lib/api/attendance";
 
 type PeriodType = "daily" | "weekly" | "monthly";
 
+/** Format date as YYYY-MM-DD in local time (avoids UTC shift from toISOString). */
+function toLocalDateString(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Parse YYYY-MM-DD as local date (avoids UTC interpretation of new Date(s)). */
+function parseLocalDate(ymd: string): Date {
+  const [y, m, d] = ymd.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
+}
+
 export default function ReportsPage() {
   const [selectedReport, setSelectedReport] = useState<"dtr" | "attendance" | "hours" | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -58,40 +72,37 @@ export default function ReportsPage() {
   const [isLoadingSummary, setIsLoadingSummary] = useState(true);
   const [summaryError, setSummaryError] = useState<string | null>(null);
 
-  // Calculate date range based on period type
+  // Calculate date range based on period type (local timezone-safe)
   const dateRange = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     let start: Date;
-    let end: Date = new Date(today);
-    
+    const end = new Date(today);
+
     switch (periodType) {
       case "daily":
         start = new Date(today);
-        end = new Date(today);
         break;
-      case "weekly":
-        // Get start of week (Monday)
+      case "weekly": {
+        // Week starts Monday (ISO weekday); Sunday = 0 in getDay() → treat as end of previous week
         start = new Date(today);
         const dayOfWeek = start.getDay();
-        const diff = start.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-        start.setDate(diff);
+        const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+        start.setDate(start.getDate() - daysToMonday);
         start.setHours(0, 0, 0, 0);
-        // End is today
-        end = new Date(today);
         break;
+      }
       case "monthly":
-        // First day of current month
         start = new Date(today.getFullYear(), today.getMonth(), 1);
-        // Today
-        end = new Date(today);
         break;
+      default:
+        start = new Date(today.getFullYear(), today.getMonth(), 1);
     }
-    
+
     return {
-      start: start.toISOString().split("T")[0],
-      end: end.toISOString().split("T")[0],
+      start: toLocalDateString(start),
+      end: toLocalDateString(end),
     };
   }, [periodType]);
 
@@ -595,9 +606,9 @@ export default function ReportsPage() {
                   <option value="monthly">Monthly (This Month)</option>
                 </Select>
                 <p className="text-[11px] text-slate-500">
-                  {periodType === "daily" && `Showing data for ${new Date(dateRange.end).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`}
-                  {periodType === "weekly" && `Showing data from ${new Date(dateRange.start).toLocaleDateString("en-US", { month: "short", day: "numeric" })} to ${new Date(dateRange.end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
-                  {periodType === "monthly" && `Showing data from ${new Date(dateRange.start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} to ${new Date(dateRange.end).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`}
+                  {periodType === "daily" && `Showing data for ${parseLocalDate(dateRange.end).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`}
+                  {periodType === "weekly" && `Showing data from ${parseLocalDate(dateRange.start).toLocaleDateString("en-US", { month: "short", day: "numeric" })} to ${parseLocalDate(dateRange.end).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`}
+                  {periodType === "monthly" && `Showing data from ${parseLocalDate(dateRange.start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })} to ${parseLocalDate(dateRange.end).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}`}
                 </p>
               </div>
 

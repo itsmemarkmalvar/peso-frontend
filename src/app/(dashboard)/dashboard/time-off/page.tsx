@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, User, CalendarDays, FileText, MessageSquare } from "lucide-react";
 
 import {
   Card,
@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -130,54 +131,54 @@ export default function LeavePage() {
   const getTypeBadgeClass = (type: LeaveType) => {
     switch (type) {
       case "Leave":
-        return "border-blue-200 bg-blue-50 text-blue-900";
+        return "border-[color:var(--dash-border)] bg-[color:var(--dash-accent-soft)] text-[color:var(--dash-accent-strong)]";
       case "Holiday":
-        return "border-purple-200 bg-purple-50 text-purple-900";
+        return "border-[color:var(--dash-border)] bg-[color:var(--dash-accent-soft)]/70 text-[color:var(--dash-ink)]";
       default:
-        return "border-slate-200 bg-slate-50 text-slate-900";
+        return "border-[color:var(--dash-border)] bg-[color:var(--muted)] text-[color:var(--dash-ink)]";
     }
   };
 
   const getStatusBadgeClass = (status: LeaveStatus) => {
     switch (status) {
       case "Approved":
-        return "bg-green-50 text-green-800 ring-1 ring-green-200";
+        return "bg-[color:var(--dash-accent-soft)] text-[color:var(--dash-accent-strong)] ring-1 ring-[color:var(--dash-border)]";
       case "Rejected":
-        return "bg-red-50 text-red-800 ring-1 ring-red-200";
+        return "bg-[color:var(--dash-alert-soft)] text-[color:var(--dash-alert)] ring-1 ring-[color:var(--dash-alert)]/30";
       case "Pending":
-        return "bg-yellow-50 text-yellow-800 ring-1 ring-yellow-200";
+        return "bg-[color:var(--dash-warn-soft)] text-[color:var(--dash-warn)] ring-1 ring-[color:var(--dash-warn)]/30";
       default:
-        return "bg-slate-50 text-slate-800 ring-1 ring-slate-200";
+        return "bg-[color:var(--muted)] text-[color:var(--dash-ink)] ring-1 ring-[color:var(--dash-border)]";
     }
   };
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-lg font-semibold text-slate-900">Leave requests</h1>
-        <p className="text-sm text-slate-600">
+        <h1 className="text-lg font-semibold text-[color:var(--dash-ink)]">Leave requests</h1>
+        <p className="text-sm text-[color:var(--dash-muted)]">
           Review and approve leave and holiday requests from OJT interns.
         </p>
       </div>
 
-      <Card className="border-slate-200">
+      <Card className="border-[color:var(--dash-border)] bg-[color:var(--dash-card)]">
         <CardHeader>
-          <CardTitle className="text-base">Pending & completed leave requests</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-base text-[color:var(--dash-ink)]">Pending & completed leave requests</CardTitle>
+          <CardDescription className="text-[color:var(--dash-muted)]">
             Click on any row to view details and approve or reject requests.
           </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading && (
-            <p className="text-sm text-slate-500 py-4">Loading leave requests…</p>
+            <p className="text-sm text-[color:var(--dash-muted)] py-4">Loading leave requests…</p>
           )}
           {error && !isLoading && (
-            <p className="text-sm text-red-600 py-4">
+            <p className="text-sm text-[color:var(--dash-alert)] py-4">
               {error} Unable to load leave requests.
             </p>
           )}
           {!isLoading && !error && rows.length === 0 && (
-            <p className="text-sm text-slate-500 py-4">
+            <p className="text-sm text-[color:var(--dash-muted)] py-4">
               No leave requests yet. Once interns submit leave requests, they will appear here.
             </p>
           )}
@@ -187,23 +188,23 @@ export default function LeavePage() {
                 <div
                   key={item.id}
                   onClick={() => handleRowClick(item)}
-                  className="flex items-center gap-3 rounded-lg border border-slate-100 bg-white px-3 py-2 text-xs text-slate-700 cursor-pointer transition-colors hover:bg-slate-50"
+                  className="flex items-center gap-3 rounded-lg border border-[color:var(--dash-border)] bg-[color:var(--dash-card)] px-3 py-2 text-xs text-[color:var(--dash-ink)] cursor-pointer transition-colors hover:bg-[color:var(--dash-accent-soft)]/40"
                 >
-                  <div className="hidden h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-500 sm:flex shrink-0">
+                  <div className="hidden h-9 w-9 items-center justify-center rounded-full bg-[color:var(--dash-accent-soft)] text-xs font-semibold text-[color:var(--dash-accent-strong)] sm:flex shrink-0">
                     {item.intern_name
                       .split(" ")[0]
                       .charAt(0)
                       .toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0 space-y-0.5">
-                    <p className="truncate text-sm font-medium text-slate-900">
+                    <p className="truncate text-sm font-medium text-[color:var(--dash-ink)]">
                       {item.intern_name}
                     </p>
-                    <p className="text-[11px] text-slate-500">
+                    <p className="text-[11px] text-[color:var(--dash-muted)]">
                       {item.intern_student_id}
                     </p>
                   </div>
-                  <div className="flex-1 min-w-0 text-sm text-slate-700 truncate">
+                  <div className="flex-1 min-w-0 text-sm text-[color:var(--dash-ink)] truncate">
                     {item.reason_title || "No reason provided"}
                   </div>
                   <div className="shrink-0">
@@ -220,137 +221,168 @@ export default function LeavePage() {
 
       {/* Detail Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent onClose={() => setIsDialogOpen(false)} className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Leave Request Details</DialogTitle>
-            <DialogDescription>
-              Review the request details and approve or reject it.
+        <DialogContent onClose={() => setIsDialogOpen(false)} className="flex max-h-[90vh] max-w-xl flex-col rounded-xl border-[color:var(--dash-border)] bg-[color:var(--dash-card)] shadow-xl">
+          <DialogHeader className="shrink-0 space-y-1.5 pb-0">
+            <DialogTitle className="text-lg font-semibold text-[color:var(--dash-ink)]">Leave Request Details</DialogTitle>
+            <DialogDescription className="text-sm text-[color:var(--dash-muted)]">
+              Review the request and approve or reject it.
             </DialogDescription>
           </DialogHeader>
           {selectedRequest && (
-            <div className="space-y-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Intern Name</p>
-                  <p className="text-sm text-slate-900">{selectedRequest.intern_name}</p>
+            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto py-4">
+              {/* Intern & status header */}
+              <div className="flex items-center gap-4 rounded-lg border border-[color:var(--dash-border)] bg-[color:var(--dash-accent-soft)]/50 px-4 py-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[color:var(--dash-accent-soft)] text-[color:var(--dash-accent-strong)]">
+                  <User className="h-6 w-6" />
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Student ID</p>
-                  <p className="text-sm text-slate-900">{selectedRequest.intern_student_id}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-[color:var(--dash-ink)]">{selectedRequest.intern_name}</p>
+                  <p className="text-xs text-[color:var(--dash-muted)]">{selectedRequest.intern_student_id}</p>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Type</p>
-                  <Badge
-                    variant="outline"
-                    className={`text-xs font-medium ${getTypeBadgeClass(selectedRequest.type)}`}
-                  >
-                    {selectedRequest.type}
-                  </Badge>
+                <Badge className={`shrink-0 text-xs font-medium ${getStatusBadgeClass(selectedRequest.status)}`}>
+                  {selectedRequest.status}
+                </Badge>
+              </div>
+
+              {/* Request info */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4 text-[color:var(--dash-muted)]" />
+                  <span className="text-xs font-medium uppercase tracking-wide text-[color:var(--dash-muted)]">Request period</span>
                 </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Status</p>
-                  <Badge className={`text-xs ${getStatusBadgeClass(selectedRequest.status)}`}>
-                    {selectedRequest.status}
-                  </Badge>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Start Date</p>
-                  <p className="text-sm text-slate-900">
-                    {new Date(selectedRequest.start_date).toLocaleDateString("en-US", {
-                      month: "long",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </p>
-                </div>
-                {selectedRequest.end_date && (
-                  <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase mb-1">End Date</p>
-                    <p className="text-sm text-slate-900">
-                      {new Date(selectedRequest.end_date).toLocaleDateString("en-US", {
-                        month: "long",
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg border border-[color:var(--dash-border)] bg-[color:var(--dash-bg)] px-3 py-2">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-[color:var(--dash-muted)]">Type</p>
+                    <Badge variant="outline" className={`mt-0.5 text-xs font-medium ${getTypeBadgeClass(selectedRequest.type)}`}>
+                      {selectedRequest.type}
+                    </Badge>
+                  </div>
+                  <div className="rounded-lg border border-[color:var(--dash-border)] bg-[color:var(--dash-bg)] px-3 py-2">
+                    <p className="text-[10px] font-medium uppercase tracking-wide text-[color:var(--dash-muted)]">Start</p>
+                    <p className="mt-0.5 text-sm font-medium text-[color:var(--dash-ink)]">
+                      {new Date(selectedRequest.start_date).toLocaleDateString("en-US", {
+                        month: "short",
                         day: "numeric",
                         year: "numeric",
                       })}
                     </p>
                   </div>
-                )}
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Reason Title</p>
-                <p className="text-sm text-slate-900">{selectedRequest.reason_title}</p>
-              </div>
-              {selectedRequest.notes && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Notes</p>
-                  <p className="text-sm text-slate-700 whitespace-pre-wrap">{selectedRequest.notes}</p>
+                  {selectedRequest.end_date ? (
+                    <div className="rounded-lg border border-[color:var(--dash-border)] bg-[color:var(--dash-bg)] px-3 py-2">
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-[color:var(--dash-muted)]">End</p>
+                      <p className="mt-0.5 text-sm font-medium text-[color:var(--dash-ink)]">
+                        {new Date(selectedRequest.end_date).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-[color:var(--dash-border)] bg-[color:var(--dash-bg)] px-3 py-2 sm:col-span-1">
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-[color:var(--dash-muted)]">End</p>
+                      <p className="mt-0.5 text-sm text-[color:var(--dash-muted)]">—</p>
+                    </div>
+                  )}
                 </div>
-              )}
-              {selectedRequest.rejection_reason && (
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 uppercase mb-1">Rejection Reason</p>
-                  <p className="text-sm text-red-700">{selectedRequest.rejection_reason}</p>
+              </div>
+
+              {/* Reason & notes */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-[color:var(--dash-muted)]" />
+                  <span className="text-xs font-medium uppercase tracking-wide text-[color:var(--dash-muted)]">Details</span>
                 </div>
-              )}
+                <div className="rounded-lg border border-[color:var(--dash-border)] bg-[color:var(--dash-bg)] px-3 py-3">
+                  <p className="text-[10px] font-medium uppercase tracking-wide text-[color:var(--dash-muted)]">Reason</p>
+                  <p className="mt-1 text-sm font-medium text-[color:var(--dash-ink)]">{selectedRequest.reason_title || "—"}</p>
+                  {selectedRequest.notes && (
+                    <>
+                      <p className="mt-2 text-[10px] font-medium uppercase tracking-wide text-[color:var(--dash-muted)]">Notes from intern</p>
+                      <p className="mt-1 text-sm text-[color:var(--dash-ink)] whitespace-pre-wrap">{selectedRequest.notes}</p>
+                    </>
+                  )}
+                  {selectedRequest.rejection_reason && (
+                    <>
+                      <p className="mt-2 text-[10px] font-medium uppercase tracking-wide text-[color:var(--dash-alert)]">Rejection reason</p>
+                      <p className="mt-1 text-sm text-[color:var(--dash-alert)]">{selectedRequest.rejection_reason}</p>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Admin response (Pending only) */}
               {selectedRequest.status === "Pending" && (
-                <div className="space-y-2 pt-2">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase mb-1 block">
-                      Admin Notes (optional)
-                    </label>
-                    <textarea
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      placeholder="Add notes for this request..."
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                <div className="space-y-3 rounded-lg border border-[color:var(--dash-border)] bg-[color:var(--dash-accent-soft)]/40 px-3 py-3">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-[color:var(--dash-accent-strong)]" />
+                    <span className="text-xs font-medium uppercase tracking-wide text-[color:var(--dash-accent-strong)]">Your response</span>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase mb-1 block">
-                      Rejection Reason (if rejecting)
-                    </label>
-                    <textarea
-                      value={rejectReason}
-                      onChange={(e) => setRejectReason(e.target.value)}
-                      placeholder="Enter reason for rejection..."
-                      className="w-full min-h-[80px] px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="admin-notes" className="text-xs font-medium text-[color:var(--dash-ink)]">
+                        Admin notes <span className="text-[color:var(--dash-muted)]">(optional)</span>
+                      </Label>
+                      <textarea
+                        id="admin-notes"
+                        value={adminNotes}
+                        onChange={(e) => setAdminNotes(e.target.value)}
+                        placeholder="e.g. Approved for records."
+                        rows={2}
+                        className="w-full min-h-0 resize-y rounded-lg border border-[color:var(--dash-border)] bg-white px-3 py-2 text-sm text-[color:var(--dash-ink)] placeholder:text-[color:var(--dash-muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--dash-accent)] focus:ring-offset-1"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="reject-reason" className="text-xs font-medium text-[color:var(--dash-ink)]">
+                        Rejection reason <span className="text-[color:var(--dash-alert)]">(required if rejecting)</span>
+                      </Label>
+                      <textarea
+                        id="reject-reason"
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                        placeholder="Explain why the request is rejected..."
+                        rows={2}
+                        className="w-full min-h-0 resize-y rounded-lg border border-[color:var(--dash-border)] bg-white px-3 py-2 text-sm text-[color:var(--dash-ink)] placeholder:text-[color:var(--dash-muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--dash-alert)]/40 focus:ring-offset-1"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           )}
-          <DialogFooter>
-            {selectedRequest?.status === "Pending" && (
+          <DialogFooter className="shrink-0 flex-col gap-2 border-t border-[color:var(--dash-border)] pt-4 sm:flex-row sm:justify-end">
+            {selectedRequest?.status === "Pending" ? (
               <>
                 <Button
                   variant="outline"
                   onClick={() => setIsDialogOpen(false)}
                   disabled={isProcessing}
+                  className="order-2 border-[color:var(--dash-border)] text-[color:var(--dash-ink)] hover:bg-[color:var(--dash-accent-soft)]/50 sm:order-1"
                 >
                   Cancel
                 </Button>
-                <Button
-                  variant="destructive"
-                  onClick={handleReject}
-                  disabled={isProcessing || !rejectReason.trim()}
-                  className="gap-2"
-                >
-                  <XCircle className="h-4 w-4" />
-                  Reject
-                </Button>
-                <Button
-                  onClick={handleApprove}
-                  disabled={isProcessing}
-                  className="gap-2 bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  Approve
-                </Button>
+                <div className="flex w-full gap-2 sm:order-2 sm:w-auto">
+                  <Button
+                    variant="destructive"
+                    onClick={handleReject}
+                    disabled={isProcessing || !rejectReason.trim()}
+                    className="flex-1 gap-2 sm:flex-initial"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Reject
+                  </Button>
+                  <Button
+                    onClick={handleApprove}
+                    disabled={isProcessing}
+                    className="flex-1 gap-2 bg-[color:var(--dash-accent)] text-white hover:bg-[color:var(--dash-accent-strong)] sm:flex-initial"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Approve
+                  </Button>
+                </div>
               </>
-            )}
-            {selectedRequest?.status !== "Pending" && (
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+            ) : (
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="border-[color:var(--dash-border)] text-[color:var(--dash-ink)] hover:bg-[color:var(--dash-accent-soft)]/50">
                 Close
               </Button>
             )}
