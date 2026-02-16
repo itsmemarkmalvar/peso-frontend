@@ -67,6 +67,7 @@ export type InternTimesheetData = {
 }
 
 export type InternApprovalItem = {
+  id?: number
   date: string
   status: "Approved" | "Pending" | "Rejected"
   detail: string
