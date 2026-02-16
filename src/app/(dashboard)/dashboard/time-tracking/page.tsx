@@ -31,9 +31,10 @@ type HoursRow = {
   name: string;
   student_id: string;
   hours_rendered: number;
-  total_hours: number;
+  /** From intern onboarding (required_hours). Null = not set yet by user. */
+  total_hours: number | null;
   remaining_hours: number;
-  completion_percentage: number;
+  completion_percentage: number | null;
 };
 
 function formatHours(hours: number): string {
@@ -59,10 +60,14 @@ function buildHoursRows(
 
   return interns.map((intern) => {
     const hoursRendered = calculateHoursRendered(intern.id, approvedHoursByIntern);
-    // Get required_hours from map, or use default 200 hours
-    const totalHours = internRequiredHours.get(intern.id) ?? 200;
-    const remainingHours = Math.max(0, totalHours - hoursRendered);
-    const completionPercentage = totalHours > 0 ? Math.round((hoursRendered / totalHours) * 100) : 0;
+    // Required hours come only from intern onboarding (saved to intern.required_hours). No fallback.
+    const totalHours = internRequiredHours.get(intern.id) ?? null;
+    const remainingHours =
+      totalHours !== null ? Math.max(0, totalHours - hoursRendered) : 0;
+    const completionPercentage =
+      totalHours != null && totalHours > 0
+        ? Math.round((hoursRendered / totalHours) * 100)
+        : null;
 
     return {
       intern_id: intern.id,
@@ -293,9 +298,10 @@ export default function TimeTrackingPage() {
         setAllInterns(interns);
         setFilterOptions(options ?? { roles: [], groups: [] });
 
+        // Required hours come from intern onboarding only (saved via POST /interns/me).
         const requiredHoursByIntern = new Map<number, number>();
         interns.forEach((intern) => {
-          if (typeof intern.required_hours === "number") {
+          if (typeof intern.required_hours === "number" && intern.required_hours > 0) {
             requiredHoursByIntern.set(intern.id, intern.required_hours);
           }
         });
@@ -534,20 +540,25 @@ export default function TimeTrackingPage() {
                     </div>
                     <div className="space-y-1">
                       <p className="text-[11px] font-semibold text-slate-500 uppercase">Total Hours</p>
-                      <p className="text-sm font-semibold text-slate-900 tabular-nums">
-                        {formatHours(row.total_hours)}
+                      <p className="text-sm font-semibold tabular-nums text-slate-900">
+                        {row.total_hours != null ? formatHours(row.total_hours) : "Not set"}
                       </p>
+                      {row.total_hours == null && (
+                        <p className="text-[10px] text-amber-600">Set in intern onboarding</p>
+                      )}
                     </div>
                     <div className="space-y-1">
                       <p className="text-[11px] font-semibold text-slate-500 uppercase">Remaining</p>
                       <p className={`text-sm font-semibold tabular-nums ${
-                        row.remaining_hours <= 0 
-                          ? "text-green-700" 
+                        row.total_hours == null
+                          ? "text-slate-500"
+                          : row.remaining_hours <= 0
+                          ? "text-green-700"
                           : row.remaining_hours <= row.total_hours * 0.25
                           ? "text-yellow-700"
                           : "text-slate-900"
                       }`}>
-                        {formatHours(row.remaining_hours)}
+                        {row.total_hours != null ? formatHours(row.remaining_hours) : "—"}
                       </p>
                     </div>
                     <div className="space-y-1">
@@ -560,10 +571,18 @@ export default function TimeTrackingPage() {
                           setCertificateRow(row);
                           setCertificateOpen(true);
                         }}
-                        className={`min-w-[72px] text-xs ${row.completion_percentage >= 100 ? "border-green-200 bg-green-50 text-green-800 hover:bg-green-100" : ""}`}
+                        className={`min-w-[72px] text-xs ${
+                          row.completion_percentage != null && row.completion_percentage >= 100
+                            ? "border-green-200 bg-green-50 text-green-800 hover:bg-green-100"
+                            : row.completion_percentage == null
+                            ? "border-slate-200 text-slate-500"
+                            : ""
+                        }`}
                       >
-                        {row.completion_percentage >= 100 && <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 shrink-0 text-green-600" />}
-                        {row.completion_percentage}%
+                        {row.completion_percentage != null && row.completion_percentage >= 100 && (
+                          <CheckCircle2 className="mr-1.5 h-3.5 w-3.5 shrink-0 text-green-600" />
+                        )}
+                        {row.completion_percentage != null ? `${row.completion_percentage}%` : "Not set"}
                       </Button>
                     </div>
                   </div>

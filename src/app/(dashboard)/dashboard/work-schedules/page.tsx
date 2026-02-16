@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Edit2, Save, X, Info, Loader2 } from "lucide-react";
+import { Edit2, Save, X, Info, Loader2, Moon } from "lucide-react";
 
 import {
   Card,
@@ -56,6 +56,12 @@ const WEEKDAYS = [
   { id: "saturday", label: "Saturday" },
   { id: "sunday", label: "Sunday" },
 ];
+
+/** True if end time is before or equal to start time (graveyard/overnight shift). */
+function isOvernightShift(startTime: string, endTime: string): boolean {
+  if (!startTime || !endTime) return false;
+  return endTime <= startTime;
+}
 
 export default function WorkSchedulesPage() {
   const { user } = useAuth();
@@ -482,37 +488,59 @@ export default function WorkSchedulesPage() {
               )}
             </div>
 
-            {/* Daily Time Schedules */}
-            <div className="space-y-3">
+            {/* Daily Time Schedules — supports graveyard/overnight shifts (end time next day) */}
+            <div className="space-y-2">
+              <p className="text-[11px] text-slate-500">
+                Set start and end time per day. If end is before start (e.g. 8:30 PM → 5:00 AM), the shift is treated as overnight (ends next day).
+              </p>
               {selectedDays.map((dayId, index) => {
                 const day = DAYS_OF_WEEK.find((d) => d.id === dayId);
                 const schedule = daySchedules[dayId];
                 if (!day || !schedule) return null;
+                const overnight = isOvernightShift(schedule.startTime, schedule.endTime);
 
                 return (
-                  <div key={`work-${dayId}-${index}`} className="flex items-center gap-3">
-                    <Label className="w-24 text-sm text-slate-700">{day.label}</Label>
-                    <div className="flex flex-1 items-center gap-2">
+                  <div
+                    key={`work-${dayId}-${index}`}
+                    className={`flex flex-col gap-2 rounded-lg border px-3 py-2.5 sm:flex-row sm:items-center sm:gap-3 ${
+                      overnight ? "border-violet-200 bg-violet-50/50" : "border-slate-200 bg-white"
+                    }`}
+                  >
+                    <div className="flex min-w-0 flex-1 items-center gap-2 sm:w-28">
+                      <Label className="shrink-0 text-sm font-medium text-slate-700">{day.label}</Label>
+                      {overnight && (
+                        <Badge variant="secondary" className="shrink-0 gap-1 border-violet-200 bg-violet-100 text-violet-800 text-[10px]">
+                          <Moon className="h-2.5 w-2.5" />
+                          Overnight
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex flex-1 flex-wrap items-center gap-2">
                       <Input
                         type="time"
                         value={schedule.startTime}
                         onChange={(e) => updateDaySchedule(dayId, "startTime", e.target.value)}
-                        className="flex-1 text-sm"
+                        className="w-full min-w-0 flex-1 text-sm sm:max-w-[8rem]"
+                        aria-label={`${day.label} start time`}
                       />
-                      <span className="text-sm text-slate-500">to</span>
+                      <span className="text-sm text-slate-500 shrink-0">to</span>
                       <Input
                         type="time"
                         value={schedule.endTime}
                         onChange={(e) => updateDaySchedule(dayId, "endTime", e.target.value)}
-                        className="flex-1 text-sm"
+                        className="w-full min-w-0 flex-1 text-sm sm:max-w-[8rem]"
+                        aria-label={`${day.label} end time`}
                       />
+                      {overnight && (
+                        <span className="text-[10px] text-violet-600 shrink-0">(ends next day)</span>
+                      )}
                     </div>
                   </div>
                 );
               })}
               {DAYS_OF_WEEK.filter((d) => !selectedDays.includes(d.id)).map((day) => (
-                <div key={day.id} className="flex items-center gap-3">
-                  <Label className="w-24 text-sm text-slate-400">{day.label}</Label>
+                <div key={day.id} className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2">
+                  <Label className="w-28 text-sm text-slate-400">{day.label}</Label>
                   <span className="text-sm text-slate-400">Rest day</span>
                 </div>
               ))}
