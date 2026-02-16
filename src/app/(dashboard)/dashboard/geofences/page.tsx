@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { GeofenceMap } from "@/components/map/GeofenceMap";
+import { GeofenceMap, type PendingNewLocation } from "@/components/map/GeofenceMap";
 import {
   getGeofenceLocations,
   createGeofenceLocation,
@@ -42,6 +42,7 @@ export default function GeofencesPage() {
   const [selectedLocation, setSelectedLocation] = useState<GeofenceLocation | null>(null);
   const [mode, setMode] = useState<"view" | "create" | "edit">("view");
   const [editingLocation, setEditingLocation] = useState<GeofenceLocation | null>(null);
+  const [pendingNewLocation, setPendingNewLocation] = useState<PendingNewLocation | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [formData, setFormData] = useState({
@@ -164,7 +165,27 @@ export default function GeofencesPage() {
   const handleCreateMode = () => {
     setMode("create");
     setSelectedLocation(null);
+    setPendingNewLocation(null);
     setFormData({ name: "", radius_meters: 100 });
+  };
+
+  const handleMapClickForCreate = (lat: number, lng: number) => {
+    setPendingNewLocation({ lat, lng, radius: 100, name: "" });
+  };
+
+  const handleCreateFromPending = async () => {
+    if (!pendingNewLocation || !pendingNewLocation.name?.trim()) return;
+    await handleLocationCreate({
+      name: pendingNewLocation.name.trim(),
+      latitude: pendingNewLocation.lat,
+      longitude: pendingNewLocation.lng,
+      radius_meters: pendingNewLocation.radius,
+    });
+    setPendingNewLocation(null);
+  };
+
+  const handleCancelCreate = () => {
+    setPendingNewLocation(null);
   };
 
   return (
@@ -229,6 +250,8 @@ export default function GeofencesPage() {
                     onLocationSelect={handleLocationSelect}
                     selectedLocation={selectedLocation}
                     mode={mode}
+                    pendingNewLocation={pendingNewLocation}
+                    onMapClickForCreate={handleMapClickForCreate}
                     initialCenter={
                       locations.length > 0
                         ? [
@@ -247,8 +270,78 @@ export default function GeofencesPage() {
 
         {/* Sidebar - Location List & Details */}
         <div className="space-y-4">
+          {/* Create New Geofence Form (shown when pin placed in create mode) */}
+          {pendingNewLocation && mode === "create" && (
+            <Card className="border-slate-200">
+              <CardHeader>
+                <CardTitle className="text-base">Create New Geofence Location</CardTitle>
+                <CardDescription className="text-xs">
+                  Enter name and radius for the new location
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <Label htmlFor="create-name" className="text-xs">Location Name *</Label>
+                  <Input
+                    id="create-name"
+                    placeholder="e.g., Main Office"
+                    value={pendingNewLocation.name}
+                    onChange={(e) =>
+                      setPendingNewLocation({
+                        ...pendingNewLocation,
+                        name: e.target.value,
+                      })
+                    }
+                    className="h-8 text-sm mt-1"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Coordinates</Label>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Lat: {pendingNewLocation.lat.toFixed(6)}, Lng: {pendingNewLocation.lng.toFixed(6)}
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="create-radius" className="text-xs">Radius (meters) *</Label>
+                  <Input
+                    id="create-radius"
+                    type="number"
+                    min="10"
+                    max="5000"
+                    value={pendingNewLocation.radius}
+                    onChange={(e) =>
+                      setPendingNewLocation({
+                        ...pendingNewLocation,
+                        radius: parseInt(e.target.value) || 100,
+                      })
+                    }
+                    className="h-8 text-sm mt-1"
+                  />
+                </div>
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    onClick={handleCreateFromPending}
+                    disabled={!pendingNewLocation.name?.trim() || isSaving}
+                    className="flex-1 bg-blue-700 hover:bg-blue-800"
+                    size="sm"
+                  >
+                    {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={handleCancelCreate}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Location Details Form */}
-          {selectedLocation && (
+          {selectedLocation && !pendingNewLocation && (
             <Card className="border-slate-200">
               <CardHeader>
                 <div className="flex items-center justify-between">

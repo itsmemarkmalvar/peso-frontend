@@ -24,6 +24,13 @@ type GeofenceCreateInput = Omit<
   "id" | "is_active" | "created_at" | "updated_at" | "address"
 > & { address?: string };
 
+export type PendingNewLocation = {
+  lat: number;
+  lng: number;
+  radius: number;
+  name: string;
+};
+
 interface GeofenceMapProps {
   locations?: GeofenceLocation[];
   onLocationCreate?: (location: GeofenceCreateInput) => void;
@@ -33,6 +40,9 @@ interface GeofenceMapProps {
   mode?: "view" | "create" | "edit";
   initialCenter?: [number, number];
   initialZoom?: number;
+  /** Pending location from map click (parent renders form in sidebar). No overlay on map. */
+  pendingNewLocation?: PendingNewLocation | null;
+  onMapClickForCreate?: (lat: number, lng: number) => void;
 }
 
 // Disable scroll/double-click zoom in create mode so the map doesn't adjust when user clicks to pin
@@ -55,6 +65,7 @@ function MapZoomLock({ mode }: { mode: "view" | "create" | "edit" }) {
 }
 
 // Component to handle map clicks for creating new locations
+// Uses mouseEventToLatLng for exact placement at the pixel the user clicked
 function MapClickHandler({
   onMapClick,
   mode,
@@ -62,10 +73,12 @@ function MapClickHandler({
   onMapClick: (lat: number, lng: number) => void;
   mode: "view" | "create" | "edit";
 }) {
+  const map = useMap();
   useMapEvents({
     click: (e) => {
       if (mode === "create") {
-        onMapClick(e.latlng.lat, e.latlng.lng);
+        const latlng = map.mouseEventToLatLng(e.originalEvent);
+        onMapClick(latlng.lat, latlng.lng);
       }
     },
   });
@@ -81,15 +94,11 @@ export function GeofenceMap({
   mode = "view",
   initialCenter = DEFAULT_MAP_CENTER,
   initialZoom = 13,
+  pendingNewLocation = null,
+  onMapClickForCreate,
 }: GeofenceMapProps) {
   const [mapCenter] = useState<[number, number]>(initialCenter);
   const [mapZoom] = useState(initialZoom);
-  const [newLocation, setNewLocation] = useState<{
-    lat: number;
-    lng: number;
-    radius: number;
-    name: string;
-  } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   // Use a more unique ID that includes component instance
@@ -115,25 +124,9 @@ export function GeofenceMap({
   }, []);
 
   const handleMapClick = (lat: number, lng: number) => {
-    if (mode === "create") {
-      setNewLocation({ lat, lng, radius: 100, name: "" });
+    if (mode === "create" && onMapClickForCreate) {
+      onMapClickForCreate(lat, lng);
     }
-  };
-
-  const handleCreateLocation = () => {
-    if (newLocation && onLocationCreate && newLocation.name?.trim()) {
-      onLocationCreate({
-        name: newLocation.name.trim(),
-        latitude: newLocation.lat,
-        longitude: newLocation.lng,
-        radius_meters: newLocation.radius,
-      });
-      setNewLocation(null);
-    }
-  };
-
-  const handleCancelCreate = () => {
-    setNewLocation(null);
   };
 
   if (!isMounted) {
@@ -201,11 +194,11 @@ export function GeofenceMap({
         })}
 
         {/* Render new location being created */}
-        {newLocation && (
+        {pendingNewLocation && (
           <div>
             <Circle
-              center={[newLocation.lat, newLocation.lng]}
-              radius={newLocation.radius}
+              center={[pendingNewLocation.lat, pendingNewLocation.lng]}
+              radius={pendingNewLocation.radius}
               pathOptions={{
                 color: "#10b981",
                 fillColor: "#10b981",
@@ -213,85 +206,13 @@ export function GeofenceMap({
                 weight: 2,
               }}
             />
-            <Marker position={[newLocation.lat, newLocation.lng]} />
+            <Marker position={[pendingNewLocation.lat, pendingNewLocation.lng]} />
           </div>
         )}
       </MapContainer>
 
-      {/* Create location form overlay */}
-      {newLocation && mode === "create" && (
-        <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg p-4 border border-slate-200 min-w-[300px] max-w-[400px]">
-          <h3 className="text-sm font-semibold text-slate-900 mb-3">
-            Create New Geofence Location
-          </h3>
-          <div className="space-y-3">
-            <div>
-              <label className="text-xs font-medium text-slate-700 block mb-1">
-                Location Name *
-              </label>
-              <input
-                type="text"
-                id="create-name"
-                placeholder="e.g., Main Office"
-                value={newLocation.name || ""}
-                onChange={(e) =>
-                  setNewLocation({
-                    ...newLocation,
-                    name: e.target.value,
-                  })
-                }
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-700 block mb-1">
-                Coordinates
-              </label>
-              <p className="text-xs text-slate-600">
-                Lat: {newLocation.lat.toFixed(6)}, Lng: {newLocation.lng.toFixed(6)}
-              </p>
-            </div>
-            <div>
-              <label className="text-xs font-medium text-slate-700 block mb-1">
-                Radius (meters) *
-              </label>
-              <input
-                type="number"
-                min="10"
-                max="5000"
-                value={newLocation.radius}
-                onChange={(e) =>
-                  setNewLocation({
-                    ...newLocation,
-                    radius: parseInt(e.target.value) || 100,
-                  })
-                }
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-            </div>
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={handleCreateLocation}
-                disabled={!newLocation.name?.trim()}
-                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-blue-700 rounded-md hover:bg-blue-800 disabled:bg-slate-300 disabled:cursor-not-allowed"
-              >
-                Create
-              </button>
-              <button
-                onClick={handleCancelCreate}
-                className="flex-1 px-4 py-2 text-sm font-semibold text-slate-700 bg-slate-100 rounded-md hover:bg-slate-200"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Mode indicator */}
-      {mode === "create" && !newLocation && (
+      {/* Mode indicator - no overlay on map */}
+      {mode === "create" && !pendingNewLocation && (
         <div className="absolute top-4 right-4 z-[1000] bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
           <p className="text-xs font-medium text-blue-800">
             Click on the map to pin the location. Use +/− to zoom.
