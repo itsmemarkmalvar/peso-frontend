@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { MapContainer, TileLayer, Circle, Marker, useMapEvents } from "react-leaflet";
+import { MapContainer, TileLayer, Circle, Marker, useMapEvents, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { GeofenceLocation as ApiGeofenceLocation } from "@/lib/api/geofenceLocations";
@@ -33,6 +33,25 @@ interface GeofenceMapProps {
   mode?: "view" | "create" | "edit";
   initialCenter?: [number, number];
   initialZoom?: number;
+}
+
+// Disable scroll/double-click zoom in create mode so the map doesn't adjust when user clicks to pin
+function MapZoomLock({ mode }: { mode: "view" | "create" | "edit" }) {
+  const map = useMap();
+  useEffect(() => {
+    if (mode === "create") {
+      map.scrollWheelZoom.disable();
+      map.doubleClickZoom.disable();
+    } else {
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+    }
+    return () => {
+      map.scrollWheelZoom.enable();
+      map.doubleClickZoom.enable();
+    };
+  }, [map, mode]);
+  return null;
 }
 
 // Component to handle map clicks for creating new locations
@@ -142,6 +161,7 @@ export function GeofenceMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
 
+        <MapZoomLock mode={mode} />
         <MapClickHandler onMapClick={handleMapClick} mode={mode} />
 
         {/* Render existing geofence locations */}
@@ -274,7 +294,7 @@ export function GeofenceMap({
       {mode === "create" && !newLocation && (
         <div className="absolute top-4 right-4 z-[1000] bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
           <p className="text-xs font-medium text-blue-800">
-            Click on the map to create a new location
+            Click on the map to pin the location. Use +/− to zoom.
           </p>
         </div>
       )}
