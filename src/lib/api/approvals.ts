@@ -55,18 +55,22 @@ export function getPendingApprovals(): Promise<ApprovalsListResponse> {
 
 /**
  * Approve an attendance request
+ * Uses /api/approvals/approve proxy so POST body reaches backend
  */
 export function approveRequest(id: number, comments?: string): Promise<ApprovalActionResponse> {
-  return apiClient.post<ApprovalActionResponse>(API_ENDPOINTS.approvals.approve(id), {
+  return apiClient.post<ApprovalActionResponse>(API_ENDPOINTS.approvals.approve, {
+    id,
     comments,
   });
 }
 
 /**
  * Reject an attendance request
+ * Uses /api/approvals/reject proxy so POST body (reason) reaches backend
  */
 export function rejectRequest(id: number, reason: string): Promise<ApprovalActionResponse> {
-  return apiClient.post<ApprovalActionResponse>(API_ENDPOINTS.approvals.reject(id), {
+  return apiClient.post<ApprovalActionResponse>(API_ENDPOINTS.approvals.reject, {
+    id,
     reason,
   });
 }

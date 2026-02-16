@@ -59,12 +59,12 @@ export const API_ENDPOINTS = {
     assign: '/schedules/assign',
   },
 
-  // Approvals
+  // Approvals (approve/reject use static proxy paths so POST body is forwarded)
   approvals: {
     list: '/approvals',
     pending: '/approvals/pending',
-    approve: (id: number) => `/approvals/${id}/approve`,
-    reject: (id: number) => `/approvals/${id}/reject`,
+    approve: '/approvals/approve',
+    reject: '/approvals/reject',
   },
 
   // Leaves
