@@ -71,6 +71,7 @@ export type InternApprovalItem = {
   date: string
   status: "Approved" | "Pending" | "Rejected"
   detail: string
+  approval_type?: string | null
 }
 
 export type InternApprovalsData = {

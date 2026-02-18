@@ -1,1 +1,5 @@
-export { default } from "@/app/dashboard/intern/page"
+import { redirect } from "next/navigation"
+
+export default function InternHomeRedirect() {
+  redirect("/dashboard/intern")
+}

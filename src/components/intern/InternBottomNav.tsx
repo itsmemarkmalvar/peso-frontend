@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
     icon: Clock,
   },
   {
-    label: "Timesheet",
+    label: "Timesheets",
     href: "/dashboard/intern/timesheets",
     matches: ["/dashboard/intern/timesheets"],
     icon: FileText,
