@@ -58,6 +58,9 @@ const DEFAULT_WEEKLY_AVAILABILITY: InternWeeklyAvailability = {
   friday: "available",
 }
 
+const HOURS_PER_MONTH = 176
+const REQUIRED_HOURS_MONTH_OPTIONS = [1, 2, 3, 4] as const
+
 const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
 
 /** Read image file as base64 data URL. Uses FileReader only (no canvas) for maximum reliability. */
@@ -120,6 +123,7 @@ const EMPTY_FORM: InternOnboardingForm = {
 export function InternOnboarding() {
   const router = useRouter()
   const { user } = useAuth()
+  const isGip = user?.role === "gip"
   const [form, setForm] = useState<InternOnboardingForm>(EMPTY_FORM)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -172,11 +176,17 @@ export function InternOnboarding() {
   const hasAvailability = Object.values(form.weekly_availability).every(
     (value) => Boolean(value)
   )
+  const selectedRequiredHours = Number(form.required_hours)
+  const hasRequiredHoursOption = REQUIRED_HOURS_MONTH_OPTIONS.some(
+    (months) => months * HOURS_PER_MONTH === selectedRequiredHours
+  )
+  const requiredHoursOptions = hasValidRequiredHours && !hasRequiredHoursOption
+    ? [selectedRequiredHours, ...REQUIRED_HOURS_MONTH_OPTIONS.map((months) => months * HOURS_PER_MONTH)]
+    : REQUIRED_HOURS_MONTH_OPTIONS.map((months) => months * HOURS_PER_MONTH)
 
   const isFormValid = Boolean(
     form.full_name.trim() &&
-      form.school.trim() &&
-      form.program.trim() &&
+      (isGip || (form.school.trim() && form.program.trim())) &&
       form.phone.trim() &&
       form.emergency_contact_name.trim() &&
       form.emergency_contact_phone.trim() &&
@@ -243,14 +253,16 @@ export function InternOnboarding() {
     try {
       const payload: InternOnboardingPayload = {
         full_name: form.full_name?.trim() ?? "",
-        school: form.school?.trim() ?? "",
-        program: form.program?.trim() ?? "",
         phone: form.phone?.trim() ?? "",
         emergency_contact_name: form.emergency_contact_name?.trim() ?? "",
         emergency_contact_phone: form.emergency_contact_phone?.trim() ?? "",
         required_hours: requiredHours,
         weekly_availability: form.weekly_availability ?? DEFAULT_WEEKLY_AVAILABILITY,
         ...(photoPreview ? { profile_photo: photoPreview } : {}),
+      }
+      if (!isGip) {
+        payload.school = form.school?.trim() ?? ""
+        payload.program = form.program?.trim() ?? ""
       }
       await saveInternOnboarding(payload)
       router.replace("/dashboard/intern")
@@ -358,22 +370,26 @@ export function InternOnboarding() {
                     {getInternOrGipRoleLabel(user?.role)}
                   </p>
                 </div>
-                <div className="rounded-xl border border-(--dash-border) bg-white p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
-                    School
-                  </p>
-                  <p className="mt-2 font-semibold text-(--dash-ink)">
-                    {form.school || "-"}
-                  </p>
-                </div>
-                <div className="rounded-xl border border-(--dash-border) bg-white p-4 shadow-sm">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
-                    Program
-                  </p>
-                  <p className="mt-2 font-semibold text-(--dash-ink)">
-                    {form.program || "-"}
-                  </p>
-                </div>
+                {!isGip ? (
+                  <div className="rounded-xl border border-(--dash-border) bg-white p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
+                      School
+                    </p>
+                    <p className="mt-2 font-semibold text-(--dash-ink)">
+                      {form.school || "-"}
+                    </p>
+                  </div>
+                ) : null}
+                {!isGip ? (
+                  <div className="rounded-xl border border-(--dash-border) bg-white p-4 shadow-sm">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
+                      Program
+                    </p>
+                    <p className="mt-2 font-semibold text-(--dash-ink)">
+                      {form.program || "-"}
+                    </p>
+                  </div>
+                ) : null}
                 <div className="rounded-xl border border-(--dash-border) bg-white p-4 shadow-sm">
                   <p className="text-xs font-semibold uppercase tracking-wide text-(--dash-muted)">
                     Required hours
@@ -427,40 +443,42 @@ export function InternOnboarding() {
                   required
                 />
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="school"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                  >
-                    School
-                  </Label>
-                  <Input
-                    id="school"
-                    name="school"
-                    value={form.school}
-                    onChange={updateField("school")}
-                    placeholder="City College"
-                    required
-                  />
+              {!isGip ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="school"
+                      className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+                    >
+                      School
+                    </Label>
+                    <Input
+                      id="school"
+                      name="school"
+                      value={form.school}
+                      onChange={updateField("school")}
+                      placeholder="City College"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="program"
+                      className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+                    >
+                      Program
+                    </Label>
+                    <Input
+                      id="program"
+                      name="program"
+                      value={form.program}
+                      onChange={updateField("program")}
+                      placeholder="BS Information Technology"
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="program"
-                    className="text-xs font-semibold uppercase tracking-wide text-slate-600"
-                  >
-                    Program
-                  </Label>
-                  <Input
-                    id="program"
-                    name="program"
-                    value={form.program}
-                    onChange={updateField("program")}
-                    placeholder="BS Information Technology"
-                    required
-                  />
-                </div>
-              </div>
+              ) : null}
             </CardContent>
           </Card>
 
@@ -550,20 +568,46 @@ export function InternOnboarding() {
                   htmlFor="required_hours"
                   className="text-xs font-semibold uppercase tracking-wide text-slate-600"
                 >
-                  Internship duration (hours)
+                  Required hours
                 </Label>
-                <Input
-                  id="required_hours"
-                  name="required_hours"
-                  value={form.required_hours}
-                  onChange={updateField("required_hours")}
-                  placeholder="500"
-                  type="number"
-                  min="1"
-                  step="1"
-                  inputMode="numeric"
-                  required
-                />
+                {isGip ? (
+                  <select
+                    id="required_hours"
+                    name="required_hours"
+                    value={form.required_hours}
+                    onChange={(event) =>
+                      setForm((prev) => ({ ...prev, required_hours: event.target.value }))
+                    }
+                    className="border-input h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                    required
+                  >
+                    <option value="">Select required hours</option>
+                    {requiredHoursOptions.map((hours) => {
+                      const months = hours / HOURS_PER_MONTH
+                      const isBaseOption = Number.isInteger(months) && REQUIRED_HOURS_MONTH_OPTIONS.includes(months as (typeof REQUIRED_HOURS_MONTH_OPTIONS)[number])
+                      return (
+                        <option key={hours} value={String(hours)}>
+                          {isBaseOption
+                            ? `${months} ${months === 1 ? "Month" : "Months"} (${hours} hours)`
+                            : `${hours} hours (current record)`}
+                        </option>
+                      )
+                    })}
+                  </select>
+                ) : (
+                  <Input
+                    id="required_hours"
+                    name="required_hours"
+                    value={form.required_hours}
+                    onChange={updateField("required_hours")}
+                    placeholder="500"
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputMode="numeric"
+                    required
+                  />
+                )}
               </div>
               <div className="flex-1" />
               <p className="text-xs text-(--dash-muted)">

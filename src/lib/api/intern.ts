@@ -142,8 +142,8 @@ export type InternProfile = {
 
 export type InternOnboardingPayload = {
   full_name: string
-  school: string
-  program: string
+  school?: string
+  program?: string
   phone: string
   emergency_contact_name: string
   emergency_contact_phone: string
