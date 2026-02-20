@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useState, type ReactNode } from "react"
 import {
+  Bell,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -12,7 +13,7 @@ import {
   FileText,
   Home,
   Menu,
-  Settings,
+  UserCircle,
 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -57,10 +58,16 @@ const navItems: NavItem[] = [
     icon: CheckCircle2,
   },
   {
-    label: "Menu",
-    href: "/dashboard/intern/menu",
-    matches: ["/dashboard/intern/menu"],
-    icon: Settings,
+    label: "Notifications",
+    href: "/dashboard/intern/notifications",
+    matches: ["/dashboard/intern/notifications"],
+    icon: Bell,
+  },
+  {
+    label: "Profile",
+    href: "/dashboard/intern/profile",
+    matches: ["/dashboard/intern/profile"],
+    icon: UserCircle,
   },
 ]
 
@@ -209,9 +216,16 @@ export function InternShell({ children }: InternShellProps) {
             collapsed ? "lg:w-20" : "lg:w-64"
           )}
         >
-          <div className="flex items-center justify-between gap-3">
+          <div
+            className={cn(
+              "flex shrink-0 items-center gap-3",
+              collapsed
+                ? "lg:flex-col lg:justify-center lg:gap-2"
+                : "justify-between"
+            )}
+          >
             <div className="flex items-center gap-3">
-              <div className="relative h-10 w-10 overflow-hidden rounded-xl bg-white/80">
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-xl bg-white/80">
                 <Image
                   src={pesoLogo}
                   alt="PESO logo"
@@ -233,7 +247,7 @@ export function InternShell({ children }: InternShellProps) {
               type="button"
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
               onClick={() => setCollapsed((value) => !value)}
-              className="hidden h-9 w-9 items-center justify-center rounded-lg border border-(--dash-border) text-(--dash-muted) transition hover:text-(--dash-ink) lg:inline-flex"
+              className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-(--dash-border) text-(--dash-muted) transition hover:text-(--dash-ink) lg:inline-flex"
             >
               {collapsed ? (
                 <ChevronRight className="h-5 w-5" />

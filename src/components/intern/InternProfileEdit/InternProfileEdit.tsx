@@ -258,7 +258,7 @@ export function InternProfileEdit() {
         payload.program = form.program?.trim() ?? ""
       }
       await saveInternOnboarding(payload)
-      router.replace("/dashboard/intern/menu")
+      router.replace("/dashboard/intern")
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to save profile details."
@@ -270,7 +270,7 @@ export function InternProfileEdit() {
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
-      <InternBackButton href="/dashboard/intern/menu" label="Back to menu" />
+      <InternBackButton href="/dashboard/intern" label="Back to dashboard" />
       {/* Header Card */}
       <Card className="relative overflow-hidden border-(--dash-border) bg-(--dash-card) shadow-sm">
         <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-blue-700 via-blue-600 to-slate-900" />

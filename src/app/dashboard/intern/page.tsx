@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { motion, useReducedMotion } from "framer-motion"
-import { Bell } from "lucide-react"
+import { Bell, CheckCircle2 } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { useAuth } from "@/hooks/useAuth"
@@ -183,9 +183,14 @@ const quickLinks = [
     href: "/dashboard/intern/approvals",
   },
   {
-    label: "Menu",
-    desc: "Settings and resources.",
-    href: "/dashboard/intern/menu",
+    label: "Notifications",
+    desc: "View and manage alerts for schedules and approvals.",
+    href: "/dashboard/intern/notifications",
+  },
+  {
+    label: "Profile",
+    desc: "Update your personal details and internship profile.",
+    href: "/dashboard/intern/profile",
   },
 ] as const
 
@@ -213,6 +218,7 @@ export default function InternDashboardPage() {
   const [todayAttendance, setTodayAttendance] = useState<Attendance | null>(null)
   const [nowMs, setNowMs] = useState(() => Date.now())
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false)
+  const [leaveSubmitSuccess, setLeaveSubmitSuccess] = useState(false)
   const [leaveReason, setLeaveReason] = useState("")
   const [leaveStartDate, setLeaveStartDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -409,6 +415,7 @@ export default function InternDashboardPage() {
     setLeaveStartDate(new Date().toISOString().split("T")[0])
     setLeaveEndDate("")
     setLeaveError(null)
+    setLeaveSubmitSuccess(false)
     setIsLeaveDialogOpen(true)
   }
 
@@ -436,12 +443,11 @@ export default function InternDashboardPage() {
         start_date: leaveStartDate,
         end_date: leaveEndDate ? leaveEndDate : null,
       })
-      setIsLeaveDialogOpen(false)
       setLeaveReason("")
       setLeaveStartDate(new Date().toISOString().split("T")[0])
       setLeaveEndDate("")
       setLeaveError(null)
-      alert("Absence request submitted for review.")
+      setLeaveSubmitSuccess(true)
     } catch (err) {
       setLeaveError(
         err instanceof Error ? err.message : "Failed to submit absence request"
@@ -808,86 +814,122 @@ export default function InternDashboardPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isLeaveDialogOpen} onOpenChange={setIsLeaveDialogOpen}>
-        <DialogContent onClose={() => setIsLeaveDialogOpen(false)} className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>File An Absence</DialogTitle>
-            <DialogDescription>
-              Submit an absence request for admin review.
-            </DialogDescription>
-          </DialogHeader>
-          {leaveError && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {leaveError}
+      <Dialog
+        open={isLeaveDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) setLeaveSubmitSuccess(false)
+          setIsLeaveDialogOpen(open)
+        }}
+      >
+        <DialogContent
+          onClose={() => {
+            setLeaveSubmitSuccess(false)
+            setIsLeaveDialogOpen(false)
+          }}
+          className="max-w-lg"
+        >
+          {leaveSubmitSuccess ? (
+            <div className="flex flex-col items-center gap-5 py-4 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100">
+                <CheckCircle2 className="h-8 w-8 text-emerald-600" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-base font-semibold text-slate-800">
+                  Request submitted
+                </p>
+                <p className="text-sm text-slate-600">
+                  Absence request submitted for review.
+                </p>
+              </div>
+              <Button
+                onClick={() => setIsLeaveDialogOpen(false)}
+                className="w-full bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong) sm:w-auto sm:min-w-[120px]"
+              >
+                OK
+              </Button>
             </div>
-          )}
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="leave-reason" className="text-xs font-semibold text-slate-700">
-                Reason for absence
-              </Label>
-              <textarea
-                id="leave-reason"
-                value={leaveReason}
-                onChange={(e) => setLeaveReason(e.target.value)}
-                placeholder="Share the reason for your absence..."
-                className="w-full min-h-[96px] px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isSubmittingLeave}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-700">
-                Duration of absence
-              </Label>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>File An Absence</DialogTitle>
+                <DialogDescription>
+                  Submit an absence request for admin review.
+                </DialogDescription>
+              </DialogHeader>
+              {leaveError && (
+                <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {leaveError}
+                </div>
+              )}
+              <div className="space-y-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="leave-start" className="text-xs text-slate-500">
-                    Start date
+                  <Label htmlFor="leave-reason" className="text-xs font-semibold text-slate-700">
+                    Reason for absence
                   </Label>
-                  <Input
-                    id="leave-start"
-                    type="date"
-                    value={leaveStartDate}
-                    onChange={(e) => setLeaveStartDate(e.target.value)}
+                  <textarea
+                    id="leave-reason"
+                    value={leaveReason}
+                    onChange={(e) => setLeaveReason(e.target.value)}
+                    placeholder="Share the reason for your absence..."
+                    className="w-full min-h-[96px] px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     disabled={isSubmittingLeave}
-                    className="text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="leave-end" className="text-xs text-slate-500">
-                    End date
+                  <Label className="text-xs font-semibold text-slate-700">
+                    Duration of absence
                   </Label>
-                  <Input
-                    id="leave-end"
-                    type="date"
-                    value={leaveEndDate}
-                    onChange={(e) => setLeaveEndDate(e.target.value)}
-                    disabled={isSubmittingLeave}
-                    className="text-sm"
-                  />
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="leave-start" className="text-xs text-slate-500">
+                        Start date
+                      </Label>
+                      <Input
+                        id="leave-start"
+                        type="date"
+                        value={leaveStartDate}
+                        onChange={(e) => setLeaveStartDate(e.target.value)}
+                        disabled={isSubmittingLeave}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="leave-end" className="text-xs text-slate-500">
+                        End date
+                      </Label>
+                      <Input
+                        id="leave-end"
+                        type="date"
+                        value={leaveEndDate}
+                        onChange={(e) => setLeaveEndDate(e.target.value)}
+                        disabled={isSubmittingLeave}
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Leave end date blank if the absent request is for one day only.
+                  </p>
                 </div>
               </div>
-              <p className="text-[11px] text-slate-500">
-                Leave end date blank if the absent request is for one day only.
-              </p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsLeaveDialogOpen(false)}
-              disabled={isSubmittingLeave}
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSubmitLeave}
-              disabled={isSubmittingLeave}
-              className="bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong)"
-            >
-              {isSubmittingLeave ? "Submitting..." : "Submit"}
-            </Button>
-          </DialogFooter>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsLeaveDialogOpen(false)}
+                  disabled={isSubmittingLeave}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleSubmitLeave}
+                  disabled={isSubmittingLeave}
+                  className="bg-(--dash-accent) text-white hover:bg-(--dash-accent-strong)"
+                >
+                  {isSubmittingLeave ? "Submitting..." : "Submit"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </motion.div>

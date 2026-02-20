@@ -18,6 +18,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 const formatDate = (value: string) =>
   new Date(value).toLocaleDateString("en-US", {
@@ -45,9 +51,6 @@ export default function InternNotificationsPage() {
       .then((data) => {
         if (!active) return
         setNotifications(data)
-        if (!selectedNotification && data.length > 0) {
-          setSelectedNotification(data[0])
-        }
       })
       .catch((err) => {
         if (!active) return
@@ -88,19 +91,18 @@ export default function InternNotificationsPage() {
 
   const handleOpenNotification = async (item: NotificationRecord) => {
     setSelectedNotification(item)
-    if (item.is_read) {
-      return
-    }
-    try {
-      const updated = await markNotificationRead(item.id)
-      setNotifications((prev) =>
-        prev.map((entry) => (entry.id === updated.id ? updated : entry))
-      )
-      setSelectedNotification((current) =>
-        current && current.id === updated.id ? updated : current
-      )
-    } catch {
-      // Non-blocking: keep UI responsive even if read status fails
+    if (!item.is_read) {
+      try {
+        const updated = await markNotificationRead(item.id)
+        setNotifications((prev) =>
+          prev.map((entry) => (entry.id === updated.id ? updated : entry))
+        )
+        setSelectedNotification((current) =>
+          current && current.id === updated.id ? updated : current
+        )
+      } catch {
+        // Non-blocking: keep UI responsive even if read status fails
+      }
     }
   }
 
@@ -113,7 +115,7 @@ export default function InternNotificationsPage() {
         status
       )
       setNotifications((prev) =>
-        prev.map((item) => (item.id === updated.id ? updated : item))
+        prev.map((n) => (n.id === updated.id ? updated : n))
       )
       setSelectedNotification(updated)
     } catch (err) {
@@ -123,9 +125,12 @@ export default function InternNotificationsPage() {
     }
   }
 
+  const isDetailModalOpen = selectedNotification !== null
+  const closeDetailModal = () => setSelectedNotification(null)
+
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6">
-      <InternBackButton href="/dashboard/intern/menu" label="Back to menu" />
+      <InternBackButton href="/dashboard/intern" label="Back to dashboard" />
       <header className="rounded-2xl border border-(--dash-border) bg-(--dash-card) p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
@@ -141,88 +146,85 @@ export default function InternNotificationsPage() {
         </div>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-        <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">All notifications</CardTitle>
-            <CardDescription className="text-(--dash-muted)">
-              Schedule changes, approvals, and system updates.
+      <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-lg">All notifications</CardTitle>
+<CardDescription className="text-(--dash-muted)">
+              All notifications will be saved here.
             </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {isLoadingNotifications && (
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {isLoadingNotifications && (
+            <p className="text-xs text-(--dash-muted)">
+              Loading notifications...
+            </p>
+          )}
+          {notificationsError && !isLoadingNotifications && (
+            <p className="text-xs text-red-600">{notificationsError}</p>
+          )}
+          {!isLoadingNotifications &&
+            !notificationsError &&
+            notifications.length === 0 && (
               <p className="text-xs text-(--dash-muted)">
-                Loading notifications...
+                No notifications yet. We&apos;ll let you know when something
+                needs your attention.
               </p>
             )}
-            {notificationsError && !isLoadingNotifications && (
-              <p className="text-xs text-red-600">{notificationsError}</p>
-            )}
-            {!isLoadingNotifications &&
-              !notificationsError &&
-              notifications.length === 0 && (
-                <p className="text-xs text-(--dash-muted)">
-                  No notifications yet. We&apos;ll let you know when something
-                  needs your attention.
-                </p>
-              )}
-            {!isLoadingNotifications &&
-              !notificationsError &&
-              notifications.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => handleOpenNotification(item)}
-                  className={`w-full rounded-xl border px-4 py-3 text-left text-xs transition ${
-                    item.is_read
-                      ? "border-slate-100 bg-white hover:border-slate-200"
-                      : "border-blue-200 bg-blue-50/60 hover:border-blue-300"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {item.title}
-                      </p>
-                      <p className="mt-1 text-[11px] text-slate-600">
-                        {item.message}
-                      </p>
-                    </div>
-                    <span className="text-[10px] text-slate-400">
-                      {formatDate(item.created_at)}
-                    </span>
+          {!isLoadingNotifications &&
+            !notificationsError &&
+            notifications.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => handleOpenNotification(item)}
+                className={`w-full rounded-xl border px-4 py-3 text-left text-xs transition ${
+                  item.is_read
+                    ? "border-slate-100 bg-white hover:border-slate-200"
+                    : "border-blue-200 bg-blue-50/60 hover:border-blue-300"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {item.title}
+                    </p>
+                    <p className="mt-1 text-[11px] text-slate-600">
+                      {item.message}
+                    </p>
                   </div>
-                </button>
-              ))}
-          </CardContent>
-        </Card>
-
-        <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg">Details</CardTitle>
-            <CardDescription className="text-(--dash-muted)">
-              Review and respond to important updates.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {selectedNotification ? (
-              <>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <p className="text-sm font-semibold text-slate-900">
-                    {selectedNotification.title}
-                  </p>
-                  <p className="mt-2 text-xs text-slate-600">
-                    {selectedNotification.message}
-                  </p>
-                  <p className="mt-2 text-[11px] text-slate-400">
-                    {formatDate(selectedNotification.created_at)}
-                  </p>
+                  <span className="text-[10px] text-slate-400">
+                    {formatDate(item.created_at)}
+                  </span>
                 </div>
+              </button>
+            ))}
+        </CardContent>
+      </Card>
+
+      <Dialog open={isDetailModalOpen} onOpenChange={(open) => !open && closeDetailModal()}>
+        <DialogContent
+          onClose={closeDetailModal}
+          className="max-w-lg border-(--dash-border) bg-(--dash-card)"
+        >
+          {selectedNotification && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="text-lg">
+                  {selectedNotification.title}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
+                <p className="text-sm text-slate-600">
+                  {selectedNotification.message}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  {formatDate(selectedNotification.created_at)}
+                </p>
 
                 {selectedNotification.type ===
                   "schedule_availability_request" && (
-                  <div className="space-y-3">
-                    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-xs text-slate-600">
+                  <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4">
+                    <div className="text-xs text-slate-600">
                       <p className="font-semibold text-slate-700">
                         Schedule change: {scheduleDayLabel}
                       </p>
@@ -233,7 +235,7 @@ export default function InternNotificationsPage() {
                       )}
                     </div>
                     {adminNotes && (
-                      <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                      <div>
                         <p className="text-[11px] font-semibold uppercase text-slate-500">
                           Admin notes
                         </p>
@@ -242,7 +244,7 @@ export default function InternNotificationsPage() {
                         </p>
                       </div>
                     )}
-                    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+                    <div>
                       <p className="text-[11px] font-semibold uppercase text-slate-500">
                         Are you available?
                       </p>
@@ -269,22 +271,19 @@ export default function InternNotificationsPage() {
                         </Button>
                         {responseStatus && (
                           <span className="text-[11px] text-slate-500">
-                            Current response: {responseStatus.replace("_", " ")}
+                            Current response:{" "}
+                            {responseStatus.replace("_", " ")}
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
                 )}
-              </>
-            ) : (
-              <p className="text-xs text-(--dash-muted)">
-                Select a notification to see the details.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
