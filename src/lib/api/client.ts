@@ -34,19 +34,16 @@ export class ApiClient {
       headers.set("Content-Type", "application/json");
     }
 
+    // Add auth token if available
+    const token = this.getAuthToken();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
     const config: RequestInit = {
       ...options,
       headers,
     };
-
-    // Add auth token if available
-    const token = this.getAuthToken();
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
-    }
 
     const response = await fetch(url, config);
     const contentType = response.headers.get('content-type') ?? '';
