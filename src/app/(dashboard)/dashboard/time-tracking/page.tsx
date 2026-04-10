@@ -36,6 +36,7 @@ type HoursRow = {
   total_hours: number | null;
   remaining_hours: number;
   completion_percentage: number | null;
+  resume_path: string | null;
 };
 
 function formatHours(hours: number): string {
@@ -78,6 +79,7 @@ function buildHoursRows(
       total_hours: totalHours,
       remaining_hours: remainingHours,
       completion_percentage: completionPercentage,
+      resume_path: intern.resume_path ?? null,
     };
   });
 }
@@ -606,6 +608,13 @@ export default function TimeTrackingPage() {
           </DialogHeader>
           {certificateRow && (
             <>
+              {certificateRow.completion_percentage != null &&
+                certificateRow.completion_percentage >= 100 &&
+                !certificateRow.resume_path && (
+                  <div className="mx-6 mt-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    You must upload your resume before accessing your Certificate of Completion.
+                  </div>
+                )}
               <div className="flex-1 overflow-y-auto px-6 pb-4">
                 <div className="rounded-xl border-2 border-amber-200/80 bg-gradient-to-b from-amber-50/80 to-white shadow-inner p-6 sm:p-8">
                   <p className="mb-2 text-center text-sm font-semibold uppercase tracking-widest text-amber-700/90">
@@ -663,6 +672,11 @@ export default function TimeTrackingPage() {
                 {canPrintCOC && (
                   <Button
                     type="button"
+                    disabled={
+                      certificateRow.completion_percentage != null &&
+                      certificateRow.completion_percentage >= 100 &&
+                      !certificateRow.resume_path
+                    }
                     onClick={() => {
                       const data = buildCertificateData(certificateRow, internMap.get(certificateRow.intern_id));
                       exportCertificateAsPdf(data).catch((err) => {

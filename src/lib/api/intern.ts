@@ -99,6 +99,7 @@ export type AdminIntern = {
   role: string
   required_hours: number | null
   profile_photo?: string | null
+  resume_path?: string | null
 }
 
 /** Full intern detail from onboarding (for People modal) */
@@ -114,6 +115,8 @@ export type AdminInternDetail = Omit<AdminIntern, "name"> & {
   start_date: string | null
   end_date: string | null
   onboarded_at: string | null
+  resume_path?: string | null
+  resume_file_name?: string | null
 }
 
 export type InternAvailabilityOption = "available" | "not_available"
@@ -138,6 +141,8 @@ export type InternProfile = {
   onboarded_at: string | null
   weekly_availability: InternWeeklyAvailability | null
   profile_photo?: string | null
+  resume_path?: string | null
+  resume_file_name?: string | null
 }
 
 export type InternOnboardingPayload = {
@@ -223,12 +228,66 @@ export function getInternProfile(): Promise<InternProfile | null> {
 }
 
 export function saveInternOnboarding(
-  payload: InternOnboardingPayload
+  payload: InternOnboardingPayload,
+  resumeFile?: File | null
 ): Promise<InternProfile> {
+  const formData = new FormData()
+  formData.append("full_name", payload.full_name)
+  if (payload.school !== undefined) {
+    formData.append("school", payload.school)
+  }
+  if (payload.program !== undefined) {
+    formData.append("program", payload.program)
+  }
+  formData.append("phone", payload.phone)
+  formData.append("emergency_contact_name", payload.emergency_contact_name)
+  formData.append("emergency_contact_phone", payload.emergency_contact_phone)
+  formData.append("required_hours", String(payload.required_hours))
+  formData.append(
+    "weekly_availability[monday]",
+    payload.weekly_availability.monday
+  )
+  formData.append(
+    "weekly_availability[tuesday]",
+    payload.weekly_availability.tuesday
+  )
+  formData.append(
+    "weekly_availability[wednesday]",
+    payload.weekly_availability.wednesday
+  )
+  formData.append(
+    "weekly_availability[thursday]",
+    payload.weekly_availability.thursday
+  )
+  formData.append(
+    "weekly_availability[friday]",
+    payload.weekly_availability.friday
+  )
+  if (payload.profile_photo) {
+    formData.append("profile_photo", payload.profile_photo)
+  }
+  if (resumeFile) {
+    formData.append("resume", resumeFile)
+  }
+
   return apiClient
-    .post<{ success: boolean; message: string; data: InternProfile }>(
+    .postForm<{ success: boolean; message: string; data: InternProfile }>(
       API_ENDPOINTS.interns.me,
-      payload
+      formData
     )
     .then((res) => res.data)
+}
+
+export async function openMyResumePdf(): Promise<void> {
+  const blob = await apiClient.getBlob(API_ENDPOINTS.interns.meResume)
+  const blobUrl = URL.createObjectURL(blob)
+  window.open(blobUrl, "_blank", "noopener,noreferrer")
+  window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
+}
+
+export async function openInternResumePdf(internId: number): Promise<void> {
+  const blob = await apiClient.getBlob(API_ENDPOINTS.interns.resume(internId))
+  const blobUrl = URL.createObjectURL(blob)
+  window.open(blobUrl, "_blank", "noopener,noreferrer")
+  window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
 }

@@ -86,6 +86,35 @@ export class ApiClient {
     );
   }
 
+  async requestBlob(endpoint: string, options: RequestInit = {}): Promise<Blob> {
+    const url = `${this.baseURL}${endpoint}`;
+    const headers = new Headers(options.headers);
+    if (!headers.has("Accept")) {
+      headers.set("Accept", "application/pdf,application/octet-stream");
+    }
+
+    const token = this.getAuthToken();
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    if (!response.ok) {
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("application/json")) {
+        const body = (await response.json().catch(() => null)) as LaravelValidationError | null;
+        throw new Error(body?.message ?? "Failed to fetch file.");
+      }
+      throw new Error(`API Error (${response.status}): ${response.statusText}`);
+    }
+
+    return response.blob();
+  }
+
   private getAuthToken(): string | null {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('auth_token');
@@ -95,6 +124,10 @@ export class ApiClient {
 
   get<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'GET' });
+  }
+
+  getBlob(endpoint: string): Promise<Blob> {
+    return this.requestBlob(endpoint, { method: "GET" });
   }
 
   post<T>(endpoint: string, data?: unknown): Promise<T> {

@@ -39,6 +39,7 @@ import {
   getAdminInterns,
   getAdminFilterOptions,
   getAdminInternDetail,
+  openInternResumePdf,
   type AdminIntern,
   type AdminFilterOptions,
   type AdminInternDetail,
@@ -69,10 +70,13 @@ export default function PeoplePage() {
   const [personDetail, setPersonDetail] = useState<AdminInternDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [failedProfilePhotos, setFailedProfilePhotos] = useState<Set<number>>(new Set());
+  const [resumeLoading, setResumeLoading] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedPerson) {
       setPersonDetail(null);
+      setResumeError(null);
       return;
     }
     let active = true;
@@ -82,6 +86,7 @@ export default function PeoplePage() {
         if (active) {
           setPersonDetail(detail);
           setDetailLoading(false);
+          setResumeError(null);
         }
       })
       .catch(() => {
@@ -97,6 +102,21 @@ export default function PeoplePage() {
 
   const handleImageError = (id: number) => {
     setFailedProfilePhotos((prev) => new Set(prev).add(id));
+  };
+
+  const handleViewResume = async () => {
+    if (!selectedPerson) return;
+    setResumeLoading(true);
+    setResumeError(null);
+    try {
+      await openInternResumePdf(selectedPerson.id);
+    } catch (err) {
+      setResumeError(
+        err instanceof Error ? err.message : "Unable to open resume PDF."
+      );
+    } finally {
+      setResumeLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -580,10 +600,23 @@ export default function PeoplePage() {
                   </div>
 
                   {/* Footer */}
-                  <div className="rounded-b-lg flex justify-end border-t border-slate-200 bg-slate-50/50 px-6 py-4">
-                    <Button variant="outline" size="sm" onClick={() => setSelectedPerson(null)}>
-                      Close
-                    </Button>
+                  <div className="rounded-b-lg border-t border-slate-200 bg-slate-50/50 px-6 py-4">
+                    {resumeError && (
+                      <p className="mb-2 text-xs text-red-600">{resumeError}</p>
+                    )}
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleViewResume}
+                        disabled={resumeLoading || !(personDetail ?? selectedPerson).resume_path}
+                      >
+                        {resumeLoading ? "Opening..." : "View Resume PDF"}
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={() => setSelectedPerson(null)}>
+                        Close
+                      </Button>
+                    </div>
                   </div>
                 </>
               )}

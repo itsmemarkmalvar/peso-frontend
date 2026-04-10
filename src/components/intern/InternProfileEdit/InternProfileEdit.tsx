@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   getInternProfile,
+  openMyResumePdf,
   saveInternOnboarding,
   type InternOnboardingPayload,
   type InternWeeklyAvailability,
@@ -62,6 +63,7 @@ const HOURS_PER_MONTH = 176
 const REQUIRED_HOURS_MONTH_OPTIONS = [1, 2, 3, 4] as const
 
 const MAX_PHOTO_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
+const MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
 
 /** Read image file as base64 data URL. Uses FileReader only (no canvas) for maximum reliability. */
 function readImageAsBase64(file: File): Promise<string> {
@@ -122,7 +124,11 @@ export function InternProfileEdit() {
   const [error, setError] = useState<string | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [photoError, setPhotoError] = useState<string | null>(null)
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [resumeName, setResumeName] = useState<string>("")
+  const [resumeError, setResumeError] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement | null>(null)
+  const resumeInputRef = useRef<HTMLInputElement | null>(null)
 
   useEffect(() => {
     let active = true
@@ -147,6 +153,9 @@ export function InternProfileEdit() {
         })
         if (profile.profile_photo) {
           setPhotoPreview(profile.profile_photo)
+        }
+        if (profile.resume_file_name) {
+          setResumeName(profile.resume_file_name)
         }
       })
       .catch(() => {})
@@ -184,7 +193,8 @@ export function InternProfileEdit() {
       form.emergency_contact_name.trim() &&
       form.emergency_contact_phone.trim() &&
       hasValidRequiredHours &&
-      hasAvailability
+      hasAvailability &&
+      (resumeFile || resumeName)
   )
 
   const updateField =
@@ -237,6 +247,46 @@ export function InternProfileEdit() {
     setPhotoError(null)
   }
 
+  const handleResumeSelect = () => {
+    resumeInputRef.current?.click()
+  }
+
+  const handleResumeChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    const lowerName = file.name.toLowerCase()
+    const isPdfMime = file.type === "application/pdf"
+    const hasPdfExtension = lowerName.endsWith(".pdf")
+    if (!isPdfMime || !hasPdfExtension) {
+      setResumeError("Please upload a PDF file only.")
+      event.target.value = ""
+      return
+    }
+
+    if (file.size > MAX_RESUME_SIZE_BYTES) {
+      setResumeError("Resume must be 5MB or smaller.")
+      event.target.value = ""
+      return
+    }
+
+    setResumeError(null)
+    setResumeFile(file)
+    setResumeName(file.name)
+    event.target.value = ""
+  }
+
+  const handleResumeView = async () => {
+    try {
+      setResumeError(null)
+      await openMyResumePdf()
+    } catch (err) {
+      setResumeError(
+        err instanceof Error ? err.message : "Unable to open resume preview."
+      )
+    }
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setError(null)
@@ -257,7 +307,7 @@ export function InternProfileEdit() {
         payload.school = form.school?.trim() ?? ""
         payload.program = form.program?.trim() ?? ""
       }
-      await saveInternOnboarding(payload)
+      await saveInternOnboarding(payload, resumeFile)
       router.replace("/dashboard/intern")
     } catch (err) {
       setError(
@@ -459,6 +509,64 @@ export function InternProfileEdit() {
                   />
                 </div>
               </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <Card className="border-(--dash-border) bg-(--dash-card) shadow-sm">
+          <CardHeader>
+            <div>
+              <CardTitle className="text-lg">Resume upload</CardTitle>
+              <CardDescription className="text-(--dash-muted)">
+                Resume (PDF) is required for completion records and certificate processing.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <Label
+              htmlFor="resume"
+              className="text-xs font-semibold uppercase tracking-wide text-slate-600"
+            >
+              Resume (PDF) <span className="text-red-600">*</span>
+            </Label>
+            <input
+              ref={resumeInputRef}
+              id="resume"
+              type="file"
+              accept=".pdf,application/pdf"
+              onChange={handleResumeChange}
+              className="hidden"
+            />
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleResumeSelect}
+                className="text-sm"
+              >
+                {resumeName ? "Replace resume" : "Upload resume"}
+              </Button>
+              {resumeName ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={handleResumeView}
+                  className="text-sm"
+                >
+                  View resume
+                </Button>
+              ) : null}
+              {resumeName ? (
+                <span className="text-xs text-slate-600">{resumeName}</span>
+              ) : (
+                <span className="text-xs text-red-600">
+                  Resume (PDF) is required to proceed.
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-(--dash-muted)">PDF only, up to 5MB</p>
+            {resumeError ? (
+              <p className="text-xs text-red-600">{resumeError}</p>
             ) : null}
           </CardContent>
         </Card>
