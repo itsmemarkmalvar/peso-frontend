@@ -44,6 +44,7 @@ import {
   type AdminFilterOptions,
   type AdminInternDetail,
 } from "@/lib/api/intern";
+import { getNsrpFormByUser, openNsrpPdfByUser, type NsrpFormData } from "@/lib/api/nsrp";
 
 function getRoleBadgeClass(role: string): string {
   switch (role) {
@@ -72,6 +73,11 @@ export default function PeoplePage() {
   const [failedProfilePhotos, setFailedProfilePhotos] = useState<Set<number>>(new Set());
   const [resumeLoading, setResumeLoading] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
+  const [nsrpLoading, setNsrpLoading] = useState(false);
+  const [nsrpForm, setNsrpForm] = useState<NsrpFormData | null>(null);
+  const [nsrpError, setNsrpError] = useState<string | null>(null);
+  const [nsrpPdfLoading, setNsrpPdfLoading] = useState(false);
+  const [nsrpPdfError, setNsrpPdfError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedPerson) {
@@ -87,6 +93,25 @@ export default function PeoplePage() {
           setPersonDetail(detail);
           setDetailLoading(false);
           setResumeError(null);
+          setNsrpError(null);
+          setNsrpForm(null);
+          setNsrpLoading(true);
+          getNsrpFormByUser(selectedPerson.user_id)
+            .then((data) => {
+              if (active) {
+                setNsrpForm(data);
+              }
+            })
+            .catch((err) => {
+              if (active) {
+                setNsrpError(err instanceof Error ? err.message : "Failed to load NSRP form.");
+              }
+            })
+            .finally(() => {
+              if (active) {
+                setNsrpLoading(false);
+              }
+            });
         }
       })
       .catch(() => {
@@ -116,6 +141,19 @@ export default function PeoplePage() {
       );
     } finally {
       setResumeLoading(false);
+    }
+  };
+
+  const handleViewNsrpPdf = async () => {
+    if (!selectedPerson) return;
+    setNsrpPdfLoading(true);
+    setNsrpPdfError(null);
+    try {
+      await openNsrpPdfByUser(selectedPerson.user_id);
+    } catch (err) {
+      setNsrpPdfError(err instanceof Error ? err.message : "Unable to open NSRP PDF.");
+    } finally {
+      setNsrpPdfLoading(false);
     }
   };
 
@@ -181,9 +219,11 @@ export default function PeoplePage() {
               </CardDescription>
             </div>
             {!isLoading && !error && (
-              <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200">
-                <Users className="h-4 w-4 text-slate-500" />
-                <span>{people.length} total</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-slate-700 ring-1 ring-slate-200">
+                  <Users className="h-4 w-4 text-slate-500" />
+                  <span>{people.length} total</span>
+                </div>
               </div>
             )}
           </div>
@@ -596,6 +636,37 @@ export default function PeoplePage() {
                           </div>
                         </section>
                       )}
+
+                      {/* NSRP */}
+                      <section className="sm:col-span-2 rounded-lg border border-slate-200 bg-slate-50/50 p-4">
+                        <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400">
+                          NSRP Form
+                        </h3>
+                        {nsrpLoading ? (
+                          <p className="text-sm text-slate-500">Loading NSRP...</p>
+                        ) : nsrpError ? (
+                          <p className="text-sm text-red-600">{nsrpError}</p>
+                        ) : nsrpForm ? (
+                          <div className="space-y-3 text-sm">
+                            {nsrpPdfError && <p className="text-xs text-red-600">{nsrpPdfError}</p>}
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="text-slate-500">Status:</span>
+                              <span
+                                className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                                  nsrpForm.is_completed ? "bg-emerald-100 text-emerald-800" : "bg-amber-100 text-amber-800"
+                                }`}
+                              >
+                                {nsrpForm.is_completed ? "Completed" : "Draft"}
+                              </span>
+                            </div>
+                            <Button type="button" variant="outline" size="sm" onClick={handleViewNsrpPdf} disabled={nsrpPdfLoading}>
+                              {nsrpPdfLoading ? "Opening NSRP PDF..." : "View NSRP PDF"}
+                            </Button>
+                          </div>
+                        ) : (
+                          <p className="text-sm text-slate-500">No NSRP form submitted yet.</p>
+                        )}
+                      </section>
                     </div>
                   </div>
 

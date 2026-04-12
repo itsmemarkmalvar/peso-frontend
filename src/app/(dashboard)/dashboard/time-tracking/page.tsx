@@ -37,6 +37,7 @@ type HoursRow = {
   remaining_hours: number;
   completion_percentage: number | null;
   resume_path: string | null;
+  nsrp_is_completed: boolean;
 };
 
 function formatHours(hours: number): string {
@@ -80,6 +81,7 @@ function buildHoursRows(
       remaining_hours: remainingHours,
       completion_percentage: completionPercentage,
       resume_path: intern.resume_path ?? null,
+      nsrp_is_completed: Boolean(intern.nsrp_is_completed),
     };
   });
 }
@@ -615,6 +617,13 @@ export default function TimeTrackingPage() {
                     You must upload your resume before accessing your Certificate of Completion.
                   </div>
                 )}
+              {certificateRow.completion_percentage != null &&
+                certificateRow.completion_percentage >= 100 &&
+                !certificateRow.nsrp_is_completed && (
+                  <div className="mx-6 mt-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    You must complete NSRP form before accessing your Certificate of Completion.
+                  </div>
+                )}
               <div className="flex-1 overflow-y-auto px-6 pb-4">
                 <div className="rounded-xl border-2 border-amber-200/80 bg-gradient-to-b from-amber-50/80 to-white shadow-inner p-6 sm:p-8">
                   <p className="mb-2 text-center text-sm font-semibold uppercase tracking-widest text-amber-700/90">
@@ -673,9 +682,12 @@ export default function TimeTrackingPage() {
                   <Button
                     type="button"
                     disabled={
-                      certificateRow.completion_percentage != null &&
-                      certificateRow.completion_percentage >= 100 &&
-                      !certificateRow.resume_path
+                      (certificateRow.completion_percentage != null &&
+                        certificateRow.completion_percentage >= 100 &&
+                        !certificateRow.resume_path) ||
+                      (certificateRow.completion_percentage != null &&
+                        certificateRow.completion_percentage >= 100 &&
+                        !certificateRow.nsrp_is_completed)
                     }
                     onClick={() => {
                       const data = buildCertificateData(certificateRow, internMap.get(certificateRow.intern_id));

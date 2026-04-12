@@ -100,6 +100,7 @@ export type AdminIntern = {
   required_hours: number | null
   profile_photo?: string | null
   resume_path?: string | null
+  nsrp_is_completed?: boolean
 }
 
 /** Full intern detail from onboarding (for People modal) */
@@ -117,6 +118,7 @@ export type AdminInternDetail = Omit<AdminIntern, "name"> & {
   onboarded_at: string | null
   resume_path?: string | null
   resume_file_name?: string | null
+  nsrp_is_completed?: boolean
 }
 
 export type InternAvailabilityOption = "available" | "not_available"
@@ -143,6 +145,7 @@ export type InternProfile = {
   profile_photo?: string | null
   resume_path?: string | null
   resume_file_name?: string | null
+  nsrp_is_completed?: boolean
 }
 
 export type InternOnboardingPayload = {

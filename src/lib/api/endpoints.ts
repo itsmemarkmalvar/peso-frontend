@@ -34,6 +34,15 @@ export const API_ENDPOINTS = {
     delete: (id: number) => `/interns/${id}`,
   },
 
+  nsrp: {
+    me: "/nsrp/me",
+    status: "/nsrp/me/status",
+    saveDraft: "/nsrp/me/draft",
+    submit: "/nsrp/me/submit",
+    show: (userId: number) => `/nsrp/${userId}`,
+    pdf: (userId: number) => `/nsrp/${userId}/pdf`,
+  },
+
   // Attendance
   attendance: {
     clockIn: '/attendance/clock-in',

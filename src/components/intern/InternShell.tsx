@@ -13,6 +13,7 @@ import {
   FileText,
   Home,
   Menu,
+  ClipboardList,
   UserCircle,
 } from "lucide-react"
 
@@ -22,6 +23,7 @@ import { internTheme } from "@/components/intern/internTheme"
 import pesoLogo from "@/assets/images/image-Photoroom.png"
 import { useAuth } from "@/hooks/useAuth"
 import { getInternProfile } from "@/lib/api/intern"
+import { getMyNsrpStatus } from "@/lib/api/nsrp"
 
 type NavItem = {
   label: string
@@ -64,6 +66,12 @@ const navItems: NavItem[] = [
     icon: Bell,
   },
   {
+    label: "NSRP Form",
+    href: "/dashboard/intern/nsrp",
+    matches: ["/dashboard/intern/nsrp"],
+    icon: ClipboardList,
+  },
+  {
     label: "Profile",
     href: "/dashboard/intern/profile",
     matches: ["/dashboard/intern/profile"],
@@ -94,12 +102,14 @@ export function InternShell({ children }: InternShellProps) {
   const isOnboardingRoute =
     normalizedPath.startsWith("/dashboard/intern/onboarding") ||
     normalizedPath.startsWith("/intern/dashboard/onboarding")
+  const isNsrpRoute = normalizedPath.startsWith("/dashboard/intern/nsrp")
   const allowOnboardingEdit =
     searchParams?.get("profile") === "1" || searchParams?.get("edit") === "1"
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileChecked, setProfileChecked] = useState(false)
   const [needsOnboarding, setNeedsOnboarding] = useState(false)
+  const [needsNsrp, setNeedsNsrp] = useState(false)
   const [onboardingBypass, setOnboardingBypass] = useState(false)
   const [bypassChecked, setBypassChecked] = useState(false)
   const bypassActive = isOnboardingRoute && onboardingBypass
@@ -145,6 +155,7 @@ export function InternShell({ children }: InternShellProps) {
     if (bypassActive) {
       setProfileChecked(true)
       setNeedsOnboarding(false)
+      setNeedsNsrp(false)
       return
     }
     if (isLoading || !user || !isInternOrGip()) {
@@ -162,9 +173,31 @@ export function InternShell({ children }: InternShellProps) {
 
         if (!hasOnboarded && !isOnboardingRoute) {
           router.replace("/dashboard/intern/onboarding")
+          return
         }
-        if (hasOnboarded && isOnboardingRoute && !allowOnboardingEdit) {
-          router.replace("/dashboard/intern")
+        if (hasOnboarded) {
+          getMyNsrpStatus()
+            .then((status) => {
+              if (!active) return
+              const nsrpCompleted = Boolean(status?.is_completed)
+              setNeedsNsrp(!nsrpCompleted)
+
+              if (!nsrpCompleted && !isNsrpRoute) {
+                router.replace("/dashboard/intern/nsrp")
+                return
+              }
+
+              if (nsrpCompleted && isOnboardingRoute && !allowOnboardingEdit) {
+                router.replace("/dashboard/intern")
+              }
+            })
+            .catch(() => {
+              if (!active) return
+              setNeedsNsrp(true)
+              if (!isNsrpRoute) {
+                router.replace("/dashboard/intern/nsrp")
+              }
+            })
         }
       })
       .catch(() => {
@@ -175,7 +208,7 @@ export function InternShell({ children }: InternShellProps) {
     return () => {
       active = false
     }
-  }, [isLoading, isOnboardingRoute, router, user, bypassActive])
+  }, [isLoading, isOnboardingRoute, isNsrpRoute, router, user, bypassActive])
 
   if (
     !bypassActive &&
@@ -189,6 +222,10 @@ export function InternShell({ children }: InternShellProps) {
   }
 
   if (!bypassActive && needsOnboarding && !isOnboardingRoute) {
+    return null
+  }
+
+  if (!bypassActive && needsNsrp && !isNsrpRoute) {
     return null
   }
 

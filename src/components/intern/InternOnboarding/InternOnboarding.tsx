@@ -315,7 +315,7 @@ export function InternOnboarding() {
         payload.program = form.program?.trim() ?? ""
       }
       await saveInternOnboarding(payload, resumeFile)
-      router.replace("/dashboard/intern")
+      router.replace("/dashboard/intern/nsrp")
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to save onboarding details."
