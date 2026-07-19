@@ -2,6 +2,7 @@
  * API Client Configuration
  * Handles all HTTP requests to Laravel backend
  */
+import { MockServer } from './mock/mockServer';
 
 // In dev we proxy `/api/*` → Laravel (see `next.config.ts` rewrites) to avoid CORS.
 // Override per-environment with NEXT_PUBLIC_API_URL, e.g. `http://127.0.0.1:8000/api`
@@ -45,7 +46,12 @@ export class ApiClient {
       headers,
     };
 
-    const response = await fetch(url, config);
+    let response: Response;
+    if (process.env.NEXT_PUBLIC_DEMO_MODE === 'true') {
+      response = await MockServer.handle(options.method || 'GET', endpoint, config);
+    } else {
+      response = await fetch(url, config);
+    }
     const contentType = response.headers.get('content-type') ?? '';
 
     if (!response.ok) {
