@@ -195,7 +195,7 @@ export function InternOnboarding() {
 
   const isFormValid = Boolean(
     form.full_name.trim() &&
-      (isGip || (form.school.trim() && form.program.trim())) &&
+      (isGip || ((form.school?.trim() || '') && (form.program?.trim() || ''))) &&
       form.phone.trim() &&
       form.emergency_contact_name.trim() &&
       form.emergency_contact_phone.trim() &&
